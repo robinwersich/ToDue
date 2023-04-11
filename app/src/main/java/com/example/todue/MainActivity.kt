@@ -37,7 +37,6 @@ data class TodoData(val text: String)
 
 private val todos = List(50) { TodoData("Task $it") }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TodoItem(data: TodoData, modifier: Modifier = Modifier) {
     Row(
