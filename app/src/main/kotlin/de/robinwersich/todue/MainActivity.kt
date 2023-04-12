@@ -14,63 +14,25 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import de.robinwersich.todue.data.entities.Task
+import de.robinwersich.todue.ui.home.HomeScreen
 import de.robinwersich.todue.ui.theme.ToDueTheme
+import java.time.LocalDate
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             ToDueTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background,
                 ) {
-                    TodoList(todos)
+                    HomeScreen()
                 }
             }
         }
     }
 }
 
-data class TodoData(val text: String)
-
-private val todos = List(50) { TodoData("Task $it") }
-
-@Composable
-fun TodoItem(data: TodoData, modifier: Modifier = Modifier) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxWidth()
-            .size(48.dp)
-            .padding(8.dp)
-    ) {
-        Checkbox(checked = false, onCheckedChange = null, modifier = Modifier.padding(8.dp))
-        Text(text = data.text, fontSize = 24.sp)
-    }
-}
-
-@Composable
-fun TodoList(todos: List<TodoData>) {
-    LazyColumn {
-        itemsIndexed(todos) { index, item ->
-            TodoItem(item)
-            if (index <= todos.lastIndex) Divider(thickness = Dp.Hairline)
-        }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun TodoItemPreview() {
-    TodoItem(todos.first())
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    ToDueTheme {
-        TodoList(todos)
-    }
-}
