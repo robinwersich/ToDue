@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.todue"
+    namespace = "de.robinwersich.todue"
     compileSdk = 33
 
     defaultConfig {
-        applicationId = "com.example.todue"
+        applicationId = "de.robinwersich.todue"
         minSdk = 24
         targetSdk = 33
         versionCode = 1

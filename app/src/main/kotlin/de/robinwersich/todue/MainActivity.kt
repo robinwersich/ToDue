@@ -1,4 +1,4 @@
-package com.example.todue
+package de.robinwersich.todue
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -14,7 +14,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.todue.ui.theme.ToDueTheme
+import de.robinwersich.todue.ui.theme.ToDueTheme
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
