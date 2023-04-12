@@ -1,4 +1,4 @@
-package com.example.todue.ui.theme
+package de.robinwersich.todue.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

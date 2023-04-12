@@ -1,4 +1,4 @@
-package com.example.todue
+package de.robinwersich.todue
 
 import org.junit.Test
 
