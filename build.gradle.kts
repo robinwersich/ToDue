@@ -3,8 +3,3 @@ plugins {
     id("com.android.library") version "7.4.2" apply false
     id("org.jetbrains.kotlin.android") version "1.8.10" apply false
 }
-
-ext {
-    extra["kotlinVersion"] = "1.8.10"
-    extra["composeVersion"] = "1.4.4"
-}
