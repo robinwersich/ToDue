@@ -10,17 +10,18 @@ import de.robinwersich.todue.data.entities.Task
 @Database(entities = [Task::class], version = 1, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class ToDueDatabase : RoomDatabase() {
-    abstract fun todoDao(): TaskDao
+  abstract fun todoDao(): TaskDao
 
-    companion object {
-        @Volatile
-        private var Instance: ToDueDatabase? = null
+  companion object {
+    @Volatile private var Instance: ToDueDatabase? = null
 
-        fun getDatabase(context: Context): ToDueDatabase = Instance ?: synchronized(this) {
-            Room.databaseBuilder(context, ToDueDatabase::class.java, "todue_database")
-                .fallbackToDestructiveMigration()
-                .build()
-                .also { Instance = it }
+    fun getDatabase(context: Context): ToDueDatabase =
+      Instance
+        ?: synchronized(this) {
+          Room.databaseBuilder(context, ToDueDatabase::class.java, "todue_database")
+            .fallbackToDestructiveMigration()
+            .build()
+            .also { Instance = it }
         }
-    }
+  }
 }

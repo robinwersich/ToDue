@@ -1,6 +1,5 @@
 package de.robinwersich.todue.ui.home
 
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -13,19 +12,20 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 
 class HomeScreenViewModel(
-    private val taskRepository: TaskRepository,
+  private val taskRepository: TaskRepository,
 ) : ViewModel() {
-    val taskList: StateFlow<List<Task>> = taskRepository.getAllTasks().stateIn(
+  val taskList: StateFlow<List<Task>> =
+    taskRepository
+      .getAllTasks()
+      .stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = emptyList(),
-    )
+        initialValue = emptyList()
+      )
 
-    companion object {
-        val Factory = viewModelFactory {
-            initializer {
-                HomeScreenViewModel(toDueApplication().container.tasksRepository)
-            }
-        }
+  companion object {
+    val Factory = viewModelFactory {
+      initializer { HomeScreenViewModel(toDueApplication().container.tasksRepository) }
     }
+  }
 }

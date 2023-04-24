@@ -4,9 +4,8 @@ import androidx.room.TypeConverter
 import java.time.LocalDate
 
 class Converters {
-    @TypeConverter
-    fun timestampToLocalDate(timestamp: Long?) = timestamp?.let { LocalDate.ofEpochDay(it) }
+  @TypeConverter
+  fun timestampToLocalDate(timestamp: Long?) = timestamp?.let { LocalDate.ofEpochDay(it) }
 
-    @TypeConverter
-    fun localDateToTimestamp(localDate: LocalDate?) = localDate?.toEpochDay()
+  @TypeConverter fun localDateToTimestamp(localDate: LocalDate?) = localDate?.toEpochDay()
 }

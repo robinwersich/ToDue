@@ -21,45 +21,40 @@ import de.robinwersich.todue.data.entities.Task
 import de.robinwersich.todue.ui.theme.ToDueTheme
 import java.time.LocalDate
 
-
 @Composable
 fun HomeScreen(viewModel: HomeScreenViewModel = viewModel(factory = HomeScreenViewModel.Factory)) {
-    TaskList(todos = viewModel.taskList.collectAsState().value)
+  TaskList(todos = viewModel.taskList.collectAsState().value)
 }
 
 @Composable
 fun TaskListItem(text: String, modifier: Modifier = Modifier) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 16.dp)
-    ) {
-        Checkbox(checked = false, onCheckedChange = null, modifier = Modifier.padding(8.dp))
-        Text(text = text, fontSize = 24.sp)
-    }
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    modifier = modifier.fillMaxWidth().padding(vertical = 8.dp, horizontal = 16.dp)
+  ) {
+    Checkbox(checked = false, onCheckedChange = null, modifier = Modifier.padding(8.dp))
+    Text(text = text, fontSize = 24.sp)
+  }
 }
 
 @Composable
 fun TaskList(todos: List<Task>) {
-    LazyColumn {
-        itemsIndexed(todos) { index, item ->
-            TaskListItem(item.text)
-            if (index <= todos.lastIndex) Divider(thickness = Dp.Hairline)
-        }
+  LazyColumn {
+    itemsIndexed(todos) { index, item ->
+      TaskListItem(item.text)
+      if (index <= todos.lastIndex) Divider(thickness = Dp.Hairline)
     }
+  }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun TodoItemPreview() {
-    TaskListItem("Create Todo App")
+  TaskListItem("Create Todo App")
 }
 
 @Preview(showBackground = true)
 @Composable
 fun DefaultPreview() {
-    ToDueTheme {
-        TaskList(List(50) { Task(text = "Task $it", dueDate = LocalDate.now()) })
-    }
+  ToDueTheme { TaskList(List(50) { Task(text = "Task $it", dueDate = LocalDate.now()) }) }
 }
