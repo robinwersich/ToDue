@@ -15,14 +15,19 @@ import java.time.LocalDate
 
 @Composable
 fun HomeScreen(viewModel: HomeScreenViewModel = viewModel(factory = HomeScreenViewModel.Factory)) {
-  TaskList(todos = viewModel.taskList.collectAsState().value)
+  TaskList(todos = viewModel.taskList.collectAsState().value, onDoneChanged = viewModel::setDone)
 }
 
 @Composable
-fun TaskList(todos: List<TaskUiData>) {
+fun TaskList(todos: List<TaskUiData>, onDoneChanged: (id: Int, done: Boolean) -> Unit) {
   LazyColumn {
     items(items = todos, key = { it.id }) {
-      Task(text = it.text, dueDate = it.dueDate, done = it.done)
+      Task(
+        text = it.text,
+        dueDate = it.dueDate,
+        done = it.done,
+        onDoneChanged = { done -> onDoneChanged(it.id, done) }
+      )
       Divider(thickness = Dp.Hairline)
     }
   }
@@ -31,5 +36,10 @@ fun TaskList(todos: List<TaskUiData>) {
 @Preview(showBackground = true)
 @Composable
 fun TaskListPreview() {
-  ToDueTheme { TaskList(List(50) { TaskUiData(id = it, text = "Task $it", dueDate = LocalDate.now()) }) }
+  ToDueTheme {
+    TaskList(
+      todos = List(50) { TaskUiData(id = it, text = "Task $it", dueDate = LocalDate.now()) },
+      onDoneChanged = {_, _ ->}
+    )
+  }
 }
