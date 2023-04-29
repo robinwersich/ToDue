@@ -1,4 +1,4 @@
-package de.robinwersich.todue.ui.home
+package de.robinwersich.todue.ui.screens
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -6,7 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import de.robinwersich.todue.data.repositories.DatabaseTaskRepository
 import de.robinwersich.todue.toDueApplication
-import de.robinwersich.todue.ui.TaskUiData
+import de.robinwersich.todue.ui.components.TaskUiData
 import java.time.LocalDate
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

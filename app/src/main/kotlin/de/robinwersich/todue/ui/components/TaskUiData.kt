@@ -1,4 +1,4 @@
-package de.robinwersich.todue.ui
+package de.robinwersich.todue.ui.components
 
 import java.time.LocalDate
 
