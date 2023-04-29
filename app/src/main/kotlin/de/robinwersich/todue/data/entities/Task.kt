@@ -10,4 +10,5 @@ data class Task(
   @ColumnInfo(name = "id") @PrimaryKey(autoGenerate = true) val id: Int = 0,
   @ColumnInfo(name = "text") val text: String,
   @ColumnInfo(name = "due_date") val dueDate: LocalDate,
+  @ColumnInfo(name = "done_date") val doneDate: LocalDate? = null
 )

@@ -1,0 +1,89 @@
+package de.robinwersich.todue.ui
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconToggleButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import de.robinwersich.todue.R
+import java.time.LocalDate
+
+@Composable
+fun Task(
+  text: String,
+  modifier: Modifier = Modifier,
+  dueDate: LocalDate? = null,
+  done: Boolean = false,
+  onDoneChanged: (Boolean) -> Unit = {},
+) {
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)
+  ) {
+    TaskCheckbox(checked = done, onCheckedChange = onDoneChanged)
+    Column {
+      Text(
+        text = text,
+        style =
+          MaterialTheme.typography.titleLarge.copy(
+            textDecoration = if (done) TextDecoration.LineThrough else null
+          )
+      )
+      TaskInfo(dueDate)
+    }
+  }
+}
+
+@Composable
+fun TaskCheckbox(
+  checked: Boolean,
+  onCheckedChange: (Boolean) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  IconToggleButton(checked = checked, onCheckedChange = onCheckedChange, modifier = modifier) {
+    Icon(
+      painter =
+        painterResource(if (checked) R.drawable.circle_checked else R.drawable.circle_unchecked),
+      contentDescription = null,
+    )
+  }
+}
+
+@Composable
+fun TaskInfo(
+  dueDate: LocalDate? = null,
+) {
+  Row {
+    dueDate?.let {
+      Icon(
+        painter = painterResource(R.drawable.calendar),
+        contentDescription = null,
+        modifier = Modifier.padding(end = 4.dp).size(16.dp)
+      )
+      Text(text = it.toString(), style = MaterialTheme.typography.labelSmall)
+    }
+  }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TodoItemPreview() {
+  Task(text = "Create Todo App", dueDate = LocalDate.now())
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TodoItemDonePreview() {
+  Task(text = "Create Todo App", dueDate = LocalDate.now(), done = true)
+}
