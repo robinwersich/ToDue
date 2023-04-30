@@ -29,13 +29,15 @@ fun TaskList(
 ) {
   LazyColumn(modifier = modifier) {
     items(items = todos, key = { it.id }) {
-      Task(
-        text = it.text,
-        dueDate = it.dueDate,
-        doneDate = it.doneDate,
-        onDoneChanged = { done -> onDoneChanged(it.id, done) },
-      )
-      Divider(thickness = Dp.Hairline)
+      Column {
+        Task(
+          text = it.text,
+          dueDate = it.dueDate,
+          doneDate = it.doneDate,
+          onDoneChanged = { done -> onDoneChanged(it.id, done) },
+        )
+        Divider(thickness = Dp.Hairline)
+      }
     }
   }
 }
