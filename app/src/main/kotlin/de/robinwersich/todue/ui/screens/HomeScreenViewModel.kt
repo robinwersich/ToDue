@@ -29,6 +29,10 @@ class HomeScreenViewModel(
         initialValue = emptyList()
       )
 
+  fun addTask() {
+    viewModelScope.launch { taskRepository.insertTask(Task(text = "", dueDate = LocalDate.now())) }
+  }
+
   fun setDone(taskId: Int, done: Boolean) {
     val doneDate = if (done) LocalDate.now() else null
     viewModelScope.launch { taskRepository.setDoneDate(taskId, doneDate) }
