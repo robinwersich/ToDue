@@ -4,9 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import de.robinwersich.todue.data.entities.Task
 import de.robinwersich.todue.data.repositories.DatabaseTaskRepository
 import de.robinwersich.todue.toDueApplication
-import de.robinwersich.todue.ui.components.TaskUiData
+import de.robinwersich.todue.ui.components.TaskUiState
+import de.robinwersich.todue.ui.components.toUiState
 import java.time.LocalDate
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,10 +19,10 @@ import kotlinx.coroutines.launch
 class HomeScreenViewModel(
   private val taskRepository: DatabaseTaskRepository,
 ) : ViewModel() {
-  val taskList: StateFlow<List<TaskUiData>> =
+  val taskList: StateFlow<List<TaskUiState>> =
     taskRepository
       .getAllTasks()
-      .map { tasks -> tasks.map { TaskUiData(it.id, it.text, it.dueDate, it.doneDate != null) } }
+      .map { tasks -> tasks.map { it.toUiState() } }
       .stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -28,9 +30,8 @@ class HomeScreenViewModel(
       )
 
   fun setDone(taskId: Int, done: Boolean) {
-    viewModelScope.launch {
-      taskRepository.setDoneDate(taskId, if (done) LocalDate.now() else null)
-    }
+    val doneDate = if (done) LocalDate.now() else null
+    viewModelScope.launch { taskRepository.setDoneDate(taskId, doneDate) }
   }
 
   companion object {

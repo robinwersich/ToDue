@@ -22,11 +22,12 @@ import java.time.LocalDate
 @Composable
 fun Task(
   text: String,
+  onDoneChanged: (Boolean) -> Unit,
   modifier: Modifier = Modifier,
   dueDate: LocalDate? = null,
-  done: Boolean = false,
-  onDoneChanged: (Boolean) -> Unit = {},
+  doneDate: LocalDate? = null,
 ) {
+  val done = doneDate != null
   Row(
     verticalAlignment = Alignment.CenterVertically,
     modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)
@@ -38,9 +39,9 @@ fun Task(
         style =
           MaterialTheme.typography.titleLarge.copy(
             textDecoration = if (done) TextDecoration.LineThrough else null
-          )
+          ),
       )
-      TaskInfo(dueDate)
+      TaskInfo(dueDate = dueDate, modifier = Modifier.padding(top = 8.dp))
     }
   }
 }
@@ -62,9 +63,10 @@ fun TaskCheckbox(
 
 @Composable
 fun TaskInfo(
+  modifier: Modifier = Modifier,
   dueDate: LocalDate? = null,
 ) {
-  Row {
+  Row(modifier = modifier) {
     dueDate?.let {
       Icon(
         painter = painterResource(R.drawable.calendar),
@@ -79,11 +81,26 @@ fun TaskInfo(
 @Preview(showBackground = true)
 @Composable
 fun TodoItemPreview() {
-  Task(text = "Create Todo App", dueDate = LocalDate.now())
+  Task(text = "Create Todo App", dueDate = LocalDate.now(), onDoneChanged = {})
 }
 
 @Preview(showBackground = true)
 @Composable
 fun TodoItemDonePreview() {
-  Task(text = "Create Todo App", dueDate = LocalDate.now(), done = true)
+  Task(
+    text = "Create Todo App",
+    dueDate = LocalDate.now(),
+    doneDate = LocalDate.now(),
+    onDoneChanged = {}
+  )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TodoItemMultiLinePreview() {
+  Task(
+    text = "This is a very long task that spans two lines",
+    dueDate = LocalDate.now(),
+    onDoneChanged = {}
+  )
 }
