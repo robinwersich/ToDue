@@ -20,6 +20,10 @@ import de.robinwersich.todue.R
 import java.time.LocalDate
 
 @Composable
+fun Task(state: TaskUiState, onDoneChanged: (Boolean) -> Unit, modifier: Modifier = Modifier) =
+  Task(state.text, onDoneChanged, modifier, state.dueDate, state.doneDate)
+
+@Composable
 fun Task(
   text: String,
   onDoneChanged: (Boolean) -> Unit,
