@@ -21,15 +21,15 @@ import java.time.LocalDate
 
 @Composable
 fun Task(state: TaskUiState, onDoneChanged: (Boolean) -> Unit, modifier: Modifier = Modifier) =
-  Task(state.text, onDoneChanged, modifier, state.dueDate, state.doneDate)
+  Task(state.text, state.dueDate, state.doneDate, onDoneChanged, modifier)
 
 @Composable
 fun Task(
   text: String,
+  dueDate: LocalDate,
+  doneDate: LocalDate?,
   onDoneChanged: (Boolean) -> Unit,
   modifier: Modifier = Modifier,
-  dueDate: LocalDate? = null,
-  doneDate: LocalDate? = null,
 ) {
   val done = doneDate != null
   Row(
@@ -85,7 +85,7 @@ fun TaskInfo(
 @Preview(showBackground = true)
 @Composable
 fun TodoItemPreview() {
-  Task(text = "Create Todo App", dueDate = LocalDate.now(), onDoneChanged = {})
+  Task(text = "Create Todo App", dueDate = LocalDate.now(), doneDate = null, onDoneChanged = {})
 }
 
 @Preview(showBackground = true)
@@ -95,7 +95,7 @@ fun TodoItemDonePreview() {
     text = "Create Todo App",
     dueDate = LocalDate.now(),
     doneDate = LocalDate.now(),
-    onDoneChanged = {}
+    onDoneChanged = {},
   )
 }
 
@@ -105,6 +105,7 @@ fun TodoItemMultiLinePreview() {
   Task(
     text = "This is a very long task that spans two lines",
     dueDate = LocalDate.now(),
-    onDoneChanged = {}
+    doneDate = null,
+    onDoneChanged = {},
   )
 }
