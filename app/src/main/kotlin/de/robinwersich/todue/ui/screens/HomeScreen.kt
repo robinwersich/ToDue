@@ -34,6 +34,7 @@ fun HomeScreen(viewModel: HomeScreenViewModel = viewModel(factory = HomeScreenVi
   ) { paddingValues ->
     TaskList(
       todos = viewModel.taskList.collectAsState().value,
+      onTextChanged = viewModel::setText,
       onDoneChanged = viewModel::setDone,
       modifier = Modifier.padding(paddingValues)
     )
@@ -43,6 +44,7 @@ fun HomeScreen(viewModel: HomeScreenViewModel = viewModel(factory = HomeScreenVi
 @Composable
 fun TaskList(
   todos: List<TaskUiState>,
+  onTextChanged: (id: Int, text: String) -> Unit,
   onDoneChanged: (id: Int, done: Boolean) -> Unit,
   modifier: Modifier = Modifier,
 ) {
@@ -52,6 +54,7 @@ fun TaskList(
       Column {
         Task(
           state = it,
+          onTextChanged = { text -> onTextChanged(taskId, text) },
           onDoneChanged = { done -> onDoneChanged(taskId, done) },
         )
         Divider(thickness = Dp.Hairline)
@@ -66,6 +69,7 @@ fun TaskListPreview() {
   ToDueTheme {
     TaskList(
       todos = List(50) { TaskUiState(id = it, text = "Task $it", dueDate = LocalDate.now()) },
+      onTextChanged = { _, _ -> },
       onDoneChanged = { _, _ -> },
     )
   }

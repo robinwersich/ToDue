@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
@@ -20,14 +21,19 @@ import de.robinwersich.todue.R
 import java.time.LocalDate
 
 @Composable
-fun Task(state: TaskUiState, onDoneChanged: (Boolean) -> Unit, modifier: Modifier = Modifier) =
-  Task(state.text, state.dueDate, state.doneDate, onDoneChanged, modifier)
+fun Task(
+  state: TaskUiState,
+  onTextChanged: (String) -> Unit,
+  onDoneChanged: (Boolean) -> Unit,
+  modifier: Modifier = Modifier
+) = Task(state.text, state.dueDate, state.doneDate, onTextChanged, onDoneChanged, modifier)
 
 @Composable
 fun Task(
   text: String,
   dueDate: LocalDate,
   doneDate: LocalDate?,
+  onTextChanged: (String) -> Unit,
   onDoneChanged: (Boolean) -> Unit,
   modifier: Modifier = Modifier,
 ) {
@@ -38,13 +44,17 @@ fun Task(
   ) {
     TaskCheckbox(checked = done, onCheckedChange = onDoneChanged)
     Column {
-      Text(
-        text = text,
-        style =
-          MaterialTheme.typography.titleLarge.copy(
-            textDecoration = if (done) TextDecoration.LineThrough else null
-          ),
-      )
+      CachedUpdate(text, onTextChanged) {
+        val (cachedText, setCachedText) = it
+        BasicTextField(
+          value = cachedText,
+          onValueChange = setCachedText,
+          textStyle =
+            MaterialTheme.typography.titleLarge.copy(
+              textDecoration = if (done) TextDecoration.LineThrough else null
+            ),
+        )
+      }
       TaskInfo(dueDate = dueDate, modifier = Modifier.padding(top = 8.dp))
     }
   }
@@ -85,7 +95,13 @@ fun TaskInfo(
 @Preview(showBackground = true)
 @Composable
 fun TodoItemPreview() {
-  Task(text = "Create Todo App", dueDate = LocalDate.now(), doneDate = null, onDoneChanged = {})
+  Task(
+    text = "Create Todo App",
+    dueDate = LocalDate.now(),
+    doneDate = null,
+    onTextChanged = {},
+    onDoneChanged = {}
+  )
 }
 
 @Preview(showBackground = true)
@@ -95,6 +111,7 @@ fun TodoItemDonePreview() {
     text = "Create Todo App",
     dueDate = LocalDate.now(),
     doneDate = LocalDate.now(),
+    onTextChanged = {},
     onDoneChanged = {},
   )
 }
@@ -106,6 +123,7 @@ fun TodoItemMultiLinePreview() {
     text = "This is a very long task that spans two lines",
     dueDate = LocalDate.now(),
     doneDate = null,
+    onTextChanged = {},
     onDoneChanged = {},
   )
 }

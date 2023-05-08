@@ -9,6 +9,7 @@ class DatabaseTaskRepository(private val taskDao: TaskDao) : TaskRepository {
   override suspend fun updateTask(task: Task) = taskDao.update(task)
   override suspend fun deleteTask(task: Task) = taskDao.delete(task)
 
+  override suspend fun setText(id: Int, text: String) = taskDao.setText(id, text)
   override suspend fun setDoneDate(id: Int, doneDate: LocalDate?) =
     taskDao.setDoneDate(id, doneDate)
   override fun getTask(id: Int) = taskDao.getTask(id)
