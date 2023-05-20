@@ -10,6 +10,8 @@ data class TaskUiState(
   val text: String,
   val dueDate: LocalDate,
   val doneDate: LocalDate? = null,
+  val expanded: Boolean = false,
 )
 
-fun Task.toUiState(): TaskUiState = TaskUiState(id, text, dueDate, doneDate)
+fun Task.toUiState(expanded: Boolean = false): TaskUiState =
+  TaskUiState(id, text, dueDate, doneDate, expanded)

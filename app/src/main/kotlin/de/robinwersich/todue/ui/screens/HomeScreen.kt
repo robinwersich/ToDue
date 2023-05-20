@@ -1,5 +1,6 @@
 package de.robinwersich.todue.ui.screens
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -36,7 +37,9 @@ fun HomeScreen(viewModel: HomeScreenViewModel = viewModel(factory = HomeScreenVi
       todos = viewModel.taskList.collectAsState().value,
       onTextChanged = viewModel::setText,
       onDoneChanged = viewModel::setDone,
-      modifier = Modifier.padding(paddingValues)
+      onDelete = viewModel::deleteTask,
+      onExpandToggled = viewModel::toggleExpansion,
+      modifier = Modifier.padding(paddingValues),
     )
   }
 }
@@ -46,6 +49,8 @@ fun TaskList(
   todos: List<TaskUiState>,
   onTextChanged: (id: Int, text: String) -> Unit,
   onDoneChanged: (id: Int, done: Boolean) -> Unit,
+  onDelete: (id: Int) -> Unit,
+  onExpandToggled: (id: Int) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   LazyColumn(modifier = modifier) {
@@ -56,6 +61,8 @@ fun TaskList(
           state = it,
           onTextChanged = { text -> onTextChanged(taskId, text) },
           onDoneChanged = { done -> onDoneChanged(taskId, done) },
+          onDelete = { onDelete(taskId) },
+          modifier = Modifier.clickable(onClick = { onExpandToggled(taskId) })
         )
         Divider(thickness = Dp.Hairline)
       }
@@ -71,6 +78,8 @@ fun TaskListPreview() {
       todos = List(50) { TaskUiState(id = it, text = "Task $it", dueDate = LocalDate.now()) },
       onTextChanged = { _, _ -> },
       onDoneChanged = { _, _ -> },
+      onDelete = {},
+      onExpandToggled = {},
     )
   }
 }

@@ -1,12 +1,16 @@
 package de.robinwersich.todue.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -14,7 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import de.robinwersich.todue.R
@@ -25,8 +28,19 @@ fun Task(
   state: TaskUiState,
   onTextChanged: (String) -> Unit,
   onDoneChanged: (Boolean) -> Unit,
+  onDelete: () -> Unit,
   modifier: Modifier = Modifier
-) = Task(state.text, state.dueDate, state.doneDate, onTextChanged, onDoneChanged, modifier)
+) =
+  Task(
+    state.text,
+    state.dueDate,
+    state.doneDate,
+    onTextChanged,
+    onDoneChanged,
+    onDelete,
+    modifier,
+    state.expanded
+  )
 
 @Composable
 fun Task(
@@ -35,7 +49,9 @@ fun Task(
   doneDate: LocalDate?,
   onTextChanged: (String) -> Unit,
   onDoneChanged: (Boolean) -> Unit,
+  onDelete: () -> Unit,
   modifier: Modifier = Modifier,
+  expanded: Boolean = false,
 ) {
   val done = doneDate != null
   Row(
@@ -49,13 +65,18 @@ fun Task(
         BasicTextField(
           value = cachedText,
           onValueChange = setCachedText,
-          textStyle =
-            MaterialTheme.typography.titleLarge.copy(
-              textDecoration = if (done) TextDecoration.LineThrough else null
-            ),
+          textStyle = MaterialTheme.typography.titleLarge,
         )
       }
-      TaskInfo(dueDate = dueDate, modifier = Modifier.padding(top = 8.dp))
+      if (expanded) {
+        ExpandedTaskInfo(
+          dueDate = dueDate,
+          onDelete = onDelete,
+          modifier = Modifier.padding(top = 8.dp)
+        )
+      } else {
+        CollapsedTaskInfo(dueDate = dueDate, modifier = Modifier.padding(top = 8.dp))
+      }
     }
   }
 }
@@ -76,7 +97,7 @@ fun TaskCheckbox(
 }
 
 @Composable
-fun TaskInfo(
+fun CollapsedTaskInfo(
   modifier: Modifier = Modifier,
   dueDate: LocalDate? = null,
 ) {
@@ -92,6 +113,25 @@ fun TaskInfo(
   }
 }
 
+@Composable
+fun ExpandedTaskInfo(
+  onDelete: () -> Unit,
+  modifier: Modifier = Modifier,
+  dueDate: LocalDate? = null,
+) {
+  Column(modifier = modifier) {
+    Spacer(modifier = Modifier.fillMaxWidth().height(40.dp))
+    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+      IconButton(onClick = onDelete) {
+        Icon(
+          painter = painterResource(R.drawable.delete),
+          contentDescription = null,
+        )
+      }
+    }
+  }
+}
+
 @Preview(showBackground = true)
 @Composable
 fun TodoItemPreview() {
@@ -100,7 +140,8 @@ fun TodoItemPreview() {
     dueDate = LocalDate.now(),
     doneDate = null,
     onTextChanged = {},
-    onDoneChanged = {}
+    onDoneChanged = {},
+    onDelete = {},
   )
 }
 
@@ -113,6 +154,7 @@ fun TodoItemDonePreview() {
     doneDate = LocalDate.now(),
     onTextChanged = {},
     onDoneChanged = {},
+    onDelete = {},
   )
 }
 
@@ -125,5 +167,20 @@ fun TodoItemMultiLinePreview() {
     doneDate = null,
     onTextChanged = {},
     onDoneChanged = {},
+    onDelete = {},
+  )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun TodoItemExpandedPreview() {
+  Task(
+    text = "This is a very long task that spans two lines",
+    dueDate = LocalDate.now(),
+    doneDate = null,
+    expanded = true,
+    onTextChanged = {},
+    onDoneChanged = {},
+    onDelete = {},
   )
 }
