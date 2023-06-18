@@ -24,43 +24,18 @@ import de.robinwersich.todue.R
 import java.time.LocalDate
 
 @Composable
-fun Task(
-  state: TaskUiState,
-  onTextChanged: (String) -> Unit,
-  onDoneChanged: (Boolean) -> Unit,
-  onDelete: () -> Unit,
-  modifier: Modifier = Modifier
-) =
-  Task(
-    state.text,
-    state.dueDate,
-    state.doneDate,
-    onTextChanged,
-    onDoneChanged,
-    onDelete,
-    modifier,
-    state.expanded
-  )
-
-@Composable
-fun Task(
-  text: String,
-  dueDate: LocalDate,
-  doneDate: LocalDate?,
-  onTextChanged: (String) -> Unit,
-  onDoneChanged: (Boolean) -> Unit,
-  onDelete: () -> Unit,
-  modifier: Modifier = Modifier,
-  expanded: Boolean = false,
-) {
-  val done = doneDate != null
+fun Task(state: TaskState, onEvent: (TaskEvent) -> Unit, modifier: Modifier = Modifier) {
+  // TODO: state fields be extracted here to not capture the state object in every child composable?
   Row(
     verticalAlignment = Alignment.CenterVertically,
     modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)
   ) {
-    TaskCheckbox(checked = done, onCheckedChange = onDoneChanged)
+    TaskCheckbox(
+      checked = state.doneDate != null,
+      onCheckedChange = { onEvent(TaskEvent.SetDone(state.id, it)) }
+    )
     Column {
-      CachedUpdate(text, onTextChanged) {
+      CachedUpdate(state.text, { onEvent(TaskEvent.SetText(state.id, it)) }) {
         val (cachedText, setCachedText) = it
         BasicTextField(
           value = cachedText,
@@ -68,14 +43,14 @@ fun Task(
           textStyle = MaterialTheme.typography.titleLarge,
         )
       }
-      if (expanded) {
+      if (state.expanded) {
         ExpandedTaskInfo(
-          dueDate = dueDate,
-          onDelete = onDelete,
+          dueDate = state.dueDate,
+          onRemove = { onEvent(TaskEvent.Remove(state.id)) },
           modifier = Modifier.padding(top = 8.dp)
         )
       } else {
-        CollapsedTaskInfo(dueDate = dueDate, modifier = Modifier.padding(top = 8.dp))
+        CollapsedTaskInfo(dueDate = state.dueDate, modifier = Modifier.padding(top = 8.dp))
       }
     }
   }
@@ -115,14 +90,18 @@ fun CollapsedTaskInfo(
 
 @Composable
 fun ExpandedTaskInfo(
-  onDelete: () -> Unit,
+  onRemove: () -> Unit,
   modifier: Modifier = Modifier,
   dueDate: LocalDate? = null,
 ) {
   Column(modifier = modifier) {
     Spacer(modifier = Modifier.fillMaxWidth().height(40.dp))
-    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-      IconButton(onClick = onDelete) {
+    Row(
+      verticalAlignment = Alignment.Bottom,
+      horizontalArrangement = Arrangement.End,
+      modifier = Modifier.fillMaxWidth()
+    ) {
+      IconButton(onClick = onRemove) {
         Icon(
           painter = painterResource(R.drawable.delete),
           contentDescription = null,
@@ -135,52 +114,26 @@ fun ExpandedTaskInfo(
 @Preview(showBackground = true)
 @Composable
 fun TodoItemPreview() {
-  Task(
-    text = "Create Todo App",
-    dueDate = LocalDate.now(),
-    doneDate = null,
-    onTextChanged = {},
-    onDoneChanged = {},
-    onDelete = {},
-  )
+  Task(TaskState(text = "Create Todo App"), onEvent = {})
 }
 
 @Preview(showBackground = true)
 @Composable
 fun TodoItemDonePreview() {
-  Task(
-    text = "Create Todo App",
-    dueDate = LocalDate.now(),
-    doneDate = LocalDate.now(),
-    onTextChanged = {},
-    onDoneChanged = {},
-    onDelete = {},
-  )
+  Task(TaskState(text = "Create Todo App", doneDate = LocalDate.now()), onEvent = {})
 }
 
 @Preview(showBackground = true)
 @Composable
 fun TodoItemMultiLinePreview() {
-  Task(
-    text = "This is a very long task that spans two lines",
-    dueDate = LocalDate.now(),
-    doneDate = null,
-    onTextChanged = {},
-    onDoneChanged = {},
-    onDelete = {},
-  )
+  Task(TaskState(text = "This is a very long task that spans two lines"), onEvent = {})
 }
 
 @Preview(showBackground = true)
 @Composable
 fun TodoItemExpandedPreview() {
   Task(
-    text = "This is a very long task that spans two lines",
-    dueDate = LocalDate.now(),
-    doneDate = null,
-    expanded = true,
-    onTextChanged = {},
-    onDoneChanged = {},
-    onDelete = {},
+    TaskState(text = "This is a very long task that spans two lines", expanded = true),
+    onEvent = {}
   )
 }
