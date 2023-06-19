@@ -24,54 +24,49 @@ import de.robinwersich.todue.R
 import java.time.LocalDate
 
 @Composable
-fun Task(
-  state: TaskUiState,
-  onTextChanged: (String) -> Unit,
-  onDoneChanged: (Boolean) -> Unit,
-  onDelete: () -> Unit,
-  modifier: Modifier = Modifier
-) =
+fun Task(state: TaskState, onEvent: (TaskEvent) -> Unit, modifier: Modifier = Modifier) {
+  val taskId = state.id
   Task(
-    state.text,
-    state.dueDate,
-    state.doneDate,
-    onTextChanged,
-    onDoneChanged,
-    onDelete,
-    modifier,
-    state.expanded
+    text = state.text,
+    dueDate = state.dueDate,
+    doneDate = state.doneDate,
+    expanded = state.expanded,
+    onDoneChanged = { onEvent(TaskEvent.SetDone(taskId, it)) },
+    onTextChanged = { onEvent(TaskEvent.SetText(taskId, it)) },
+    onRemove = { onEvent(TaskEvent.Remove(taskId)) },
+    modifier = modifier,
   )
+}
 
 @Composable
 fun Task(
   text: String,
   dueDate: LocalDate,
   doneDate: LocalDate?,
-  onTextChanged: (String) -> Unit,
+  expanded: Boolean,
   onDoneChanged: (Boolean) -> Unit,
-  onDelete: () -> Unit,
+  onTextChanged: (String) -> Unit,
+  onRemove: () -> Unit,
   modifier: Modifier = Modifier,
-  expanded: Boolean = false,
 ) {
-  val done = doneDate != null
   Row(
     verticalAlignment = Alignment.CenterVertically,
     modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)
   ) {
-    TaskCheckbox(checked = done, onCheckedChange = onDoneChanged)
+    TaskCheckbox(checked = doneDate != null, onCheckedChange = onDoneChanged)
     Column {
-      CachedUpdate(text, onTextChanged) {
+      CachedUpdate(value = text, onValueChanged = onTextChanged) {
         val (cachedText, setCachedText) = it
         BasicTextField(
           value = cachedText,
           onValueChange = setCachedText,
-          textStyle = MaterialTheme.typography.titleLarge,
+          textStyle = MaterialTheme.typography.titleLarge
         )
       }
       if (expanded) {
         ExpandedTaskInfo(
           dueDate = dueDate,
-          onDelete = onDelete,
+          onRemove = onRemove,
           modifier = Modifier.padding(top = 8.dp)
         )
       } else {
@@ -91,7 +86,7 @@ fun TaskCheckbox(
     Icon(
       painter =
         painterResource(if (checked) R.drawable.circle_checked else R.drawable.circle_unchecked),
-      contentDescription = null,
+      contentDescription = null
     )
   }
 }
@@ -115,18 +110,19 @@ fun CollapsedTaskInfo(
 
 @Composable
 fun ExpandedTaskInfo(
-  onDelete: () -> Unit,
+  onRemove: () -> Unit,
   modifier: Modifier = Modifier,
   dueDate: LocalDate? = null,
 ) {
   Column(modifier = modifier) {
     Spacer(modifier = Modifier.fillMaxWidth().height(40.dp))
-    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-      IconButton(onClick = onDelete) {
-        Icon(
-          painter = painterResource(R.drawable.delete),
-          contentDescription = null,
-        )
+    Row(
+      verticalAlignment = Alignment.Bottom,
+      horizontalArrangement = Arrangement.End,
+      modifier = Modifier.fillMaxWidth()
+    ) {
+      IconButton(onClick = onRemove) {
+        Icon(painter = painterResource(R.drawable.delete), contentDescription = null)
       }
     }
   }
@@ -135,52 +131,26 @@ fun ExpandedTaskInfo(
 @Preview(showBackground = true)
 @Composable
 fun TodoItemPreview() {
-  Task(
-    text = "Create Todo App",
-    dueDate = LocalDate.now(),
-    doneDate = null,
-    onTextChanged = {},
-    onDoneChanged = {},
-    onDelete = {},
-  )
+  Task(TaskState(text = "Create Todo App"), onEvent = {})
 }
 
 @Preview(showBackground = true)
 @Composable
 fun TodoItemDonePreview() {
-  Task(
-    text = "Create Todo App",
-    dueDate = LocalDate.now(),
-    doneDate = LocalDate.now(),
-    onTextChanged = {},
-    onDoneChanged = {},
-    onDelete = {},
-  )
+  Task(TaskState(text = "Create Todo App", doneDate = LocalDate.now()), onEvent = {})
 }
 
 @Preview(showBackground = true)
 @Composable
 fun TodoItemMultiLinePreview() {
-  Task(
-    text = "This is a very long task that spans two lines",
-    dueDate = LocalDate.now(),
-    doneDate = null,
-    onTextChanged = {},
-    onDoneChanged = {},
-    onDelete = {},
-  )
+  Task(TaskState(text = "This is a very long task that spans two lines"), onEvent = {})
 }
 
 @Preview(showBackground = true)
 @Composable
 fun TodoItemExpandedPreview() {
   Task(
-    text = "This is a very long task that spans two lines",
-    dueDate = LocalDate.now(),
-    doneDate = null,
-    expanded = true,
-    onTextChanged = {},
-    onDoneChanged = {},
-    onDelete = {},
+    TaskState(text = "This is a very long task that spans two lines", expanded = true),
+    onEvent = {}
   )
 }

@@ -5,13 +5,13 @@ import de.robinwersich.todue.data.entities.Task
 import java.time.LocalDate
 
 @Immutable
-data class TaskUiState(
-  val id: Int,
-  val text: String,
-  val dueDate: LocalDate,
+data class TaskState(
+  val id: Int = 0,
+  val text: String = "",
+  val dueDate: LocalDate = LocalDate.now(),
   val doneDate: LocalDate? = null,
   val expanded: Boolean = false,
 )
 
-fun Task.toUiState(expanded: Boolean = false): TaskUiState =
-  TaskUiState(id, text, dueDate, doneDate, expanded)
+fun Task.toUiState(expanded: Boolean = false): TaskState =
+  TaskState(id, text, dueDate, doneDate, expanded)

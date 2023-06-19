@@ -1,4 +1,4 @@
-package de.robinwersich.todue.ui.screens
+package de.robinwersich.todue.ui.screens.main
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -13,32 +13,30 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import de.robinwersich.todue.ui.components.Task
-import de.robinwersich.todue.ui.components.TaskUiState
+import de.robinwersich.todue.ui.components.TaskEvent
+import de.robinwersich.todue.ui.components.TaskState
 import de.robinwersich.todue.ui.theme.ToDueTheme
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(viewModel: HomeScreenViewModel = viewModel(factory = HomeScreenViewModel.Factory)) {
+fun MainScreen(state: MainScreenState, onEvent: (TaskEvent) -> Unit) {
   Scaffold(
     floatingActionButton = {
-      FloatingActionButton(onClick = viewModel::addTask) {
+      FloatingActionButton(onClick = { onEvent(TaskEvent.Add) }) {
         Icon(imageVector = Icons.Default.Add, contentDescription = null)
       }
     }
   ) { paddingValues ->
     TaskList(
-      todos = viewModel.taskList.collectAsState().value,
-      onTextChanged = viewModel::setText,
-      onDoneChanged = viewModel::setDone,
-      onDelete = viewModel::deleteTask,
-      onExpandToggled = viewModel::toggleExpansion,
+      tasks = state.tasks,
+      onEvent = { onEvent(it) }, // TODO: use method reference once this doesn't cause recomposition
       modifier = Modifier.padding(paddingValues),
     )
   }
@@ -46,23 +44,20 @@ fun HomeScreen(viewModel: HomeScreenViewModel = viewModel(factory = HomeScreenVi
 
 @Composable
 fun TaskList(
-  todos: List<TaskUiState>,
-  onTextChanged: (id: Int, text: String) -> Unit,
-  onDoneChanged: (id: Int, done: Boolean) -> Unit,
-  onDelete: (id: Int) -> Unit,
-  onExpandToggled: (id: Int) -> Unit,
+  tasks: List<TaskState>,
+  onEvent: (TaskEvent) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   LazyColumn(modifier = modifier) {
-    items(items = todos, key = { it.id }) {
-      val taskId = it.id
+    items(items = tasks, key = { it.id }) {
+      // TODO: don't remember modifier once upgraded to compose 1.5
+      val clickableModifier =
+        remember(onEvent, it.id) { Modifier.clickable { onEvent(TaskEvent.Expand(it.id)) } }
       Column {
         Task(
           state = it,
-          onTextChanged = { text -> onTextChanged(taskId, text) },
-          onDoneChanged = { done -> onDoneChanged(taskId, done) },
-          onDelete = { onDelete(taskId) },
-          modifier = Modifier.clickable(onClick = { onExpandToggled(taskId) })
+          onEvent = onEvent,
+          modifier = clickableModifier,
         )
         Divider(thickness = Dp.Hairline)
       }
@@ -75,11 +70,8 @@ fun TaskList(
 fun TaskListPreview() {
   ToDueTheme {
     TaskList(
-      todos = List(50) { TaskUiState(id = it, text = "Task $it", dueDate = LocalDate.now()) },
-      onTextChanged = { _, _ -> },
-      onDoneChanged = { _, _ -> },
-      onDelete = {},
-      onExpandToggled = {},
+      tasks = List(50) { TaskState(id = it, text = "Task $it", dueDate = LocalDate.now()) },
+      onEvent = {}
     )
   }
 }
