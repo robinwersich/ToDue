@@ -25,32 +25,52 @@ import java.time.LocalDate
 
 @Composable
 fun Task(state: TaskState, onEvent: (TaskEvent) -> Unit, modifier: Modifier = Modifier) {
-  // TODO: state fields be extracted here to not capture the state object in every child composable?
+  val taskId = state.id
+  Task(
+    text = state.text,
+    dueDate = state.dueDate,
+    doneDate = state.doneDate,
+    expanded = state.expanded,
+    onDoneChanged = { onEvent(TaskEvent.SetDone(taskId, it)) },
+    onTextChanged = { onEvent(TaskEvent.SetText(taskId, it)) },
+    onRemove = { onEvent(TaskEvent.Remove(taskId)) },
+    modifier = modifier,
+  )
+}
+
+@Composable
+fun Task(
+  text: String,
+  dueDate: LocalDate,
+  doneDate: LocalDate?,
+  expanded: Boolean,
+  onDoneChanged: (Boolean) -> Unit,
+  onTextChanged: (String) -> Unit,
+  onRemove: () -> Unit,
+  modifier: Modifier = Modifier,
+) {
   Row(
     verticalAlignment = Alignment.CenterVertically,
     modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)
   ) {
-    TaskCheckbox(
-      checked = state.doneDate != null,
-      onCheckedChange = { onEvent(TaskEvent.SetDone(state.id, it)) }
-    )
+    TaskCheckbox(checked = doneDate != null, onCheckedChange = onDoneChanged)
     Column {
-      CachedUpdate(state.text, { onEvent(TaskEvent.SetText(state.id, it)) }) {
+      CachedUpdate(value = text, onValueChanged = onTextChanged) {
         val (cachedText, setCachedText) = it
         BasicTextField(
           value = cachedText,
           onValueChange = setCachedText,
-          textStyle = MaterialTheme.typography.titleLarge,
+          textStyle = MaterialTheme.typography.titleLarge
         )
       }
-      if (state.expanded) {
+      if (expanded) {
         ExpandedTaskInfo(
-          dueDate = state.dueDate,
-          onRemove = { onEvent(TaskEvent.Remove(state.id)) },
+          dueDate = dueDate,
+          onRemove = onRemove,
           modifier = Modifier.padding(top = 8.dp)
         )
       } else {
-        CollapsedTaskInfo(dueDate = state.dueDate, modifier = Modifier.padding(top = 8.dp))
+        CollapsedTaskInfo(dueDate = dueDate, modifier = Modifier.padding(top = 8.dp))
       }
     }
   }
@@ -66,7 +86,7 @@ fun TaskCheckbox(
     Icon(
       painter =
         painterResource(if (checked) R.drawable.circle_checked else R.drawable.circle_unchecked),
-      contentDescription = null,
+      contentDescription = null
     )
   }
 }
@@ -102,10 +122,7 @@ fun ExpandedTaskInfo(
       modifier = Modifier.fillMaxWidth()
     ) {
       IconButton(onClick = onRemove) {
-        Icon(
-          painter = painterResource(R.drawable.delete),
-          contentDescription = null,
-        )
+        Icon(painter = painterResource(R.drawable.delete), contentDescription = null)
       }
     }
   }
