@@ -14,9 +14,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -60,7 +63,9 @@ fun Task(
         BasicTextField(
           value = cachedText,
           onValueChange = setCachedText,
-          textStyle = MaterialTheme.typography.titleLarge
+          textStyle =
+            MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+          cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant)
         )
       }
       if (expanded) {
