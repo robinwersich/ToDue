@@ -1,7 +1,10 @@
 package de.robinwersich.todue.ui.screens.main
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -48,29 +51,41 @@ fun TaskList(
   onEvent: (TaskEvent) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  LazyColumn(modifier = modifier) {
-    items(items = tasks, key = { it.id }) {
-      // TODO: don't remember modifier once upgraded to compose 1.5
-      val clickableModifier =
-        remember(onEvent, it.id) { Modifier.clickable { onEvent(TaskEvent.Expand(it.id)) } }
-      Column {
-        Task(
-          state = it,
-          onEvent = onEvent,
-          modifier = clickableModifier,
-        )
-        Divider(thickness = Dp.Hairline)
+  Column {
+    LazyColumn(modifier = modifier) {
+      items(items = tasks, key = { it.id }) {
+        // TODO: don't remember modifier once upgraded to compose 1.5
+        val clickableModifier =
+          remember(onEvent, it.id) { Modifier.clickable { onEvent(TaskEvent.Expand(it.id)) } }
+        Column {
+          Task(
+            state = it,
+            onEvent = onEvent,
+            modifier = if (it.expanded) Modifier else clickableModifier,
+          )
+          Divider(thickness = Dp.Hairline)
+        }
       }
     }
+    val interactionSource = remember { MutableInteractionSource() }
+    val clickableModifier =
+      remember(onEvent) {
+        Modifier.fillMaxSize().clickable(interactionSource = interactionSource, indication = null) {
+          onEvent(TaskEvent.Collapse)
+        }
+      }
+    Spacer(clickableModifier)
   }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun TaskListPreview() {
+fun MainScreenPreview() {
   ToDueTheme {
-    TaskList(
-      tasks = List(50) { TaskState(id = it, text = "Task $it", dueDate = LocalDate.now()) },
+    MainScreen(
+      MainScreenState(
+        tasks = List(50) { TaskState(id = it, text = "Task $it", dueDate = LocalDate.now()) }
+      ),
       onEvent = {}
     )
   }
