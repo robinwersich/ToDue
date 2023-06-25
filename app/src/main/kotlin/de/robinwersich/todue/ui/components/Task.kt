@@ -63,6 +63,7 @@ fun Task(
         BasicTextField(
           value = cachedText,
           onValueChange = setCachedText,
+          enabled = expanded,
           textStyle =
             MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.onSurface),
           cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurfaceVariant)
