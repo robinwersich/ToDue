@@ -16,13 +16,13 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import de.robinwersich.todue.ui.components.Task
 import de.robinwersich.todue.ui.components.TaskEvent
+import de.robinwersich.todue.ui.components.TaskFocusLevel
 import de.robinwersich.todue.ui.components.TaskState
 import de.robinwersich.todue.ui.theme.ToDueTheme
 import java.time.LocalDate
@@ -51,30 +51,40 @@ fun TaskList(
   onEvent: (TaskEvent) -> Unit,
   modifier: Modifier = Modifier,
 ) {
+  val interactionSource = remember { MutableInteractionSource() }
   Column {
     LazyColumn(modifier = modifier) {
       items(items = tasks, key = { it.id }) {
         // TODO: don't remember modifier once upgraded to compose 1.5
-        val clickableModifier =
-          remember(onEvent, it.id) { Modifier.clickable { onEvent(TaskEvent.Expand(it.id)) } }
+        val taskModifier =
+          remember(it.id, it.focusLevel, onEvent) {
+            when (it.focusLevel) {
+              TaskFocusLevel.NEUTRAL -> Modifier.clickable { onEvent(TaskEvent.Expand(it.id)) }
+              TaskFocusLevel.FOCUSSED -> Modifier
+              TaskFocusLevel.BACKGROUND ->
+                Modifier.clickable(interactionSource = interactionSource, indication = null) {
+                  onEvent(TaskEvent.Collapse)
+                }
+            }
+          }
         Column {
           Task(
             state = it,
             onEvent = onEvent,
-            modifier = if (it.expanded) Modifier else clickableModifier,
+            modifier = taskModifier,
           )
           Divider(thickness = Dp.Hairline)
         }
       }
     }
-    val interactionSource = remember { MutableInteractionSource() }
-    val clickableModifier =
+
+    val spacerModifier =
       remember(onEvent) {
         Modifier.fillMaxSize().clickable(interactionSource = interactionSource, indication = null) {
           onEvent(TaskEvent.Collapse)
         }
       }
-    Spacer(clickableModifier)
+    Spacer(spacerModifier)
   }
 }
 
@@ -84,7 +94,7 @@ fun MainScreenPreview() {
   ToDueTheme {
     MainScreen(
       MainScreenState(
-        tasks = List(50) { TaskState(id = it, text = "Task $it", dueDate = LocalDate.now()) }
+        tasks = List(15) { TaskState(id = it, text = "Task $it", dueDate = LocalDate.now()) }
       ),
       onEvent = {}
     )
