@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
@@ -26,7 +27,9 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import de.robinwersich.todue.R
 import de.robinwersich.todue.ui.theme.ToDueTheme
 import java.time.LocalDate
@@ -58,44 +61,49 @@ fun TaskContent(
   onRemove: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  CompositionLocalProvider(
-    LocalContentColor provides
+  Surface(
+    shadowElevation = if (focusLevel == TaskFocusLevel.FOCUSSED) 8.dp else 0.dp,
+    contentColor =
       if (focusLevel == TaskFocusLevel.BACKGROUND) LocalContentColor.current.copy(alpha = 0.38f)
-      else LocalContentColor.current
+      else LocalContentColor.current,
+    modifier = modifier.zIndex(if (focusLevel == TaskFocusLevel.FOCUSSED) 1f else 0f)
   ) {
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      modifier = modifier.fillMaxWidth().padding(vertical = 8.dp)
-    ) {
-      TaskCheckbox(
-        checked = doneDate != null,
-        onCheckedChange = onDoneChanged,
-        enabled = focusLevel != TaskFocusLevel.BACKGROUND
-      )
-      Column {
-        CachedUpdate(value = text, onValueChanged = onTextChanged) {
-          val (cachedText, setCachedText) = it
-          BasicTextField(
-            value = cachedText,
-            onValueChange = setCachedText,
-            enabled = focusLevel == TaskFocusLevel.FOCUSSED,
-            textStyle =
-              MaterialTheme.typography.titleLarge.merge(
-                TextStyle(color = LocalContentColor.current)
-              ),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary)
-          )
-        }
-        if (focusLevel == TaskFocusLevel.FOCUSSED) {
-          ExpandedTaskInfo(
-            dueDate = dueDate,
-            onRemove = onRemove,
-            modifier = Modifier.padding(top = 8.dp)
-          )
-        } else {
-          CollapsedTaskInfo(dueDate = dueDate, modifier = Modifier.padding(top = 8.dp))
+    Column {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
+      ) {
+        TaskCheckbox(
+          checked = doneDate != null,
+          onCheckedChange = onDoneChanged,
+          enabled = focusLevel != TaskFocusLevel.BACKGROUND
+        )
+        Column {
+          CachedUpdate(value = text, onValueChanged = onTextChanged) {
+            val (cachedText, setCachedText) = it
+            BasicTextField(
+              value = cachedText,
+              onValueChange = setCachedText,
+              enabled = focusLevel == TaskFocusLevel.FOCUSSED,
+              textStyle =
+                MaterialTheme.typography.titleLarge.merge(
+                  TextStyle(color = LocalContentColor.current)
+                ),
+              cursorBrush = SolidColor(MaterialTheme.colorScheme.primary)
+            )
+          }
+          if (focusLevel == TaskFocusLevel.FOCUSSED) {
+            ExpandedTaskInfo(
+              dueDate = dueDate,
+              onRemove = onRemove,
+              modifier = Modifier.padding(top = 8.dp)
+            )
+          } else {
+            CollapsedTaskInfo(dueDate = dueDate, modifier = Modifier.padding(top = 8.dp))
+          }
         }
       }
+      Divider(thickness = Dp.Hairline)
     }
   }
 }
