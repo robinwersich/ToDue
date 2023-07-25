@@ -15,6 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
 import de.robinwersich.todue.ui.components.Task
 import de.robinwersich.todue.ui.components.TaskEvent
@@ -48,9 +49,11 @@ fun TaskList(
   modifier: Modifier = Modifier,
 ) {
   val interactionSource = remember { MutableInteractionSource() }
+  val focusManager = LocalFocusManager.current
   val taskListModifier =
     remember(modifier, onEvent) {
       modifier.clickable(interactionSource = interactionSource, indication = null) {
+        focusManager.clearFocus()
         onEvent(TaskEvent.Collapse)
       }
     }
@@ -58,10 +61,13 @@ fun TaskList(
     items(items = tasks, key = { it.id }) {
       // TODO: don't remember modifier once upgraded to compose 1.5
       val taskModifier =
-        remember(it.id, it.focusLevel, onEvent) {
-          if (it.focusLevel == TaskFocusLevel.NEUTRAL)
-            Modifier.clickable { onEvent(TaskEvent.Expand(it.id)) }
-          else Modifier
+        remember(it.id, it.focusLevel, onEvent, interactionSource) {
+          when (it.focusLevel) {
+            TaskFocusLevel.FOCUSSED ->
+              Modifier.clickable(interactionSource = interactionSource, indication = null) {}
+            TaskFocusLevel.NEUTRAL -> Modifier.clickable { onEvent(TaskEvent.Expand(it.id)) }
+            TaskFocusLevel.BACKGROUND -> Modifier
+          }
         }
       Task(
         state = it,
