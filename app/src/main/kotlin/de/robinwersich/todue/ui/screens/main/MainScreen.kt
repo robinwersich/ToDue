@@ -84,7 +84,8 @@ fun MainScreenPreview() {
   ToDueTheme {
     MainScreen(
       MainScreenState(
-        tasks = List(4) { TaskState(id = it, text = "Task $it", dueDate = LocalDate.now()) }
+        tasks =
+          List(4) { TaskState(id = it.toLong(), text = "Task $it", dueDate = LocalDate.now()) }
       ),
       onEvent = {}
     )

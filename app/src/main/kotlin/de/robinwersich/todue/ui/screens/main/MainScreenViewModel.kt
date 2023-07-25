@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 class MainScreenViewModel(
   private val taskRepository: DatabaseTaskRepository,
 ) : ViewModel() {
-  private val focussedTaskIdFlow: MutableStateFlow<Int?> = MutableStateFlow(null)
+  private val focussedTaskIdFlow: MutableStateFlow<Long?> = MutableStateFlow(null)
   private val taskList: Flow<List<TaskState>> =
     taskRepository.getAllTasks().combine(focussedTaskIdFlow) { tasks, expandedTaskId ->
       tasks.map { task ->

@@ -11,7 +11,7 @@ enum class TaskFocusLevel {
 
 @Immutable
 data class TaskState(
-  val id: Int = 0,
+  val id: Long = 0,
   val text: String = "",
   val dueDate: LocalDate = LocalDate.now(),
   val doneDate: LocalDate? = null,
