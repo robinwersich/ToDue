@@ -23,9 +23,9 @@ import kotlinx.coroutines.launch
 class MainScreenViewModel(
   private val taskRepository: DatabaseTaskRepository,
 ) : ViewModel() {
-  private val focussedTaskId: MutableStateFlow<Int?> = MutableStateFlow(null)
+  private val focussedTaskIdFlow: MutableStateFlow<Int?> = MutableStateFlow(null)
   private val taskList: Flow<List<TaskState>> =
-    taskRepository.getAllTasks().combine(focussedTaskId) { tasks, expandedTaskId ->
+    taskRepository.getAllTasks().combine(focussedTaskIdFlow) { tasks, expandedTaskId ->
       tasks.map { task ->
         TaskState(
           id = task.id,
@@ -57,9 +57,12 @@ class MainScreenViewModel(
         viewModelScope.launch {
           taskRepository.insertTask(Task(text = "", dueDate = LocalDate.now()))
         }
-      is TaskEvent.Remove -> viewModelScope.launch { taskRepository.deleteTask(event.id) }
-      is TaskEvent.Expand -> focussedTaskId.value = event.id
-      is TaskEvent.Collapse -> focussedTaskId.value = null
+      is TaskEvent.Remove -> {
+        if (focussedTaskIdFlow.value == event.id) focussedTaskIdFlow.value = null
+        viewModelScope.launch { taskRepository.deleteTask(event.id) }
+      }
+      is TaskEvent.Expand -> focussedTaskIdFlow.value = event.id
+      is TaskEvent.Collapse -> focussedTaskIdFlow.value = null
       is TaskEvent.SetText -> viewModelScope.launch { taskRepository.setText(event.id, event.text) }
       is TaskEvent.SetDone -> {
         val doneDate = if (event.done) LocalDate.now() else null
