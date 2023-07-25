@@ -25,7 +25,7 @@ class MainScreenViewModel(
 ) : ViewModel() {
   private val focussedTaskIdFlow: MutableStateFlow<Long?> = MutableStateFlow(null)
   private val taskList: Flow<List<TaskState>> =
-    taskRepository.getAllTasks().combine(focussedTaskIdFlow) { tasks, expandedTaskId ->
+    taskRepository.getAllTasks().combine(focussedTaskIdFlow) { tasks, focussedTaskId ->
       tasks.map { task ->
         TaskState(
           id = task.id,
@@ -33,7 +33,7 @@ class MainScreenViewModel(
           dueDate = task.dueDate,
           doneDate = task.doneDate,
           focusLevel =
-            when (expandedTaskId) {
+            when (focussedTaskId) {
               null -> TaskFocusLevel.NEUTRAL
               task.id -> TaskFocusLevel.FOCUSSED
               else -> TaskFocusLevel.BACKGROUND
@@ -55,7 +55,8 @@ class MainScreenViewModel(
     when (event) {
       is TaskEvent.Add ->
         viewModelScope.launch {
-          taskRepository.insertTask(Task(text = "", dueDate = LocalDate.now()))
+          focussedTaskIdFlow.value =
+            taskRepository.insertTask(Task(text = "", dueDate = LocalDate.now()))
         }
       is TaskEvent.Remove -> {
         if (focussedTaskIdFlow.value == event.id) focussedTaskIdFlow.value = null

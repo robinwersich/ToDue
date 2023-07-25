@@ -21,8 +21,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -61,6 +65,9 @@ fun TaskContent(
   onRemove: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
+  val focusRequester = remember { FocusRequester() }
+  LaunchedEffect(true) { if (focusLevel == TaskFocusLevel.FOCUSSED) focusRequester.requestFocus() }
+
   Surface(
     shadowElevation = if (focusLevel == TaskFocusLevel.FOCUSSED) 8.dp else 0.dp,
     contentColor =
@@ -89,7 +96,8 @@ fun TaskContent(
                 MaterialTheme.typography.titleLarge.merge(
                   TextStyle(color = LocalContentColor.current)
                 ),
-              cursorBrush = SolidColor(MaterialTheme.colorScheme.primary)
+              cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+              modifier = Modifier.focusRequester(focusRequester)
             )
           }
           if (focusLevel == TaskFocusLevel.FOCUSSED) {
