@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application
-        android:name=".ToDueApplication"
+        android:name="com.robinwersich.todue.ToDueApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -13,7 +13,7 @@
         android:theme="@style/Theme.ToDue"
         tools:targetApi="31">
         <activity
-            android:name=".MainActivity"
+            android:name="com.robinwersich.todue.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.ToDue">
             <intent-filter>

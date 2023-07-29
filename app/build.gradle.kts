@@ -5,15 +5,15 @@ plugins {
 }
 
 android {
-  namespace = "de.robinwersich.todue"
+  namespace = "com.robinwersich.todue"
   compileSdk = 33
 
   defaultConfig {
-    applicationId = "de.robinwersich.todue"
+    applicationId = "com.robinwersich.todue"
     minSdk = 24
     targetSdk = 33
     versionCode = 1
-    versionName = "1.0"
+    versionName = "0.1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     vectorDrawables { useSupportLibrary = true }
