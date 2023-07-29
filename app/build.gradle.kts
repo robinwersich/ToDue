@@ -1,7 +1,7 @@
 plugins {
   id("com.android.application")
   kotlin("android")
-  id("com.google.devtools.ksp") version "1.8.10-1.0.9"
+  id("com.google.devtools.ksp") version "1.9.0-1.0.12"
 }
 
 android {
@@ -32,7 +32,7 @@ android {
   }
   kotlinOptions { jvmTarget = "1.8" }
   buildFeatures { compose = true }
-  composeOptions { kotlinCompilerExtensionVersion = "1.4.4" }
+  composeOptions { kotlinCompilerExtensionVersion = "1.5.1" }
   packagingOptions { resources { excludes.add("/META-INF/{AL2.0,LGPL2.1}") } }
 }
 
