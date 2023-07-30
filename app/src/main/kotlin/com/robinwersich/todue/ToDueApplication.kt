@@ -14,6 +14,5 @@ class ToDueApplication : Application() {
   }
 }
 
-fun CreationExtras.toDueApplication(): com.robinwersich.todue.ToDueApplication =
-  (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]
-    as com.robinwersich.todue.ToDueApplication)
+fun CreationExtras.toDueApplication(): ToDueApplication =
+  (this[ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY] as ToDueApplication)
