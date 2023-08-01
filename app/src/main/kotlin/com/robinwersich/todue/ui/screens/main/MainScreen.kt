@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -20,19 +19,20 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.ui.components.Task
-import com.robinwersich.todue.ui.components.TaskEvent
 import com.robinwersich.todue.ui.components.TaskFocusLevel
+import com.robinwersich.todue.ui.components.TaskListEvent
 import com.robinwersich.todue.ui.components.TaskState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import java.time.LocalDate
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(state: MainScreenState, onEvent: (TaskEvent) -> Unit) {
+fun MainScreen(state: MainScreenState, onEvent: (MainScreenEvent) -> Unit) {
   Scaffold(
     containerColor = MaterialTheme.colorScheme.surface,
     floatingActionButton = {
-      FloatingActionButton(onClick = { onEvent(TaskEvent.Add) }) {
+      FloatingActionButton(onClick = { onEvent(TaskListEvent.AddTask) }) {
         Icon(imageVector = Icons.Default.Add, contentDescription = null)
       }
     }
@@ -47,8 +47,8 @@ fun MainScreen(state: MainScreenState, onEvent: (TaskEvent) -> Unit) {
 
 @Composable
 fun TaskList(
-  tasks: List<TaskState>,
-  onEvent: (TaskEvent) -> Unit,
+  tasks: ImmutableList<TaskState>,
+  onEvent: (TaskListEvent) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   val interactionSource = remember { MutableInteractionSource() }
@@ -57,24 +57,25 @@ fun TaskList(
     remember(modifier, onEvent) {
       modifier.clickable(interactionSource = interactionSource, indication = null) {
         focusManager.clearFocus()
-        onEvent(TaskEvent.Collapse)
+        onEvent(TaskListEvent.CollapseTasks)
       }
     }
   LazyColumn(modifier = taskListModifier.padding(8.dp)) {
-    items(items = tasks, key = { it.id }) {
+    items(items = tasks, key = { it.id }) { taskState ->
       // TODO: don't remember modifier once upgraded to compose 1.5
       val taskModifier =
-        remember(it.id, it.focusLevel, onEvent, interactionSource) {
-          when (it.focusLevel) {
+        remember(taskState.id, taskState.focusLevel, onEvent, interactionSource) {
+          when (taskState.focusLevel) {
             TaskFocusLevel.FOCUSSED ->
               Modifier.clickable(interactionSource = interactionSource, indication = null) {}
-            TaskFocusLevel.NEUTRAL -> Modifier.clickable { onEvent(TaskEvent.Expand(it.id)) }
+            TaskFocusLevel.NEUTRAL ->
+              Modifier.clickable { onEvent(TaskListEvent.ExpandTask(taskState.id)) }
             TaskFocusLevel.BACKGROUND -> Modifier
           }
         }
       Task(
-        state = it,
-        onEvent = onEvent,
+        state = taskState,
+        onEvent = { onEvent(TaskListEvent.ModifyTask(it, taskState.id)) },
         modifier = taskModifier,
       )
     }
@@ -89,6 +90,7 @@ fun MainScreenPreview() {
       MainScreenState(
         tasks =
           List(4) { TaskState(id = it.toLong(), text = "Task $it", dueDate = LocalDate.now()) }
+            .toImmutableList()
       ),
       onEvent = {}
     )

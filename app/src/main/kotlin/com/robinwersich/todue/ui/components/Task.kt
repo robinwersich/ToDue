@@ -40,30 +40,17 @@ import com.robinwersich.todue.ui.theme.ToDueTheme
 import java.time.LocalDate
 
 @Composable
-fun Task(state: TaskState, onEvent: (TaskEvent) -> Unit, modifier: Modifier = Modifier) {
-  val taskId = state.id
-
-  TaskContent(
-    text = state.text,
-    dueDate = state.dueDate,
-    doneDate = state.doneDate,
-    focusLevel = state.focusLevel,
-    onDoneChanged = { onEvent(TaskEvent.SetDone(taskId, it)) },
-    onTextChanged = { onEvent(TaskEvent.SetText(taskId, it)) },
-    onRemove = { onEvent(TaskEvent.Remove(taskId)) },
-    modifier = modifier,
-  )
+fun Task(state: TaskState, onEvent: (TaskModifyEvent) -> Unit, modifier: Modifier = Modifier) {
+  Task(state.text, state.dueDate, state.doneDate, state.focusLevel, onEvent, modifier)
 }
 
 @Composable
-fun TaskContent(
+fun Task(
   text: String,
   dueDate: LocalDate,
   doneDate: LocalDate?,
   focusLevel: TaskFocusLevel,
-  onDoneChanged: (Boolean) -> Unit,
-  onTextChanged: (String) -> Unit,
-  onRemove: () -> Unit,
+  onEvent: (TaskModifyEvent) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   val isFocussed = focusLevel == TaskFocusLevel.FOCUSSED
@@ -81,7 +68,7 @@ fun TaskContent(
       Row(verticalAlignment = Alignment.CenterVertically) {
         TaskCheckbox(
           checked = doneDate != null,
-          onCheckedChange = onDoneChanged,
+          onCheckedChange = { onEvent(TaskModifyEvent.SetDone(it)) },
           enabled = !isBackground,
           modifier = Modifier.width(checkBoxWidth)
         )
@@ -89,7 +76,7 @@ fun TaskContent(
         val textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = textColor))
 
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
-          CachedUpdate(value = text, onValueChanged = onTextChanged) {
+          CachedUpdate(value = text, onValueChanged = { onEvent(TaskModifyEvent.SetText(it)) }) {
             val (cachedText, setCachedText) = it
             BasicTextField(
               value = cachedText,
@@ -105,9 +92,9 @@ fun TaskContent(
       }
 
       if (isFocussed) {
-        TaskSettings(
+        TaskProperties(
           dueDate = dueDate,
-          onRemove = onRemove,
+          onEvent = onEvent,
           modifier = Modifier.padding(start = checkBoxWidth)
         )
       }
@@ -137,29 +124,29 @@ fun TaskCheckbox(
 }
 
 @Composable
-fun TaskSettings(
-  onRemove: () -> Unit,
+fun TaskProperties(
+  onEvent: (TaskModifyEvent) -> Unit,
   modifier: Modifier = Modifier,
   dueDate: LocalDate,
 ) {
   Column(modifier = modifier) {
     Divider()
     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-      TaskSetting(R.drawable.scheduled_date, "this week") // TODO: use actual data
-      TaskSetting(R.drawable.time_estimate, "30min") // TODO: use actual data
+      TaskProperty(R.drawable.scheduled_date, "this week") // TODO: use actual data
+      TaskProperty(R.drawable.time_estimate, "30min") // TODO: use actual data
     }
     Divider()
-    TaskSetting(R.drawable.due_date, "12.09.") // TODO: use actual data
+    TaskProperty(R.drawable.due_date, "12.09.") // TODO: use actual data
     Divider()
     Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-      TaskAction(R.drawable.delete, onClick = onRemove)
+      TaskAction(R.drawable.delete, onClick = { onEvent(TaskModifyEvent.Delete) })
     }
   }
 }
 
 @Composable
-fun TaskSetting(@DrawableRes iconId: Int, text: String) {
-  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(48.dp)) {
+fun TaskProperty(@DrawableRes iconId: Int, text: String, modifier: Modifier = Modifier) {
+  Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.height(48.dp)) {
     Icon(painterResource(iconId), contentDescription = null)
     Spacer(Modifier.width(8.dp))
     Text(text, style = MaterialTheme.typography.bodyMedium)
