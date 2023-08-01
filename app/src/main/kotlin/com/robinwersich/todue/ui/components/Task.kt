@@ -170,11 +170,6 @@ fun TaskAction(@DrawableRes iconId: Int, onClick: () -> Unit, modifier: Modifier
   )
 }
 
-@Preview
-@Composable
-private fun TodoItemPreview() {
-  ToDueTheme { Task(TaskState(text = "Create Todo App"), onEvent = {}) }
-}
 
 @Preview
 @Composable
@@ -217,6 +212,14 @@ private fun TodoItemMultiLinePreview() {
 @Preview
 @Composable
 private fun TodoItemExpandedPreview() {
+  ToDueTheme {
+    Task(TaskState(text = "Create Todo App", focusLevel = TaskFocusLevel.FOCUSSED), onEvent = {})
+  }
+}
+
+@Preview(uiMode = UI_MODE_NIGHT_YES)
+@Composable
+private fun TodoItemExpandedDarkPreview() {
   ToDueTheme {
     Task(TaskState(text = "Create Todo App", focusLevel = TaskFocusLevel.FOCUSSED), onEvent = {})
   }

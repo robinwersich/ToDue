@@ -82,16 +82,32 @@ fun TaskList(
   }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
+private fun taskStateList(size: Int, focussedTask: Int? = null): List<TaskState> {
+  return List(size) {
+    val focusLevel =
+      when (focussedTask) {
+        null -> TaskFocusLevel.NEUTRAL
+        it -> TaskFocusLevel.FOCUSSED
+        else -> TaskFocusLevel.BACKGROUND
+      }
+    TaskState(it.toLong(), "Task $it", dueDate = LocalDate.now(), focusLevel = focusLevel)
+  }
+}
+
+@Preview(showSystemUi = true)
 @Composable
 private fun MainScreenPreview() {
   ToDueTheme {
+    MainScreen(MainScreenState(tasks = taskStateList(size = 5).toImmutableList()), onEvent = {})
+  }
+}
+
+@Preview(showSystemUi = true)
+@Composable
+private fun MainScreenWithFocussedPreview() {
+  ToDueTheme {
     MainScreen(
-      MainScreenState(
-        tasks =
-          List(4) { TaskState(id = it.toLong(), text = "Task $it", dueDate = LocalDate.now()) }
-            .toImmutableList()
-      ),
+      MainScreenState(tasks = taskStateList(size = 5, focussedTask = 3).toImmutableList()),
       onEvent = {}
     )
   }
