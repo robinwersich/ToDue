@@ -84,7 +84,7 @@ fun TaskList(
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
-fun MainScreenPreview() {
+private fun MainScreenPreview() {
   ToDueTheme {
     MainScreen(
       MainScreenState(
