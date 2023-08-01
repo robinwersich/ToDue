@@ -1,6 +1,9 @@
 package com.robinwersich.todue.ui.components
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import androidx.annotation.DrawableRes
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,19 +11,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -29,11 +31,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import com.robinwersich.todue.R
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import java.time.LocalDate
@@ -65,53 +66,51 @@ fun TaskContent(
   onRemove: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
+  val isFocussed = focusLevel == TaskFocusLevel.FOCUSSED
+  val isBackground = focusLevel == TaskFocusLevel.BACKGROUND
   val focusRequester = remember { FocusRequester() }
-  LaunchedEffect(true) { if (focusLevel == TaskFocusLevel.FOCUSSED) focusRequester.requestFocus() }
+  LaunchedEffect(true) { if (isFocussed) focusRequester.requestFocus() }
 
+  val checkBoxWidth = 48.dp
   Surface(
-    shadowElevation = if (focusLevel == TaskFocusLevel.FOCUSSED) 8.dp else 0.dp,
-    contentColor =
-      if (focusLevel == TaskFocusLevel.BACKGROUND) LocalContentColor.current.copy(alpha = 0.38f)
-      else LocalContentColor.current,
-    modifier = modifier.zIndex(if (focusLevel == TaskFocusLevel.FOCUSSED) 1f else 0f)
+    shape = RoundedCornerShape(16.dp),
+    tonalElevation = if (isFocussed) 2.dp else 0.dp,
+    modifier = modifier
   ) {
-    Column {
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)
-      ) {
+    Column(modifier = Modifier.padding(end = 16.dp).fillMaxWidth()) {
+      Row(verticalAlignment = Alignment.CenterVertically) {
         TaskCheckbox(
           checked = doneDate != null,
           onCheckedChange = onDoneChanged,
-          enabled = focusLevel != TaskFocusLevel.BACKGROUND
+          enabled = !isBackground,
+          modifier = Modifier.width(checkBoxWidth)
         )
-        Column {
+        val textColor = LocalContentColor.current.copy(alpha = if (isBackground) 0.38f else 1f)
+        val textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = textColor))
+
+        Column(modifier = Modifier.padding(vertical = 8.dp)) {
           CachedUpdate(value = text, onValueChanged = onTextChanged) {
             val (cachedText, setCachedText) = it
             BasicTextField(
               value = cachedText,
               onValueChange = setCachedText,
-              enabled = focusLevel == TaskFocusLevel.FOCUSSED,
-              textStyle =
-                MaterialTheme.typography.titleLarge.merge(
-                  TextStyle(color = LocalContentColor.current)
-                ),
+              enabled = isFocussed,
+              textStyle = textStyle,
               cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
               modifier = Modifier.focusRequester(focusRequester)
             )
           }
-          if (focusLevel == TaskFocusLevel.FOCUSSED) {
-            ExpandedTaskInfo(
-              dueDate = dueDate,
-              onRemove = onRemove,
-              modifier = Modifier.padding(top = 8.dp)
-            )
-          } else {
-            CollapsedTaskInfo(dueDate = dueDate, modifier = Modifier.padding(top = 8.dp))
-          }
+          // put task info here if collapsed
         }
       }
-      Divider(thickness = Dp.Hairline)
+
+      if (isFocussed) {
+        TaskSettings(
+          dueDate = dueDate,
+          onRemove = onRemove,
+          modifier = Modifier.padding(start = checkBoxWidth)
+        )
+      }
     }
   }
 }
@@ -138,78 +137,82 @@ fun TaskCheckbox(
 }
 
 @Composable
-fun CollapsedTaskInfo(
+fun TaskSettings(
+  onRemove: () -> Unit,
   modifier: Modifier = Modifier,
-  dueDate: LocalDate? = null,
+  dueDate: LocalDate,
 ) {
-  CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.labelSmall) {
-    Row(modifier = modifier) {
-      dueDate?.let {
-        Icon(
-          painter = painterResource(R.drawable.calendar),
-          contentDescription = null,
-          modifier = Modifier.padding(end = 4.dp).size(16.dp)
-        )
-        Text(text = it.toString())
-      }
+  Column(modifier = modifier) {
+    Divider()
+    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+      TaskSetting(R.drawable.scheduled_date, "this week") // TODO: use actual data
+      TaskSetting(R.drawable.time_estimate, "30min") // TODO: use actual data
+    }
+    Divider()
+    TaskSetting(R.drawable.due_date, "12.09.") // TODO: use actual data
+    Divider()
+    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+      TaskAction(R.drawable.delete, onClick = onRemove)
     }
   }
 }
 
 @Composable
-fun ExpandedTaskInfo(
-  onRemove: () -> Unit,
-  modifier: Modifier = Modifier,
-  dueDate: LocalDate? = null,
-) {
-  Column(modifier = modifier) {
-    Spacer(modifier = Modifier.fillMaxWidth().height(40.dp))
-    Row(
-      verticalAlignment = Alignment.Bottom,
-      horizontalArrangement = Arrangement.End,
-      modifier = Modifier.fillMaxWidth()
-    ) {
-      IconButton(onClick = onRemove) {
-        Icon(painter = painterResource(R.drawable.delete), contentDescription = null)
-      }
-    }
+fun TaskSetting(@DrawableRes iconId: Int, text: String) {
+  Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(48.dp)) {
+    Icon(painterResource(iconId), contentDescription = null)
+    Spacer(Modifier.width(8.dp))
+    Text(text, style = MaterialTheme.typography.bodyMedium)
   }
+}
+
+@Composable
+fun TaskAction(@DrawableRes iconId: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+  Icon(
+    painterResource(iconId),
+    contentDescription = null,
+    modifier =
+      modifier
+        .padding(start = 24.dp, top = 12.dp, bottom = 12.dp)
+        .clickable(
+          onClick = onClick,
+          role = Role.Button,
+          interactionSource = remember { MutableInteractionSource() },
+          indication = rememberRipple(bounded = false, radius = 20.dp)
+        )
+  )
 }
 
 @Preview
 @Composable
 fun TodoItemPreview() {
-  ToDueTheme { Surface { Task(TaskState(text = "Create Todo App"), onEvent = {}) } }
+  ToDueTheme { Task(TaskState(text = "Create Todo App"), onEvent = {}) }
 }
 
 @Preview
 @Composable
 fun TodoItemDonePreview() {
-  ToDueTheme {
-    Surface { Task(TaskState(text = "Create Todo App", doneDate = LocalDate.now()), onEvent = {}) }
-  }
+  ToDueTheme { Task(TaskState(text = "Create Todo App", doneDate = LocalDate.now()), onEvent = {}) }
 }
 
 @Preview(uiMode = UI_MODE_NIGHT_YES)
 @Composable
 fun TodoItemDarkPreview() {
-  ToDueTheme { Surface { Task(TaskState(text = "Create Todo App"), onEvent = {}) } }
+  ToDueTheme { Task(TaskState(text = "Create Todo App"), onEvent = {}) }
 }
 
 @Preview
 @Composable
 fun TodoItemBackgroundPreview() {
   ToDueTheme {
-    Surface {
-      Task(
-        TaskState(
-          text = "Create Todo App",
-          doneDate = LocalDate.now(),
-          focusLevel = TaskFocusLevel.BACKGROUND
-        ),
-        onEvent = {}
-      )
-    }
+    Task(
+      TaskState(
+        text = "Create Todo App",
+        doneDate = LocalDate.now(),
+        focusLevel = TaskFocusLevel.BACKGROUND
+      ),
+      onEvent = {}
+    )
   }
 }
 
@@ -217,9 +220,10 @@ fun TodoItemBackgroundPreview() {
 @Composable
 fun TodoItemMultiLinePreview() {
   ToDueTheme {
-    Surface {
-      Task(TaskState(text = "This is a very long task that spans two lines"), onEvent = {})
-    }
+    Task(
+      TaskState(text = "This is a relatively long task spanning exactly two lines"),
+      onEvent = {}
+    )
   }
 }
 
@@ -227,8 +231,6 @@ fun TodoItemMultiLinePreview() {
 @Composable
 fun TodoItemExpandedPreview() {
   ToDueTheme {
-    Surface {
-      Task(TaskState(text = "Create Todo App", focusLevel = TaskFocusLevel.FOCUSSED), onEvent = {})
-    }
+    Task(TaskState(text = "Create Todo App", focusLevel = TaskFocusLevel.FOCUSSED), onEvent = {})
   }
 }

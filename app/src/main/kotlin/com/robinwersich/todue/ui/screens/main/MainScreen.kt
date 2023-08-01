@@ -11,12 +11,14 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.ui.components.Task
 import com.robinwersich.todue.ui.components.TaskEvent
 import com.robinwersich.todue.ui.components.TaskFocusLevel
@@ -28,6 +30,7 @@ import java.time.LocalDate
 @Composable
 fun MainScreen(state: MainScreenState, onEvent: (TaskEvent) -> Unit) {
   Scaffold(
+    containerColor = MaterialTheme.colorScheme.surface,
     floatingActionButton = {
       FloatingActionButton(onClick = { onEvent(TaskEvent.Add) }) {
         Icon(imageVector = Icons.Default.Add, contentDescription = null)
@@ -57,7 +60,7 @@ fun TaskList(
         onEvent(TaskEvent.Collapse)
       }
     }
-  LazyColumn(modifier = taskListModifier) {
+  LazyColumn(modifier = taskListModifier.padding(8.dp)) {
     items(items = tasks, key = { it.id }) {
       // TODO: don't remember modifier once upgraded to compose 1.5
       val taskModifier =
