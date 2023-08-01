@@ -19,14 +19,9 @@ class MainActivity : ComponentActivity() {
 
     setContent {
       ToDueTheme {
-        Surface(
-          modifier = Modifier.fillMaxSize(),
-          color = MaterialTheme.colorScheme.background,
-        ) {
-          val viewModel: MainScreenViewModel = viewModel(factory = MainScreenViewModel.Factory)
-          val state by viewModel.viewState.collectAsState()
-          MainScreen(state, viewModel::handleEvent)
-        }
+        val viewModel: MainScreenViewModel = viewModel(factory = MainScreenViewModel.Factory)
+        val state by viewModel.viewState.collectAsState()
+        MainScreen(state, viewModel::handleEvent)
       }
     }
   }
