@@ -12,11 +12,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
@@ -37,6 +41,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.R
 import com.robinwersich.todue.ui.theme.ToDueTheme
+import com.robinwersich.todue.ui.utility.signedPadding
 import java.time.LocalDate
 
 @Composable
@@ -132,21 +137,52 @@ fun TaskProperties(
   Column(modifier = modifier) {
     Divider()
     Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-      TaskProperty(R.drawable.scheduled_date, "this week") // TODO: use actual data
-      TaskProperty(R.drawable.time_estimate, "30min") // TODO: use actual data
+      TaskProperty(R.drawable.scheduled_date, "this week", onClick = {}) // TODO: use actual data
+      TaskProperty(R.drawable.time_estimate, "30min", onClick = {}) // TODO: use actual data
     }
     Divider()
-    TaskProperty(R.drawable.due_date, "12.09.") // TODO: use actual data
+    // TODO: use custom formatting
+    TaskProperty(R.drawable.due_date, dueDate.toString(), onClick = {})
     Divider()
-    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-      TaskAction(R.drawable.delete, onClick = { onEvent(TaskModifyEvent.Delete) })
+    Row(
+      horizontalArrangement = Arrangement.End,
+      modifier = Modifier.signedPadding(end = (-12).dp)
+    ) {
+      TaskAction(
+        R.drawable.delete,
+        onClick = { onEvent(TaskModifyEvent.Delete) },
+        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+      )
     }
   }
 }
 
 @Composable
-fun TaskProperty(@DrawableRes iconId: Int, text: String, modifier: Modifier = Modifier) {
-  Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier.height(48.dp)) {
+fun TaskProperty(
+  @DrawableRes iconId: Int,
+  text: String,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier
+) {
+  // additional space for the ripple effect, does not influence layout
+  val clickAreaMargin = 8.dp
+
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    modifier =
+      modifier
+        .height(48.dp)
+        .wrapContentHeight(Alignment.CenterVertically)
+        .signedPadding(-clickAreaMargin)
+        .clip(RoundedCornerShape(clickAreaMargin))
+        .clickable(
+          interactionSource = remember { MutableInteractionSource() },
+          indication = rememberRipple(),
+          role = Role.Button,
+          onClick = onClick,
+        )
+        .signedPadding(clickAreaMargin)
+  ) {
     Icon(painterResource(iconId), contentDescription = null)
     Spacer(Modifier.width(8.dp))
     Text(text, style = MaterialTheme.typography.bodyMedium)
@@ -155,21 +191,10 @@ fun TaskProperty(@DrawableRes iconId: Int, text: String, modifier: Modifier = Mo
 
 @Composable
 fun TaskAction(@DrawableRes iconId: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
-  Icon(
-    painterResource(iconId),
-    contentDescription = null,
-    modifier =
-      modifier
-        .padding(start = 24.dp, top = 12.dp, bottom = 12.dp)
-        .clickable(
-          onClick = onClick,
-          role = Role.Button,
-          interactionSource = remember { MutableInteractionSource() },
-          indication = rememberRipple(bounded = false, radius = 20.dp)
-        )
-  )
+  IconButton(onClick = onClick, modifier = modifier) {
+    Icon(painterResource(id = iconId), contentDescription = null)
+  }
 }
-
 
 @Preview
 @Composable
