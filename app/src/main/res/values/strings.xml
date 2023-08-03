@@ -1,3 +1,9 @@
 <resources>
+    <!-- App -->
     <string name="app_name">ToDue</string>
+
+    <!-- Menu -->
+    <string name="ok">OK</string>
+    <string name="cancel">Cancel</string>
+    <string name="select_due_date">Select Due Date</string>
 </resources>

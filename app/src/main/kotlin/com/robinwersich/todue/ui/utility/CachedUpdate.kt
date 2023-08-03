@@ -1,4 +1,4 @@
-package com.robinwersich.todue.ui.components
+package com.robinwersich.todue.ui.utility
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

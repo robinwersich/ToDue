@@ -38,6 +38,10 @@ android {
 }
 
 dependencies {
+  // Kotlin Libraries
+  implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
+
+  // Core Android Libraries
   implementation("androidx.core:core-ktx:1.10.1")
   implementation("androidx.activity:activity-compose:1.7.2")
   implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
