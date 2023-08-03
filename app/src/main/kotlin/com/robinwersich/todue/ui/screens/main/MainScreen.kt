@@ -23,12 +23,12 @@ import com.robinwersich.todue.ui.components.TaskFocusLevel
 import com.robinwersich.todue.ui.components.TaskListEvent
 import com.robinwersich.todue.ui.components.TaskState
 import com.robinwersich.todue.ui.theme.ToDueTheme
-import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import java.time.LocalDate
 
 @Composable
-fun MainScreen(state: MainScreenState, onEvent: (MainScreenEvent) -> Unit) {
+fun MainScreen(state: MainScreenState, onEvent: (MainScreenEvent) -> Unit = {}) {
   Scaffold(
     containerColor = MaterialTheme.colorScheme.surface,
     floatingActionButton = {
@@ -46,10 +46,10 @@ fun MainScreen(state: MainScreenState, onEvent: (MainScreenEvent) -> Unit) {
 }
 
 @Composable
-fun TaskList(
+private fun TaskList(
   tasks: ImmutableList<TaskState>,
-  onEvent: (TaskListEvent) -> Unit,
   modifier: Modifier = Modifier,
+  onEvent: (TaskListEvent) -> Unit = {},
 ) {
   val interactionSource = remember { MutableInteractionSource() }
   val focusManager = LocalFocusManager.current
@@ -97,18 +97,13 @@ private fun taskStateList(size: Int, focussedTask: Int? = null): List<TaskState>
 @Preview(showSystemUi = true)
 @Composable
 private fun MainScreenPreview() {
-  ToDueTheme {
-    MainScreen(MainScreenState(tasks = taskStateList(size = 5).toImmutableList()), onEvent = {})
-  }
+  ToDueTheme { MainScreen(MainScreenState(tasks = taskStateList(size = 5).toImmutableList())) }
 }
 
 @Preview(showSystemUi = true)
 @Composable
 private fun MainScreenWithFocussedPreview() {
   ToDueTheme {
-    MainScreen(
-      MainScreenState(tasks = taskStateList(size = 5, focussedTask = 3).toImmutableList()),
-      onEvent = {}
-    )
+    MainScreen(MainScreenState(tasks = taskStateList(size = 5, focussedTask = 3).toImmutableList()))
   }
 }

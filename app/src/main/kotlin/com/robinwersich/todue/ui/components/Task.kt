@@ -46,7 +46,7 @@ import com.robinwersich.todue.ui.utility.signedPadding
 import java.time.LocalDate
 
 @Composable
-fun Task(state: TaskState, onEvent: (TaskModifyEvent) -> Unit, modifier: Modifier = Modifier) {
+fun Task(state: TaskState, modifier: Modifier = Modifier, onEvent: (TaskModifyEvent) -> Unit = {}) {
   Task(state.text, state.dueDate, state.doneDate, state.focusLevel, onEvent, modifier)
 }
 
@@ -109,7 +109,7 @@ fun Task(
 }
 
 @Composable
-fun TaskCheckbox(
+private fun TaskCheckbox(
   checked: Boolean,
   onCheckedChange: (Boolean) -> Unit,
   modifier: Modifier = Modifier,
@@ -130,7 +130,7 @@ fun TaskCheckbox(
 }
 
 @Composable
-fun TaskProperties(
+private fun TaskProperties(
   onEvent: (TaskModifyEvent) -> Unit,
   modifier: Modifier = Modifier,
   dueDate: LocalDate,
@@ -159,7 +159,7 @@ fun TaskProperties(
 }
 
 @Composable
-fun TaskProperty(
+private fun TaskProperty(
   @DrawableRes iconId: Int,
   text: String,
   onClick: () -> Unit,
@@ -191,7 +191,7 @@ fun TaskProperty(
 }
 
 @Composable
-fun TaskAction(@DrawableRes iconId: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun TaskAction(@DrawableRes iconId: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
   IconButton(onClick = onClick, modifier = modifier) {
     Icon(painterResource(id = iconId), contentDescription = null)
   }
@@ -200,13 +200,13 @@ fun TaskAction(@DrawableRes iconId: Int, onClick: () -> Unit, modifier: Modifier
 @Preview
 @Composable
 private fun TodoItemDonePreview() {
-  ToDueTheme { Task(TaskState(text = "Create Todo App", doneDate = LocalDate.now()), onEvent = {}) }
+  ToDueTheme { Task(TaskState(text = "Create Todo App", doneDate = LocalDate.now())) }
 }
 
 @Preview(uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun TodoItemDarkPreview() {
-  ToDueTheme { Task(TaskState(text = "Create Todo App"), onEvent = {}) }
+  ToDueTheme { Task(TaskState(text = "Create Todo App")) }
 }
 
 @Preview
@@ -218,8 +218,7 @@ private fun TodoItemBackgroundPreview() {
         text = "Create Todo App",
         doneDate = LocalDate.now(),
         focusLevel = TaskFocusLevel.BACKGROUND
-      ),
-      onEvent = {}
+      )
     )
   }
 }
@@ -227,26 +226,17 @@ private fun TodoItemBackgroundPreview() {
 @Preview
 @Composable
 private fun TodoItemMultiLinePreview() {
-  ToDueTheme {
-    Task(
-      TaskState(text = "This is a relatively long task spanning exactly two lines"),
-      onEvent = {}
-    )
-  }
+  ToDueTheme { Task(TaskState(text = "This is a relatively long task spanning exactly two lines")) }
 }
 
 @Preview
 @Composable
 private fun TodoItemExpandedPreview() {
-  ToDueTheme {
-    Task(TaskState(text = "Create Todo App", focusLevel = TaskFocusLevel.FOCUSSED), onEvent = {})
-  }
+  ToDueTheme { Task(TaskState(text = "Create Todo App", focusLevel = TaskFocusLevel.FOCUSSED)) }
 }
 
 @Preview(uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun TodoItemExpandedDarkPreview() {
-  ToDueTheme {
-    Task(TaskState(text = "Create Todo App", focusLevel = TaskFocusLevel.FOCUSSED), onEvent = {})
-  }
+  ToDueTheme { Task(TaskState(text = "Create Todo App", focusLevel = TaskFocusLevel.FOCUSSED)) }
 }
