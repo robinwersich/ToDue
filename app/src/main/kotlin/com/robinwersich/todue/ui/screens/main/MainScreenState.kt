@@ -3,10 +3,10 @@ package com.robinwersich.todue.ui.screens.main
 import com.robinwersich.todue.ui.components.TaskState
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import java.time.LocalDate
 
 sealed interface TaskPropertyOverlay {
-  val taskId: Long
-  data class DueDateOverlay(override val taskId: Long) : TaskPropertyOverlay
+  data class DueDateOverlay(val taskId: Long, val initialDate: LocalDate) : TaskPropertyOverlay
 }
 
 data class MainScreenState(

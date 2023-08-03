@@ -8,10 +8,7 @@ import com.robinwersich.todue.data.entities.Task
 import com.robinwersich.todue.data.repositories.DatabaseTaskRepository
 import com.robinwersich.todue.toDueApplication
 import com.robinwersich.todue.ui.components.TaskFocusLevel
-import com.robinwersich.todue.ui.components.TaskListEvent
-import com.robinwersich.todue.ui.components.TaskModifyEvent
 import com.robinwersich.todue.ui.components.TaskState
-import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
@@ -21,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 class MainScreenViewModel(
   private val taskRepository: DatabaseTaskRepository,
@@ -61,28 +59,34 @@ class MainScreenViewModel(
 
   fun handleEvent(event: MainScreenEvent) {
     when (event) {
-      is TaskListEvent.AddTask ->
+      is AddTask ->
         viewModelScope.launch {
           focussedTaskIdFlow.value =
             taskRepository.insertTask(Task(text = "", dueDate = LocalDate.now()))
         }
-      is TaskListEvent.ExpandTask -> focussedTaskIdFlow.value = event.taskId
-      is TaskListEvent.CollapseTasks -> focussedTaskIdFlow.value = null
-      is TaskListEvent.ModifyTask -> handleTaskModifyEvent(event.event, event.taskId)
+      is ExpandTask -> focussedTaskIdFlow.value = event.taskId
+      is CollapseTasks -> focussedTaskIdFlow.value = null
+      is ModifyTask -> handleModifyTaskEvent(event.event, event.taskId)
+      is DismissOverlay -> taskPropertyOverlayFlow.value = null
     }
   }
 
-  private fun handleTaskModifyEvent(event: TaskModifyEvent, taskId: Long) {
+  private fun handleModifyTaskEvent(event: ModifyTaskEvent, taskId: Long) {
     when (event) {
-      is TaskModifyEvent.Delete -> {
-        if (focussedTaskIdFlow.value == taskId) focussedTaskIdFlow.value = null
-        viewModelScope.launch { taskRepository.deleteTask(taskId) }
-      }
-      is TaskModifyEvent.SetText ->
+      is ModifyTaskEvent.SelectDueDate ->
+        taskPropertyOverlayFlow.value =
+          TaskPropertyOverlay.DueDateOverlay(taskId = taskId, initialDate = event.initialDate)
+      is ModifyTaskEvent.SetText ->
         viewModelScope.launch { taskRepository.setText(taskId, event.text) }
-      is TaskModifyEvent.SetDone -> {
+      is ModifyTaskEvent.SetDone -> {
         val doneDate = if (event.done) LocalDate.now() else null
         viewModelScope.launch { taskRepository.setDoneDate(taskId, doneDate) }
+      }
+      is ModifyTaskEvent.SetDueDate ->
+        viewModelScope.launch { taskRepository.setDueDate(taskId, event.dueDate) }
+      is ModifyTaskEvent.Delete -> {
+        if (focussedTaskIdFlow.value == taskId) focussedTaskIdFlow.value = null
+        viewModelScope.launch { taskRepository.deleteTask(taskId) }
       }
     }
   }

@@ -40,13 +40,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.R
+import com.robinwersich.todue.ui.screens.main.ModifyTaskEvent
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.ui.utility.CachedUpdate
 import com.robinwersich.todue.ui.utility.signedPadding
 import java.time.LocalDate
 
 @Composable
-fun Task(state: TaskState, modifier: Modifier = Modifier, onEvent: (TaskModifyEvent) -> Unit = {}) {
+fun Task(state: TaskState, modifier: Modifier = Modifier, onEvent: (ModifyTaskEvent) -> Unit = {}) {
   Task(state.text, state.dueDate, state.doneDate, state.focusLevel, onEvent, modifier)
 }
 
@@ -56,7 +57,7 @@ fun Task(
   dueDate: LocalDate,
   doneDate: LocalDate?,
   focusLevel: TaskFocusLevel,
-  onEvent: (TaskModifyEvent) -> Unit,
+  onEvent: (ModifyTaskEvent) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   val isFocussed = focusLevel == TaskFocusLevel.FOCUSSED
@@ -74,7 +75,7 @@ fun Task(
       Row(verticalAlignment = Alignment.CenterVertically) {
         TaskCheckbox(
           checked = doneDate != null,
-          onCheckedChange = { onEvent(TaskModifyEvent.SetDone(it)) },
+          onCheckedChange = { onEvent(ModifyTaskEvent.SetDone(it)) },
           enabled = !isBackground,
           modifier = Modifier.width(checkBoxWidth)
         )
@@ -82,7 +83,7 @@ fun Task(
         val textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = textColor))
 
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
-          CachedUpdate(value = text, onValueChanged = { onEvent(TaskModifyEvent.SetText(it)) }) {
+          CachedUpdate(value = text, onValueChanged = { onEvent(ModifyTaskEvent.SetText(it)) }) {
             val (cachedText, setCachedText) = it
             BasicTextField(
               value = cachedText,
@@ -131,7 +132,7 @@ private fun TaskCheckbox(
 
 @Composable
 private fun TaskProperties(
-  onEvent: (TaskModifyEvent) -> Unit,
+  onEvent: (ModifyTaskEvent) -> Unit,
   modifier: Modifier = Modifier,
   dueDate: LocalDate,
 ) {
@@ -143,7 +144,11 @@ private fun TaskProperties(
     }
     Divider()
     // TODO: use custom formatting
-    TaskProperty(R.drawable.due_date, dueDate.toString(), onClick = {})
+    TaskProperty(
+      R.drawable.due_date,
+      dueDate.toString(),
+      onClick = { onEvent(ModifyTaskEvent.SelectDueDate(initialDate = dueDate)) }
+    )
     Divider()
     Row(
       horizontalArrangement = Arrangement.End,
@@ -151,7 +156,7 @@ private fun TaskProperties(
     ) {
       TaskAction(
         R.drawable.delete,
-        onClick = { onEvent(TaskModifyEvent.Delete) },
+        onClick = { onEvent(ModifyTaskEvent.Delete) },
         modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
       )
     }
