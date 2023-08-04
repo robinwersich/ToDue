@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -24,7 +25,6 @@ class MainScreenViewModel(
   private val taskRepository: DatabaseTaskRepository,
 ) : ViewModel() {
   private val focussedTaskIdFlow = MutableStateFlow<Long?>(null)
-  private val taskPropertyOverlayFlow = MutableStateFlow<TaskPropertyOverlay?>(null)
 
   private val taskList: Flow<ImmutableList<TaskState>> =
     taskRepository.getAllTasks().combine(focussedTaskIdFlow) { tasks, focussedTaskId ->
@@ -48,9 +48,7 @@ class MainScreenViewModel(
 
   val viewState: StateFlow<MainScreenState> =
     taskList
-      .combine(taskPropertyOverlayFlow) { taskList, overlay ->
-        MainScreenState(tasks = taskList, taskPropertyOverlay = overlay)
-      }
+      .map { MainScreenState(tasks = it) }
       .stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -67,15 +65,11 @@ class MainScreenViewModel(
       is ExpandTask -> focussedTaskIdFlow.value = event.taskId
       is CollapseTasks -> focussedTaskIdFlow.value = null
       is ModifyTask -> handleModifyTaskEvent(event.event, event.taskId)
-      is DismissOverlay -> taskPropertyOverlayFlow.value = null
     }
   }
 
   private fun handleModifyTaskEvent(event: ModifyTaskEvent, taskId: Long) {
     when (event) {
-      is ModifyTaskEvent.SelectDueDate ->
-        taskPropertyOverlayFlow.value =
-          TaskPropertyOverlay.DueDateOverlay(taskId = taskId, initialDate = event.initialDate)
       is ModifyTaskEvent.SetText ->
         viewModelScope.launch { taskRepository.setText(taskId, event.text) }
       is ModifyTaskEvent.SetDone -> {

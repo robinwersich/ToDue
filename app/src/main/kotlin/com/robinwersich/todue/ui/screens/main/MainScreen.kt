@@ -18,14 +18,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.robinwersich.todue.ui.components.DueDatePicker
 import com.robinwersich.todue.ui.components.Task
 import com.robinwersich.todue.ui.components.TaskFocusLevel
 import com.robinwersich.todue.ui.components.TaskState
 import com.robinwersich.todue.ui.theme.ToDueTheme
-import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import java.time.LocalDate
 
 @Composable
 fun MainScreen(state: MainScreenState, onEvent: (MainScreenEvent) -> Unit = {}) {
@@ -42,19 +41,6 @@ fun MainScreen(state: MainScreenState, onEvent: (MainScreenEvent) -> Unit = {}) 
       onEvent = { onEvent(it) }, // TODO: use method reference once this doesn't cause recomposition
       modifier = Modifier.padding(paddingValues).fillMaxHeight(),
     )
-    state.taskPropertyOverlay?.let { overlay ->
-      when (overlay) {
-        is TaskPropertyOverlay.DueDateOverlay ->
-          DueDatePicker(
-            initialSelection = overlay.initialDate,
-            onConfirm = {
-              onEvent(ModifyTask(ModifyTaskEvent.SetDueDate(it), overlay.taskId))
-              onEvent(DismissOverlay)
-            },
-            onCancel = { onEvent(DismissOverlay) },
-          )
-      }
-    }
   }
 }
 

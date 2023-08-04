@@ -27,7 +27,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -132,9 +135,9 @@ private fun TaskCheckbox(
 
 @Composable
 private fun TaskProperties(
+  dueDate: LocalDate,
   onEvent: (ModifyTaskEvent) -> Unit,
   modifier: Modifier = Modifier,
-  dueDate: LocalDate,
 ) {
   Column(modifier = modifier) {
     Divider()
@@ -143,12 +146,7 @@ private fun TaskProperties(
       TaskProperty(R.drawable.time_estimate, "30min", onClick = {}) // TODO: use actual data
     }
     Divider()
-    // TODO: use custom formatting
-    TaskProperty(
-      R.drawable.due_date,
-      dueDate.toString(),
-      onClick = { onEvent(ModifyTaskEvent.SelectDueDate(initialDate = dueDate)) }
-    )
+    DueDateProperty(dueDate = dueDate, onEvent = onEvent)
     Divider()
     Row(
       horizontalArrangement = Arrangement.End,
@@ -161,6 +159,23 @@ private fun TaskProperties(
       )
     }
   }
+}
+
+@Composable
+private fun DueDateProperty(dueDate: LocalDate, onEvent: (ModifyTaskEvent) -> Unit) {
+  // TODO: use custom formatting
+  var showDueDateSelection by remember { mutableStateOf(false) }
+  if (showDueDateSelection) {
+    DueDatePicker(
+      initialSelection = dueDate,
+      onConfirm = {
+        onEvent(ModifyTaskEvent.SetDueDate(it))
+        showDueDateSelection = false
+      },
+      onCancel = { showDueDateSelection = false },
+    )
+  }
+  TaskProperty(R.drawable.due_date, dueDate.toString(), onClick = { showDueDateSelection = true })
 }
 
 @Composable
@@ -196,7 +211,11 @@ private fun TaskProperty(
 }
 
 @Composable
-private fun TaskAction(@DrawableRes iconId: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun TaskAction(
+  @DrawableRes iconId: Int,
+  onClick: () -> Unit,
+  modifier: Modifier = Modifier
+) {
   IconButton(onClick = onClick, modifier = modifier) {
     Icon(painterResource(id = iconId), contentDescription = null)
   }
