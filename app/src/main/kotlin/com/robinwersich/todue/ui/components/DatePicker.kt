@@ -27,11 +27,15 @@ fun DueDatePicker(
   onConfirm: (LocalDate) -> Unit = {},
   onCancel: () -> Unit = {},
 ) {
+  val today = LocalDate.now()
   val datePickerState =
-    rememberDatePickerState(initialSelectedDateMillis = localDateToMillis(initialSelection))
-  val todayMillis = localDateToMillis(LocalDate.now())
+    rememberDatePickerState(
+      initialSelectedDateMillis = localDateToMillis(initialSelection),
+      yearRange = today.year until today.year + 99
+    )
+  val todayMillis = localDateToMillis(today)
   val confirmEnabled by remember {
-    derivedStateOf { datePickerState.selectedDateMillis?.let { it >= todayMillis } == true }
+    derivedStateOf { datePickerState.selectedDateMillis?.let { it >= todayMillis } ?: false }
   }
   DatePickerDialog(
     onDismissRequest = onCancel,
@@ -48,12 +52,14 @@ fun DueDatePicker(
   ) {
     DatePicker(
       state = datePickerState,
+      dateValidator = { it >= todayMillis },
       title = {
         Text(
           stringResource(R.string.select_due_date),
           modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
         )
-      }
+      },
+      showModeToggle = false,
     )
   }
 }
