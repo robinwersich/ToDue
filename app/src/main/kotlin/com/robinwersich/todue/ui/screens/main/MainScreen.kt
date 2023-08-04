@@ -22,9 +22,9 @@ import com.robinwersich.todue.ui.components.Task
 import com.robinwersich.todue.ui.components.TaskFocusLevel
 import com.robinwersich.todue.ui.components.TaskState
 import com.robinwersich.todue.ui.theme.ToDueTheme
+import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import java.time.LocalDate
 
 @Composable
 fun MainScreen(state: MainScreenState, onEvent: (MainScreenEvent) -> Unit = {}) {
@@ -71,9 +71,11 @@ private fun TaskList(
             TaskFocusLevel.BACKGROUND -> Modifier
           }
         }
+      // extract task ID so that onEvent stays the same, avoiding recomposition
+      val taskId = taskState.id
       Task(
         state = taskState,
-        onEvent = { onEvent(ModifyTask(it, taskState.id)) },
+        onEvent = { onEvent(ModifyTask(it, taskId)) },
         modifier = taskModifier,
       )
     }

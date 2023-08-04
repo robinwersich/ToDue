@@ -46,7 +46,7 @@ import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.R
 import com.robinwersich.todue.ui.screens.main.ModifyTaskEvent
 import com.robinwersich.todue.ui.theme.ToDueTheme
-import com.robinwersich.todue.ui.utility.CachedUpdate
+import com.robinwersich.todue.ui.utility.DebouncedUpdate
 import com.robinwersich.todue.ui.utility.signedPadding
 import java.time.LocalDate
 
@@ -87,7 +87,11 @@ fun Task(
         val textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = textColor))
 
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
-          CachedUpdate(value = text, onValueChanged = { onEvent(ModifyTaskEvent.SetText(it)) }) {
+          DebouncedUpdate(
+            value = text,
+            onValueChanged = { onEvent(ModifyTaskEvent.SetText(it)) },
+            emitUpdates = isFocussed
+          ) {
             val (cachedText, setCachedText) = it
             BasicTextField(
               value = cachedText,
