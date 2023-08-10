@@ -67,7 +67,10 @@ private fun TaskList(
           when (taskState.focusLevel) {
             TaskFocusLevel.FOCUSSED ->
               Modifier.clickable(interactionSource = interactionSource, indication = null) {}
-            TaskFocusLevel.NEUTRAL -> Modifier.clickable { onEvent(ExpandTask(taskState.id)) }
+            TaskFocusLevel.NEUTRAL ->
+              Modifier.clickable(interactionSource = interactionSource, indication = null) {
+                onEvent(ExpandTask(taskState.id))
+              }
             TaskFocusLevel.BACKGROUND -> Modifier
           }
         }
