@@ -2,6 +2,14 @@ package com.robinwersich.todue.ui.components
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.animateDp
+import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
@@ -44,6 +52,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.R
+import com.robinwersich.todue.ui.components.TaskFocusLevel.BACKGROUND
+import com.robinwersich.todue.ui.components.TaskFocusLevel.FOCUSSED
 import com.robinwersich.todue.ui.screens.main.ModifyTaskEvent
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.ui.utility.DebouncedUpdate
@@ -55,6 +65,7 @@ fun Task(state: TaskState, modifier: Modifier = Modifier, onEvent: (ModifyTaskEv
   Task(state.text, state.dueDate, state.doneDate, state.focusLevel, onEvent, modifier)
 }
 
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun Task(
   text: String,
@@ -64,39 +75,38 @@ fun Task(
   onEvent: (ModifyTaskEvent) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  val isFocussed = focusLevel == TaskFocusLevel.FOCUSSED
-  val isBackground = focusLevel == TaskFocusLevel.BACKGROUND
   val focusRequester = remember { FocusRequester() }
-  LaunchedEffect(true) { if (isFocussed) focusRequester.requestFocus() }
+  LaunchedEffect(true) { if (focusLevel == FOCUSSED) focusRequester.requestFocus() }
 
-  val checkBoxWidth = 48.dp
-  Surface(
-    shape = RoundedCornerShape(16.dp),
-    tonalElevation = if (isFocussed) 2.dp else 0.dp,
-    modifier = modifier
-  ) {
+  val focusTransition = updateTransition(focusLevel, label = "Focus Level")
+
+  val tonalElevation by
+    focusTransition.animateDp(label = "Tonal Elevation") { if (it == FOCUSSED) 2.dp else 0.dp }
+  Surface(shape = RoundedCornerShape(16.dp), tonalElevation = tonalElevation, modifier = modifier) {
+    val checkBoxWidth = 48.dp
     Column(modifier = Modifier.padding(end = 16.dp).fillMaxWidth()) {
       Row(verticalAlignment = Alignment.CenterVertically) {
         TaskCheckbox(
           checked = doneDate != null,
           onCheckedChange = { onEvent(ModifyTaskEvent.SetDone(it)) },
-          enabled = !isBackground,
+          enabled = focusLevel != BACKGROUND,
           modifier = Modifier.width(checkBoxWidth)
         )
-        val textColor = LocalContentColor.current.copy(alpha = if (isBackground) 0.38f else 1f)
-        val textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = textColor))
 
+        val textColor =
+          LocalContentColor.current.copy(alpha = if (focusLevel == BACKGROUND) 0.38f else 1f)
+        val textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = textColor))
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
           DebouncedUpdate(
             value = text,
             onValueChanged = { onEvent(ModifyTaskEvent.SetText(it)) },
-            emitUpdates = isFocussed
+            emitUpdates = focusLevel == FOCUSSED
           ) {
             val (cachedText, setCachedText) = it
             BasicTextField(
               value = cachedText,
               onValueChange = setCachedText,
-              enabled = isFocussed,
+              enabled = focusLevel == FOCUSSED,
               textStyle = textStyle,
               cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
               modifier = Modifier.focusRequester(focusRequester)
@@ -106,11 +116,18 @@ fun Task(
         }
       }
 
-      if (isFocussed) {
+      val animationAnchor = Alignment.Top
+      focusTransition.AnimatedVisibility(
+        visible = { it == FOCUSSED },
+        enter = fadeIn() + expandVertically(expandFrom = animationAnchor),
+        exit = fadeOut() + shrinkVertically(shrinkTowards = animationAnchor)
+      ) {
         TaskProperties(
           dueDate = dueDate,
           onEvent = onEvent,
-          modifier = Modifier.padding(start = checkBoxWidth)
+          modifier =
+            Modifier.padding(start = checkBoxWidth)
+              .wrapContentHeight(animationAnchor, unbounded = true)
         )
       }
     }
@@ -194,7 +211,6 @@ private fun TaskProperty(
   val clickAreaMargin = 8.dp
 
   Row(
-    verticalAlignment = Alignment.CenterVertically,
     modifier =
       modifier
         .height(48.dp)
