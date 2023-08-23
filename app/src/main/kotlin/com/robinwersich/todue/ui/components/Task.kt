@@ -162,11 +162,11 @@ private fun TaskProperties(
   modifier: Modifier = Modifier,
 ) {
   Column(modifier = modifier) {
-    Divider()
-    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-      TaskProperty(R.drawable.scheduled_date, "this week", onClick = {}) // TODO: use actual data
-      TaskProperty(R.drawable.time_estimate, "30min", onClick = {}) // TODO: use actual data
-    }
+//    Divider()
+//    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+//      TaskProperty(R.drawable.scheduled_date, "this week", onClick = {})
+//      TaskProperty(R.drawable.time_estimate, "30min", onClick = {})
+//    }
     Divider()
     DueDateProperty(dueDate = dueDate, onEvent = onEvent)
     Divider()
