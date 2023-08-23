@@ -258,13 +258,7 @@ private fun TodoItemDarkPreview() {
 @Composable
 private fun TodoItemBackgroundPreview() {
   ToDueTheme {
-    Task(
-      TaskState(
-        text = "Create Todo App",
-        doneDate = LocalDate.now(),
-        focusLevel = TaskFocusLevel.BACKGROUND
-      )
-    )
+    Task(TaskState(text = "Create Todo App", doneDate = LocalDate.now(), focusLevel = BACKGROUND))
   }
 }
 
@@ -277,11 +271,11 @@ private fun TodoItemMultiLinePreview() {
 @Preview
 @Composable
 private fun TodoItemExpandedPreview() {
-  ToDueTheme { Task(TaskState(text = "Create Todo App", focusLevel = TaskFocusLevel.FOCUSSED)) }
+  ToDueTheme { Task(TaskState(text = "Create Todo App", focusLevel = FOCUSSED)) }
 }
 
 @Preview(uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun TodoItemExpandedDarkPreview() {
-  ToDueTheme { Task(TaskState(text = "Create Todo App", focusLevel = TaskFocusLevel.FOCUSSED)) }
+  ToDueTheme { Task(TaskState(text = "Create Todo App", focusLevel = FOCUSSED)) }
 }
