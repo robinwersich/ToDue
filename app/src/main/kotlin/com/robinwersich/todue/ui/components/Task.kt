@@ -11,7 +11,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,7 +23,6 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -162,11 +160,11 @@ private fun TaskProperties(
   modifier: Modifier = Modifier,
 ) {
   Column(modifier = modifier) {
-//    Divider()
-//    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-//      TaskProperty(R.drawable.scheduled_date, "this week", onClick = {})
-//      TaskProperty(R.drawable.time_estimate, "30min", onClick = {})
-//    }
+    /*Divider()
+    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+      TaskProperty(R.drawable.scheduled_date, "this week", onClick = {})
+      TaskProperty(R.drawable.time_estimate, "30min", onClick = {})
+    }*/
     Divider()
     DueDateProperty(dueDate = dueDate, onEvent = onEvent)
     Divider()
@@ -217,12 +215,7 @@ private fun TaskProperty(
         .wrapContentHeight(Alignment.CenterVertically)
         .signedPadding(-clickAreaMargin)
         .clip(RoundedCornerShape(clickAreaMargin))
-        .clickable(
-          interactionSource = remember { MutableInteractionSource() },
-          indication = rememberRipple(),
-          role = Role.Button,
-          onClick = onClick,
-        )
+        .clickable(role = Role.Button, onClick = onClick)
         .signedPadding(clickAreaMargin)
   ) {
     Icon(painterResource(iconId), contentDescription = null)
