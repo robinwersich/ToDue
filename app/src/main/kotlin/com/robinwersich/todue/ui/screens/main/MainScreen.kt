@@ -61,25 +61,23 @@ private fun TaskList(
     }
   LazyColumn(modifier = taskListModifier.padding(8.dp)) {
     items(items = tasks, key = { it.id }) { taskState ->
-      // TODO: don't remember modifier once upgraded to compose 1.5
-      val taskModifier =
-        remember(taskState.id, taskState.focusLevel, onEvent, interactionSource) {
-          when (taskState.focusLevel) {
-            TaskFocusLevel.FOCUSSED ->
-              Modifier.clickable(interactionSource = interactionSource, indication = null) {}
-            TaskFocusLevel.NEUTRAL ->
-              Modifier.clickable(interactionSource = interactionSource, indication = null) {
-                onEvent(ExpandTask(taskState.id))
-              }
-            TaskFocusLevel.BACKGROUND -> Modifier
-          }
-        }
       // extract task ID so that onEvent stays the same, avoiding recomposition
       val taskId = taskState.id
       Task(
         state = taskState,
         onEvent = { onEvent(ModifyTask(it, taskId)) },
-        modifier = taskModifier,
+        modifier =
+          remember(taskState.id, taskState.focusLevel, onEvent, interactionSource) {
+            when (taskState.focusLevel) {
+              TaskFocusLevel.FOCUSSED ->
+                Modifier.clickable(interactionSource = interactionSource, indication = null) {}
+              TaskFocusLevel.NEUTRAL ->
+                Modifier.clickable(interactionSource = interactionSource, indication = null) {
+                  onEvent(ExpandTask(taskState.id))
+                }
+              TaskFocusLevel.BACKGROUND -> Modifier
+            }
+          },
       )
     }
   }

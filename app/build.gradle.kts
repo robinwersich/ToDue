@@ -6,12 +6,12 @@ plugins {
 
 android {
   namespace = "com.robinwersich.todue"
-  compileSdk = 33
+  compileSdk = 34
 
   defaultConfig {
     applicationId = "com.robinwersich.todue"
     minSdk = 24
-    targetSdk = 33
+    targetSdk = 34
     versionCode = 1
     versionName = "0.1.0"
 
@@ -35,7 +35,7 @@ android {
   }
   kotlinOptions { jvmTarget = "1.8" }
   buildFeatures { compose = true }
-  composeOptions { kotlinCompilerExtensionVersion = "1.5.1" }
+  composeOptions { kotlinCompilerExtensionVersion = "1.5.2" }
   packaging { resources { excludes.add("/META-INF/{AL2.0,LGPL2.1}") } }
 }
 
@@ -50,7 +50,7 @@ dependencies {
   implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
 
   // Compose
-  val composeUiVersion = "1.4.3"
+  val composeUiVersion = "1.5.0"
   implementation("androidx.compose.ui:ui:$composeUiVersion")
   implementation("androidx.compose.ui:ui-tooling-preview:$composeUiVersion")
   debugImplementation("androidx.compose.ui:ui-tooling:$composeUiVersion")
