@@ -50,6 +50,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.R
+import com.robinwersich.todue.data.entities.TimeBlock
 import com.robinwersich.todue.ui.components.TaskFocusLevel.BACKGROUND
 import com.robinwersich.todue.ui.components.TaskFocusLevel.FOCUSSED
 import com.robinwersich.todue.ui.screens.main.ModifyTaskEvent
@@ -60,13 +61,22 @@ import java.time.LocalDate
 
 @Composable
 fun Task(state: TaskState, modifier: Modifier = Modifier, onEvent: (ModifyTaskEvent) -> Unit = {}) {
-  Task(state.text, state.dueDate, state.doneDate, state.focusLevel, onEvent, modifier)
+  Task(
+    text = state.text,
+    timeBlock = state.timeBlock,
+    dueDate = state.dueDate,
+    doneDate = state.doneDate,
+    focusLevel = state.focusLevel,
+    onEvent = onEvent,
+    modifier = modifier,
+  )
 }
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun Task(
   text: String,
+  timeBlock: TimeBlock,
   dueDate: LocalDate,
   doneDate: LocalDate?,
   focusLevel: TaskFocusLevel,
@@ -121,6 +131,7 @@ fun Task(
         exit = fadeOut() + shrinkVertically(shrinkTowards = animationAnchor)
       ) {
         TaskProperties(
+          timeBlock = timeBlock,
           dueDate = dueDate,
           onEvent = onEvent,
           modifier =
@@ -155,13 +166,15 @@ private fun TaskCheckbox(
 
 @Composable
 private fun TaskProperties(
+  timeBlock: TimeBlock,
   dueDate: LocalDate,
   onEvent: (ModifyTaskEvent) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   Column(modifier = modifier) {
-    /*Divider()
-    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+    Divider()
+    ScheduledTimeBlockProperty(timeBlock = timeBlock, onEvent = onEvent)
+    /*Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
       TaskProperty(R.drawable.scheduled_date, "this week", onClick = {})
       TaskProperty(R.drawable.time_estimate, "30min", onClick = {})
     }*/
@@ -182,20 +195,36 @@ private fun TaskProperties(
 }
 
 @Composable
+private fun ScheduledTimeBlockProperty(timeBlock: TimeBlock, onEvent: (ModifyTaskEvent) -> Unit) {
+  var showSelection by rememberSaveable { mutableStateOf(false) }
+  if (showSelection) {
+    DueDatePicker(
+      initialSelection = timeBlock.endDate,
+      onConfirm = {
+        onEvent(ModifyTaskEvent.SetTimeBlock(TimeBlock.Day(it)))
+        showSelection = false
+      },
+      onCancel = { showSelection = false },
+    )
+  }
+  TaskProperty(R.drawable.scheduled_date, timeBlock.name, onClick = { showSelection = true })
+}
+
+@Composable
 private fun DueDateProperty(dueDate: LocalDate, onEvent: (ModifyTaskEvent) -> Unit) {
-  // TODO: use custom formatting
-  var showDueDateSelection by rememberSaveable { mutableStateOf(false) }
-  if (showDueDateSelection) {
+  var showSelection by rememberSaveable { mutableStateOf(false) }
+  if (showSelection) {
     DueDatePicker(
       initialSelection = dueDate,
       onConfirm = {
         onEvent(ModifyTaskEvent.SetDueDate(it))
-        showDueDateSelection = false
+        showSelection = false
       },
-      onCancel = { showDueDateSelection = false },
+      onCancel = { showSelection = false },
     )
   }
-  TaskProperty(R.drawable.due_date, dueDate.toString(), onClick = { showDueDateSelection = true })
+  // TODO: use custom formatting
+  TaskProperty(R.drawable.due_date, dueDate.toString(), onClick = { showSelection = true })
 }
 
 @Composable

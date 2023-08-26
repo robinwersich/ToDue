@@ -1,5 +1,6 @@
 package com.robinwersich.todue.ui.screens.main
 
+import com.robinwersich.todue.data.entities.TimeBlock
 import java.time.LocalDate
 
 sealed interface MainScreenEvent
@@ -15,6 +16,7 @@ data class ModifyTask(val event: ModifyTaskEvent, val taskId: Long) : MainScreen
 sealed interface ModifyTaskEvent {
   data class SetDone(val done: Boolean) : ModifyTaskEvent
   data class SetText(val text: String) : ModifyTaskEvent
+  data class SetTimeBlock(val timeBlock: TimeBlock) : ModifyTaskEvent
   data class SetDueDate(val date: LocalDate) : ModifyTaskEvent
   data object Delete : ModifyTaskEvent
 }

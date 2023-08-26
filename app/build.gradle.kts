@@ -40,9 +40,6 @@ android {
 }
 
 dependencies {
-  // Kotlin Libraries
-  implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
-
   // Core Android Libraries
   implementation("androidx.core:core-ktx:1.10.1")
   implementation("androidx.activity:activity-compose:1.7.2")
@@ -62,6 +59,10 @@ dependencies {
   implementation("androidx.room:room-runtime:$roomVersion")
   ksp("androidx.room:room-compiler:$roomVersion")
   implementation("androidx.room:room-ktx:$roomVersion")
+
+  // Utilities
+  implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
+  implementation("org.threeten:threeten-extra:1.7.2")
 
   // Tests
   testImplementation("junit:junit:4.13.2")

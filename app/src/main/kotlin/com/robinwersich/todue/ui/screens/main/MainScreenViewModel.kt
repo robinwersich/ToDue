@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.robinwersich.todue.data.entities.Task
+import com.robinwersich.todue.data.entities.TimeBlock
+import com.robinwersich.todue.data.entities.toTimeBlock
 import com.robinwersich.todue.data.repositories.DatabaseTaskRepository
 import com.robinwersich.todue.toDueApplication
 import com.robinwersich.todue.ui.components.TaskFocusLevel
@@ -33,6 +35,7 @@ class MainScreenViewModel(
           TaskState(
             id = task.id,
             text = task.text,
+            timeBlock = task.timeBlockSpec.toTimeBlock(),
             dueDate = task.dueDate,
             doneDate = task.doneDate,
             focusLevel =
@@ -60,7 +63,9 @@ class MainScreenViewModel(
       is AddTask ->
         viewModelScope.launch {
           focussedTaskIdFlow.value =
-            taskRepository.insertTask(Task(text = "", dueDate = LocalDate.now()))
+            taskRepository.insertTask(
+              Task(text = "", timeBlockSpec = TimeBlock.Day().toSpec(), dueDate = LocalDate.now())
+            )
         }
       is ExpandTask -> focussedTaskIdFlow.value = event.taskId
       is CollapseTasks -> focussedTaskIdFlow.value = null
@@ -76,6 +81,8 @@ class MainScreenViewModel(
         val doneDate = if (event.done) LocalDate.now() else null
         viewModelScope.launch { taskRepository.setDoneDate(taskId, doneDate) }
       }
+      is ModifyTaskEvent.SetTimeBlock ->
+        viewModelScope.launch { taskRepository.setTimeBlockSpec(taskId, event.timeBlock.toSpec()) }
       is ModifyTaskEvent.SetDueDate ->
         viewModelScope.launch { taskRepository.setDueDate(taskId, event.date) }
       is ModifyTaskEvent.Delete -> {
