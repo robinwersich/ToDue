@@ -9,8 +9,8 @@ interface TaskRepository {
   suspend fun updateTask(task: Task)
   suspend fun deleteTask(id: Long)
   suspend fun setText(id: Long, text: String)
-  suspend fun setDueDate(id: Long, dueDate: LocalDate)
-  suspend fun setDoneDate(id: Long, doneDate: LocalDate?)
+  suspend fun setDueDate(id: Long, date: LocalDate)
+  suspend fun setDoneDate(id: Long, date: LocalDate?)
   fun getTask(id: Long): Flow<Task>
   fun getAllTasks(): Flow<List<Task>>
 }

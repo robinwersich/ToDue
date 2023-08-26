@@ -9,6 +9,7 @@ import com.robinwersich.todue.data.repositories.DatabaseTaskRepository
 import com.robinwersich.todue.toDueApplication
 import com.robinwersich.todue.ui.components.TaskFocusLevel
 import com.robinwersich.todue.ui.components.TaskState
+import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
@@ -19,7 +20,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 
 class MainScreenViewModel(
   private val taskRepository: DatabaseTaskRepository,
@@ -77,7 +77,7 @@ class MainScreenViewModel(
         viewModelScope.launch { taskRepository.setDoneDate(taskId, doneDate) }
       }
       is ModifyTaskEvent.SetDueDate ->
-        viewModelScope.launch { taskRepository.setDueDate(taskId, event.dueDate) }
+        viewModelScope.launch { taskRepository.setDueDate(taskId, event.date) }
       is ModifyTaskEvent.Delete -> {
         if (focussedTaskIdFlow.value == taskId) focussedTaskIdFlow.value = null
         viewModelScope.launch { taskRepository.deleteTask(taskId) }

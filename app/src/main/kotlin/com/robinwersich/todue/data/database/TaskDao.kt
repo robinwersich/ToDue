@@ -11,10 +11,10 @@ interface TaskDao {
   @Update suspend fun update(task: Task)
   @Query("DELETE FROM todo WHERE id = :id") suspend fun delete(id: Long)
   @Query("UPDATE todo SET text = :text WHERE id = :id") suspend fun setText(id: Long, text: String)
-  @Query("UPDATE todo SET due_date = :dueDate WHERE id = :id")
-  suspend fun setDueDate(id: Long, dueDate: LocalDate)
-  @Query("UPDATE todo SET done_date = :doneDate WHERE id = :id")
-  suspend fun setDoneDate(id: Long, doneDate: LocalDate?)
+  @Query("UPDATE todo SET due_date = :date WHERE id = :id")
+  suspend fun setDueDate(id: Long, date: LocalDate)
+  @Query("UPDATE todo SET done_date = :date WHERE id = :id")
+  suspend fun setDoneDate(id: Long, date: LocalDate?)
   @Query("SELECT * FROM todo WHERE id = :id") fun getTask(id: Long): Flow<Task>
   @Query("SELECT * FROM todo") fun getAllTasks(): Flow<List<Task>>
 }
