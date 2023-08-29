@@ -21,10 +21,12 @@ android {
 
   buildTypes {
     getByName("release") {
+      isDebuggable = false
       isMinifyEnabled = true
       isShrinkResources = true
       proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
     }
+    getByName("debug") { isDebuggable = true }
   }
   compileOptions {
     isCoreLibraryDesugaringEnabled = true
@@ -34,7 +36,7 @@ android {
   kotlinOptions { jvmTarget = "1.8" }
   buildFeatures { compose = true }
   composeOptions { kotlinCompilerExtensionVersion = "1.5.1" }
-  packagingOptions { resources { excludes.add("/META-INF/{AL2.0,LGPL2.1}") } }
+  packaging { resources { excludes.add("/META-INF/{AL2.0,LGPL2.1}") } }
 }
 
 dependencies {

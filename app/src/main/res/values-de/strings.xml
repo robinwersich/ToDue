@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Menu -->
+    <string name="ok">OK</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="select_due_date">Fälligkeitsdatum auswählen</string>
+</resources>

@@ -162,11 +162,11 @@ private fun TaskProperties(
   modifier: Modifier = Modifier,
 ) {
   Column(modifier = modifier) {
-    Divider()
-    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-      TaskProperty(R.drawable.scheduled_date, "this week", onClick = {}) // TODO: use actual data
-      TaskProperty(R.drawable.time_estimate, "30min", onClick = {}) // TODO: use actual data
-    }
+//    Divider()
+//    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+//      TaskProperty(R.drawable.scheduled_date, "this week", onClick = {})
+//      TaskProperty(R.drawable.time_estimate, "30min", onClick = {})
+//    }
     Divider()
     DueDateProperty(dueDate = dueDate, onEvent = onEvent)
     Divider()
@@ -258,13 +258,7 @@ private fun TodoItemDarkPreview() {
 @Composable
 private fun TodoItemBackgroundPreview() {
   ToDueTheme {
-    Task(
-      TaskState(
-        text = "Create Todo App",
-        doneDate = LocalDate.now(),
-        focusLevel = TaskFocusLevel.BACKGROUND
-      )
-    )
+    Task(TaskState(text = "Create Todo App", doneDate = LocalDate.now(), focusLevel = BACKGROUND))
   }
 }
 
@@ -277,11 +271,11 @@ private fun TodoItemMultiLinePreview() {
 @Preview
 @Composable
 private fun TodoItemExpandedPreview() {
-  ToDueTheme { Task(TaskState(text = "Create Todo App", focusLevel = TaskFocusLevel.FOCUSSED)) }
+  ToDueTheme { Task(TaskState(text = "Create Todo App", focusLevel = FOCUSSED)) }
 }
 
 @Preview(uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun TodoItemExpandedDarkPreview() {
-  ToDueTheme { Task(TaskState(text = "Create Todo App", focusLevel = TaskFocusLevel.FOCUSSED)) }
+  ToDueTheme { Task(TaskState(text = "Create Todo App", focusLevel = FOCUSSED)) }
 }
