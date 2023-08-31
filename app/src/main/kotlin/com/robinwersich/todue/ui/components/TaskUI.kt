@@ -48,6 +48,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.R
 import com.robinwersich.todue.data.entities.TimeBlock
@@ -60,8 +62,12 @@ import com.robinwersich.todue.ui.utility.signedPadding
 import java.time.LocalDate
 
 @Composable
-fun Task(state: TaskState, modifier: Modifier = Modifier, onEvent: (ModifyTaskEvent) -> Unit = {}) {
-  Task(
+fun TaskUI(
+  state: TaskUIState,
+  modifier: Modifier = Modifier,
+  onEvent: (ModifyTaskEvent) -> Unit = {}
+) {
+  TaskUI(
     text = state.text,
     timeBlock = state.timeBlock,
     dueDate = state.dueDate,
@@ -74,7 +80,7 @@ fun Task(state: TaskState, modifier: Modifier = Modifier, onEvent: (ModifyTaskEv
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun Task(
+fun TaskUI(
   text: String,
   timeBlock: TimeBlock,
   dueDate: LocalDate,
@@ -264,40 +270,30 @@ private fun TaskAction(
   }
 }
 
-@Preview
-@Composable
-private fun TodoItemDonePreview() {
-  ToDueTheme { Task(TaskState(text = "Create Todo App", doneDate = LocalDate.now())) }
-}
-
-@Preview(uiMode = UI_MODE_NIGHT_YES)
-@Composable
-private fun TodoItemDarkPreview() {
-  ToDueTheme { Task(TaskState(text = "Create Todo App")) }
-}
-
-@Preview
-@Composable
-private fun TodoItemBackgroundPreview() {
-  ToDueTheme {
-    Task(TaskState(text = "Create Todo App", doneDate = LocalDate.now(), focusLevel = BACKGROUND))
+class TaskPreviewProvider : PreviewParameterProvider<TaskUIState> {
+  override val values: Sequence<TaskUIState> = sequence {
+    for (focusLevel in TaskFocusLevel.values()) {
+      for (doneDate in listOf(null, LocalDate.now())) {
+        yield(TaskUIState(text = "Create Todo App", doneDate = doneDate, focusLevel = focusLevel))
+      }
+      yield(
+        TaskUIState(
+          text = "This is a relatively long task spanning over two lines.",
+          focusLevel = focusLevel
+        )
+      )
+    }
   }
 }
 
 @Preview
 @Composable
-private fun TodoItemMultiLinePreview() {
-  ToDueTheme { Task(TaskState(text = "This is a relatively long task spanning exactly two lines")) }
-}
-
-@Preview
-@Composable
-private fun TodoItemExpandedPreview() {
-  ToDueTheme { Task(TaskState(text = "Create Todo App", focusLevel = FOCUSSED)) }
+private fun TaskPreview(@PreviewParameter(TaskPreviewProvider::class) taskState: TaskUIState) {
+  ToDueTheme { TaskUI(taskState) }
 }
 
 @Preview(uiMode = UI_MODE_NIGHT_YES)
 @Composable
-private fun TodoItemExpandedDarkPreview() {
-  ToDueTheme { Task(TaskState(text = "Create Todo App", focusLevel = FOCUSSED)) }
+private fun TaskPreviewDark(@PreviewParameter(TaskPreviewProvider::class) taskState: TaskUIState) {
+  ToDueTheme { TaskUI(taskState) }
 }

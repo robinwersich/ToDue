@@ -10,7 +10,7 @@ import com.robinwersich.todue.data.entities.toTimeBlock
 import com.robinwersich.todue.data.repositories.DatabaseTaskRepository
 import com.robinwersich.todue.toDueApplication
 import com.robinwersich.todue.ui.components.TaskFocusLevel
-import com.robinwersich.todue.ui.components.TaskState
+import com.robinwersich.todue.ui.components.TaskUIState
 import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -28,11 +28,11 @@ class MainScreenViewModel(
 ) : ViewModel() {
   private val focussedTaskIdFlow = MutableStateFlow<Long?>(null)
 
-  private val taskList: Flow<ImmutableList<TaskState>> =
+  private val taskList: Flow<ImmutableList<TaskUIState>> =
     taskRepository.getAllTasks().combine(focussedTaskIdFlow) { tasks, focussedTaskId ->
       tasks
         .map { task ->
-          TaskState(
+          TaskUIState(
             id = task.id,
             text = task.text,
             timeBlock = task.timeBlockSpec.toTimeBlock(),

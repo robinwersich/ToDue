@@ -18,9 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.robinwersich.todue.ui.components.Task
 import com.robinwersich.todue.ui.components.TaskFocusLevel
-import com.robinwersich.todue.ui.components.TaskState
+import com.robinwersich.todue.ui.components.TaskUI
+import com.robinwersich.todue.ui.components.TaskUIState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
@@ -46,7 +46,7 @@ fun MainScreen(state: MainScreenState, onEvent: (MainScreenEvent) -> Unit = {}) 
 
 @Composable
 private fun TaskList(
-  tasks: ImmutableList<TaskState>,
+  tasks: ImmutableList<TaskUIState>,
   modifier: Modifier = Modifier,
   onEvent: (MainScreenEvent) -> Unit = {},
 ) {
@@ -63,7 +63,7 @@ private fun TaskList(
     items(items = tasks, key = { it.id }) { taskState ->
       // extract task ID so that onEvent stays the same, avoiding recomposition
       val taskId = taskState.id
-      Task(
+      TaskUI(
         state = taskState,
         onEvent = { onEvent(ModifyTask(it, taskId)) },
         modifier =
@@ -83,7 +83,7 @@ private fun TaskList(
   }
 }
 
-private fun taskStateList(size: Int, focussedTask: Int? = null): List<TaskState> {
+private fun taskStateList(size: Int, focussedTask: Int? = null): List<TaskUIState> {
   return List(size) {
     val focusLevel =
       when (focussedTask) {
@@ -91,7 +91,7 @@ private fun taskStateList(size: Int, focussedTask: Int? = null): List<TaskState>
         it -> TaskFocusLevel.FOCUSSED
         else -> TaskFocusLevel.BACKGROUND
       }
-    TaskState(it.toLong(), "Task $it", dueDate = LocalDate.now(), focusLevel = focusLevel)
+    TaskUIState(it.toLong(), "Task $it", dueDate = LocalDate.now(), focusLevel = focusLevel)
   }
 }
 

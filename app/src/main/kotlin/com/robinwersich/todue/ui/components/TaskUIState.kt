@@ -11,7 +11,7 @@ enum class TaskFocusLevel {
 }
 
 @Immutable
-data class TaskState(
+data class TaskUIState(
   val id: Long = 0,
   val text: String = "",
   val timeBlock: TimeBlock = TimeBlock.Day(),
