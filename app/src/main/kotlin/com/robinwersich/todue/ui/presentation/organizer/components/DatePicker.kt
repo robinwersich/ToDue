@@ -1,4 +1,4 @@
-package com.robinwersich.todue.ui.components
+package com.robinwersich.todue.ui.presentation.organizer.components
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DatePicker

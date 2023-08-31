@@ -1,21 +1,21 @@
-package com.robinwersich.todue.ui.components
+package com.robinwersich.todue.ui.presentation.organizer
 
 import androidx.compose.runtime.Immutable
-import com.robinwersich.todue.data.entities.TimeBlock
+import com.robinwersich.todue.domain.model.TimeBlock
 import java.time.LocalDate
 
-enum class TaskFocusLevel {
+enum class FokusLevel {
   NEUTRAL,
   FOCUSSED,
   BACKGROUND
 }
 
 @Immutable
-data class TaskUIState(
+data class TaskViewState(
   val id: Long = 0,
   val text: String = "",
   val timeBlock: TimeBlock = TimeBlock.Day(),
   val dueDate: LocalDate = LocalDate.now(),
   val doneDate: LocalDate? = null,
-  val focusLevel: TaskFocusLevel = TaskFocusLevel.NEUTRAL,
+  val focusLevel: FokusLevel = FokusLevel.NEUTRAL,
 )

@@ -1,4 +1,4 @@
-package com.robinwersich.todue.ui.screens.main
+package com.robinwersich.todue.ui.presentation.organizer
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,16 +17,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.robinwersich.todue.ui.components.TaskFocusLevel
-import com.robinwersich.todue.ui.components.TaskUI
-import com.robinwersich.todue.ui.components.TaskUIState
+import com.robinwersich.todue.ui.presentation.organizer.components.TaskView
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
 @Composable
-fun MainScreen(state: MainScreenState, onEvent: (MainScreenEvent) -> Unit = {}) {
+fun OrganizerScreen(state: OrganizerState, onEvent: (OrganizerEvent) -> Unit = {}) {
   Scaffold(
     containerColor = MaterialTheme.colorScheme.surface,
     floatingActionButton = {
@@ -45,9 +43,9 @@ fun MainScreen(state: MainScreenState, onEvent: (MainScreenEvent) -> Unit = {}) 
 
 @Composable
 private fun TaskList(
-  tasks: ImmutableList<TaskUIState>,
+  tasks: ImmutableList<TaskViewState>,
   modifier: Modifier = Modifier,
-  onEvent: (MainScreenEvent) -> Unit = {},
+  onEvent: (OrganizerEvent) -> Unit = {},
 ) {
   val interactionSource = remember { MutableInteractionSource() }
   val taskListModifier =
@@ -60,19 +58,19 @@ private fun TaskList(
     items(items = tasks, key = { it.id }) { taskState ->
       // extract task ID so that onEvent stays the same, avoiding recomposition
       val taskId = taskState.id
-      TaskUI(
+      TaskView(
         state = taskState,
         onEvent = { onEvent(ModifyTask(it, taskId)) },
         modifier =
           remember(taskState.id, taskState.focusLevel, onEvent, interactionSource) {
             when (taskState.focusLevel) {
-              TaskFocusLevel.FOCUSSED ->
+              FokusLevel.FOCUSSED ->
                 Modifier.clickable(interactionSource = interactionSource, indication = null) {}
-              TaskFocusLevel.NEUTRAL ->
+              FokusLevel.NEUTRAL ->
                 Modifier.clickable(interactionSource = interactionSource, indication = null) {
                   onEvent(ExpandTask(taskState.id))
                 }
-              TaskFocusLevel.BACKGROUND -> Modifier
+              FokusLevel.BACKGROUND -> Modifier
             }
           },
       )
@@ -80,28 +78,28 @@ private fun TaskList(
   }
 }
 
-private fun taskStateList(size: Int, focussedTask: Int? = null): List<TaskUIState> {
+private fun taskStateList(size: Int, focussedTask: Int? = null): List<TaskViewState> {
   return List(size) {
     val focusLevel =
       when (focussedTask) {
-        null -> TaskFocusLevel.NEUTRAL
-        it -> TaskFocusLevel.FOCUSSED
-        else -> TaskFocusLevel.BACKGROUND
+        null -> FokusLevel.NEUTRAL
+        it -> FokusLevel.FOCUSSED
+        else -> FokusLevel.BACKGROUND
       }
-    TaskUIState(it.toLong(), "Task $it", dueDate = LocalDate.now(), focusLevel = focusLevel)
+    TaskViewState(it.toLong(), "Task $it", dueDate = LocalDate.now(), focusLevel = focusLevel)
   }
 }
 
 @Preview(showSystemUi = true)
 @Composable
-private fun MainScreenPreview() {
-  ToDueTheme { MainScreen(MainScreenState(tasks = taskStateList(size = 5).toImmutableList())) }
+private fun OrganizerScreenPreview() {
+  ToDueTheme { OrganizerScreen(OrganizerState(tasks = taskStateList(size = 5).toImmutableList())) }
 }
 
 @Preview(showSystemUi = true)
 @Composable
-private fun MainScreenWithFocussedPreview() {
+private fun OrganizerScreenWithFocussedPreview() {
   ToDueTheme {
-    MainScreen(MainScreenState(tasks = taskStateList(size = 5, focussedTask = 3).toImmutableList()))
+    OrganizerScreen(OrganizerState(tasks = taskStateList(size = 5, focussedTask = 3).toImmutableList()))
   }
 }

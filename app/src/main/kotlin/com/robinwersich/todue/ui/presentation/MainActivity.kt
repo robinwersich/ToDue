@@ -1,16 +1,13 @@
-package com.robinwersich.todue
+package com.robinwersich.todue.ui.presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.robinwersich.todue.ui.screens.main.MainScreen
-import com.robinwersich.todue.ui.screens.main.MainScreenViewModel
+import com.robinwersich.todue.ui.presentation.organizer.OrganizerScreen
+import com.robinwersich.todue.ui.presentation.organizer.OrganizerViewModel
 import com.robinwersich.todue.ui.theme.ToDueTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,9 +16,9 @@ class MainActivity : ComponentActivity() {
 
     setContent {
       ToDueTheme {
-        val viewModel: MainScreenViewModel = viewModel(factory = MainScreenViewModel.Factory)
+        val viewModel: OrganizerViewModel = viewModel(factory = OrganizerViewModel.Factory)
         val state by viewModel.viewState.collectAsState()
-        MainScreen(state, viewModel::handleEvent)
+        OrganizerScreen(state, viewModel::handleEvent)
       }
     }
   }

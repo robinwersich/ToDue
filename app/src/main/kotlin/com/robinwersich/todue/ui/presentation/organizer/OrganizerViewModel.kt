@@ -1,16 +1,13 @@
-package com.robinwersich.todue.ui.screens.main
+package com.robinwersich.todue.ui.presentation.organizer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.robinwersich.todue.data.entities.Task
-import com.robinwersich.todue.data.entities.TimeBlock
-import com.robinwersich.todue.data.entities.toTimeBlock
-import com.robinwersich.todue.data.repositories.DatabaseTaskRepository
+import com.robinwersich.todue.domain.model.Task
+import com.robinwersich.todue.domain.model.TimeBlock
+import com.robinwersich.todue.domain.repository.TaskRepository
 import com.robinwersich.todue.toDueApplication
-import com.robinwersich.todue.ui.components.TaskFocusLevel
-import com.robinwersich.todue.ui.components.TaskUIState
 import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -23,48 +20,48 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class MainScreenViewModel(
-  private val taskRepository: DatabaseTaskRepository,
+class OrganizerViewModel(
+  private val taskRepository: TaskRepository,
 ) : ViewModel() {
   private val focussedTaskIdFlow = MutableStateFlow<Long?>(null)
 
-  private val taskList: Flow<ImmutableList<TaskUIState>> =
+  private val taskList: Flow<ImmutableList<TaskViewState>> =
     taskRepository.getAllTasks().combine(focussedTaskIdFlow) { tasks, focussedTaskId ->
       tasks
         .map { task ->
-          TaskUIState(
+          TaskViewState(
             id = task.id,
             text = task.text,
-            timeBlock = task.timeBlockSpec.toTimeBlock(),
+            timeBlock = task.timeBlock,
             dueDate = task.dueDate,
             doneDate = task.doneDate,
             focusLevel =
               when (focussedTaskId) {
-                null -> TaskFocusLevel.NEUTRAL
-                task.id -> TaskFocusLevel.FOCUSSED
-                else -> TaskFocusLevel.BACKGROUND
+                null -> FokusLevel.NEUTRAL
+                task.id -> FokusLevel.FOCUSSED
+                else -> FokusLevel.BACKGROUND
               }
           )
         }
         .toImmutableList()
     }
 
-  val viewState: StateFlow<MainScreenState> =
+  val viewState: StateFlow<OrganizerState> =
     taskList
-      .map { MainScreenState(tasks = it) }
+      .map { OrganizerState(tasks = it) }
       .stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = MainScreenState()
+        initialValue = OrganizerState()
       )
 
-  fun handleEvent(event: MainScreenEvent) {
+  fun handleEvent(event: OrganizerEvent) {
     when (event) {
       is AddTask ->
         viewModelScope.launch {
           focussedTaskIdFlow.value =
             taskRepository.insertTask(
-              Task(text = "", timeBlockSpec = TimeBlock.Day().toSpec(), dueDate = LocalDate.now())
+              Task(text = "", timeBlock = TimeBlock.Day(), dueDate = LocalDate.now())
             )
         }
       is ExpandTask -> focussedTaskIdFlow.value = event.taskId
@@ -82,7 +79,7 @@ class MainScreenViewModel(
         viewModelScope.launch { taskRepository.setDoneDate(taskId, doneDate) }
       }
       is ModifyTaskEvent.SetTimeBlock ->
-        viewModelScope.launch { taskRepository.setTimeBlockSpec(taskId, event.timeBlock.toSpec()) }
+        viewModelScope.launch { taskRepository.setTimeBlock(taskId, event.timeBlock) }
       is ModifyTaskEvent.SetDueDate ->
         viewModelScope.launch { taskRepository.setDueDate(taskId, event.date) }
       is ModifyTaskEvent.Delete -> {
@@ -94,7 +91,7 @@ class MainScreenViewModel(
 
   companion object {
     val Factory = viewModelFactory {
-      initializer { MainScreenViewModel(toDueApplication().container.tasksRepository) }
+      initializer { OrganizerViewModel(toDueApplication().container.tasksRepository) }
     }
   }
 }

@@ -2,7 +2,7 @@ package com.robinwersich.todue.data
 
 import android.content.Context
 import com.robinwersich.todue.data.database.ToDueDatabase
-import com.robinwersich.todue.data.repositories.DatabaseTaskRepository
+import com.robinwersich.todue.data.repository.DatabaseTaskRepository
 
 class AppDataContainer(private val context: Context) {
   val tasksRepository: DatabaseTaskRepository by lazy {
