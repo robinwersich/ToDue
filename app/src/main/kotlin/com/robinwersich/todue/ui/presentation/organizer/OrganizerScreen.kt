@@ -26,7 +26,7 @@ import kotlinx.collections.immutable.toImmutableList
 @Composable
 fun OrganizerScreen(state: OrganizerState, onEvent: (OrganizerEvent) -> Unit = {}) {
   Scaffold(
-    containerColor = MaterialTheme.colorScheme.surface,
+    containerColor = MaterialTheme.colorScheme.background,
     floatingActionButton = {
       FloatingActionButton(onClick = { onEvent(AddTask) }) {
         Icon(imageVector = Icons.Default.Add, contentDescription = null)

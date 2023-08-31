@@ -4,7 +4,7 @@ import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.animateDp
+import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +44,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -104,11 +104,12 @@ fun TaskView(
 
   val focusTransition = updateTransition(focusLevel, label = "Focus Level")
 
-  val tonalElevation by
-    focusTransition.animateDp(label = "Tonal Elevation") {
-      if (it == FokusLevel.FOCUSSED) 2.dp else 0.dp
+  val surfaceColor by
+    focusTransition.animateColor(label = "Task Color") {
+      if (it == FokusLevel.FOCUSSED) MaterialTheme.colorScheme.surface
+      else Color.Transparent
     }
-  Surface(shape = RoundedCornerShape(16.dp), tonalElevation = tonalElevation, modifier = modifier) {
+  Surface(shape = RoundedCornerShape(16.dp), color = surfaceColor, modifier = modifier) {
     val checkBoxWidth = 48.dp
     Column(modifier = Modifier.padding(end = 16.dp).fillMaxWidth()) {
       Row(verticalAlignment = Alignment.CenterVertically) {
@@ -300,14 +301,14 @@ class TaskPreviewProvider : PreviewParameterProvider<TaskViewState> {
   }
 }
 
-@Preview
+@Preview()
 @Composable
 private fun TaskPreview(@PreviewParameter(TaskPreviewProvider::class) state: TaskViewState) {
-  ToDueTheme { TaskView(state) }
+  ToDueTheme { Surface(color = MaterialTheme.colorScheme.background) { TaskView(state) } }
 }
 
 @Preview(uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun TaskPreviewDark(@PreviewParameter(TaskPreviewProvider::class) state: TaskViewState) {
-  ToDueTheme { TaskView(state) }
+  ToDueTheme { Surface(color = MaterialTheme.colorScheme.background) { TaskView(state) } }
 }
