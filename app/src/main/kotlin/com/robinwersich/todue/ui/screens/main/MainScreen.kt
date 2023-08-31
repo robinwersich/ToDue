@@ -15,7 +15,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.ui.components.TaskFocusLevel
@@ -51,11 +50,9 @@ private fun TaskList(
   onEvent: (MainScreenEvent) -> Unit = {},
 ) {
   val interactionSource = remember { MutableInteractionSource() }
-  val focusManager = LocalFocusManager.current
   val taskListModifier =
     remember(modifier, onEvent) {
       modifier.clickable(interactionSource = interactionSource, indication = null) {
-        focusManager.clearFocus()
         onEvent(CollapseTasks)
       }
     }

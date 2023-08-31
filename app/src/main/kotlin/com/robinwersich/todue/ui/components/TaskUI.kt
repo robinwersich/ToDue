@@ -32,6 +32,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
@@ -90,7 +92,12 @@ fun TaskUI(
   modifier: Modifier = Modifier,
 ) {
   val focusRequester = remember { FocusRequester() }
+  // auto focus on create
   LaunchedEffect(true) { if (focusLevel == FOCUSSED) focusRequester.requestFocus() }
+
+  val focusManager = LocalFocusManager.current
+  // clear focus on collapse
+  if (focusLevel == FOCUSSED) DisposableEffect(true) { onDispose { focusManager.clearFocus() } }
 
   val focusTransition = updateTransition(focusLevel, label = "Focus Level")
 
