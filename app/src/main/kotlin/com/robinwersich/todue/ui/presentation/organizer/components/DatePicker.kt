@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -28,12 +29,14 @@ fun DueDatePicker(
   onCancel: () -> Unit = {},
 ) {
   val today = LocalDate.now()
+  val todayMillis = localDateToMillis(today)
   val datePickerState =
     rememberDatePickerState(
       initialSelectedDateMillis = localDateToMillis(initialSelection),
-      yearRange = today.year until today.year + 99
+      yearRange = today.year until today.year + 99,
+      selectableDates = object : SelectableDates {
+        override fun isSelectableDate(utcTimeMillis: Long) = utcTimeMillis >= todayMillis }
     )
-  val todayMillis = localDateToMillis(today)
   val confirmEnabled by remember {
     derivedStateOf { datePickerState.selectedDateMillis?.let { it >= todayMillis } ?: false }
   }
@@ -52,7 +55,6 @@ fun DueDatePicker(
   ) {
     DatePicker(
       state = datePickerState,
-      dateValidator = { it >= todayMillis },
       title = {
         Text(
           stringResource(R.string.select_due_date),

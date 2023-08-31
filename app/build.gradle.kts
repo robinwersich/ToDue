@@ -47,12 +47,12 @@ dependencies {
   implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
 
   // Compose
-  val composeUiVersion = "1.5.0"
+  val composeUiVersion = "1.6.0-alpha04"
   implementation("androidx.compose.ui:ui:$composeUiVersion")
   implementation("androidx.compose.ui:ui-tooling-preview:$composeUiVersion")
   debugImplementation("androidx.compose.ui:ui-tooling:$composeUiVersion")
   debugImplementation("androidx.compose.ui:ui-test-manifest:$composeUiVersion")
-  implementation("androidx.compose.material3:material3:1.1.1")
+  implementation("androidx.compose.material3:material3:1.2.0-alpha06")
 
   // Room
   val roomVersion = "2.5.2"

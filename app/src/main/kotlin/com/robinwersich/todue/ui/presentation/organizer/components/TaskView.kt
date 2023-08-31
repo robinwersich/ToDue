@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
@@ -191,15 +192,15 @@ private fun TaskProperties(
   modifier: Modifier = Modifier,
 ) {
   Column(modifier = modifier) {
-    Divider()
+    HorizontalDivider()
     ScheduledTimeBlockProperty(timeBlock = timeBlock, onEvent = onEvent)
     /*Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
       TaskProperty(R.drawable.scheduled_date, "this week", onClick = {})
       TaskProperty(R.drawable.time_estimate, "30min", onClick = {})
     }*/
-    Divider()
+    HorizontalDivider()
     DueDateProperty(dueDate = dueDate, onEvent = onEvent)
-    Divider()
+    HorizontalDivider()
     Row(
       horizontalArrangement = Arrangement.End,
       modifier = Modifier.signedPadding(end = (-12).dp)
