@@ -13,7 +13,6 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.snapping.SnapFlingBehavior
 import androidx.compose.foundation.gestures.snapping.SnapLayoutInfoProvider
 import androidx.compose.foundation.gestures.snapping.SnapPositionInLayout
-import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -40,12 +39,10 @@ class ScrollableItemSnapLayoutInfoProvider(
   private val decayAnimationSpec: DecayAnimationSpec<Float>,
   private val minOverFlingVelocity: Dp = MinOverFlingVelocity,
   private val smallItemSnapPosition: SnapPositionInLayout = SnapPositionInLayout.CenterToCenter,
+  private val density: Density,
 ) : SnapLayoutInfoProvider {
-  private val layoutInfo: LazyListLayoutInfo
-    get() = lazyListState.layoutInfo
-
   /** Flings until the end of the current item. */
-  override fun Density.calculateApproachOffset(initialVelocity: Float): Float {
+  override fun calculateApproachOffset(initialVelocity: Float): Float {
     val currentOffset = 0f
     val targetOffset = decayAnimationSpec.calculateTargetValue(currentOffset, initialVelocity)
     val currentRange =
@@ -54,41 +51,34 @@ class ScrollableItemSnapLayoutInfoProvider(
   }
 
   /** See [calculateFinalSnapOffset]. */
-  override fun Density.calculateSnappingOffset(currentVelocity: Float): Float =
+  override fun calculateSnappingOffset(currentVelocity: Float): Float =
     calculateFinalSnapOffset(currentVelocity, calculateSnapOffsetRanges())
 
-  private fun Density.calculateSnapOffsetRanges(): List<SnapRange> {
-    val paddedViewPortSize =
-      with(layoutInfo) {
-        (if (orientation == Orientation.Vertical) viewportSize.height else viewportSize.width) -
+  private fun calculateSnapOffsetRanges(): List<SnapRange> {
+    with(lazyListState.layoutInfo) {
+      val paddedViewPortLength =
+        with(viewportSize) { if (orientation == Orientation.Vertical) height else width } -
           (beforeContentPadding + afterContentPadding)
+
+      return visibleItemsInfo.map { item ->
+        if (item.size <= paddedViewPortLength) {
+          val desiredOffset =
+            smallItemSnapPosition.position(
+              layoutSize = paddedViewPortLength,
+              itemSize = item.size,
+              beforeContentPadding = beforeContentPadding,
+              afterContentPadding = afterContentPadding,
+              itemIndex = item.index
+            )
+          val snapOffset = (item.offset - desiredOffset).toFloat()
+          SnapRange(snapOffset, snapOffset)
+        } else {
+          SnapRange(
+            item.offset.toFloat(),
+            (item.offset + item.size - paddedViewPortLength).toFloat()
+          )
+        }
       }
-
-    return layoutInfo.visibleItemsInfo.map { item ->
-      calculateItemSnapRange(
-        paddedViewPortSize = paddedViewPortSize,
-        itemSize = item.size,
-        itemOffset = item.offset,
-        itemIndex = item.index,
-        smallItemSnapPosition = smallItemSnapPosition
-      )
-    }
-  }
-
-  private fun Density.calculateItemSnapRange(
-    paddedViewPortSize: Int,
-    itemSize: Int,
-    itemOffset: Int,
-    itemIndex: Int,
-    smallItemSnapPosition: SnapPositionInLayout
-  ): SnapRange {
-    return if (itemSize < paddedViewPortSize) {
-      val desiredOffset =
-        with(smallItemSnapPosition) { position(paddedViewPortSize, itemSize, itemIndex) }
-      val snapOffset = (itemOffset - desiredOffset).toFloat()
-      SnapRange(snapOffset, snapOffset)
-    } else {
-      SnapRange(itemOffset.toFloat(), (itemSize + itemOffset - paddedViewPortSize).toFloat())
     }
   }
 
@@ -99,11 +89,8 @@ class ScrollableItemSnapLayoutInfoProvider(
    *
    * @returns The chosen offset for snapping.
    */
-  private fun Density.calculateFinalSnapOffset(
-    velocity: Float,
-    snapRanges: List<SnapRange>
-  ): Float {
-    val velocityThreshold = minOverFlingVelocity.toPx().absoluteValue
+  private fun calculateFinalSnapOffset(velocity: Float, snapRanges: List<SnapRange>): Float {
+    val velocityThreshold = with(density) { minOverFlingVelocity.toPx().absoluteValue }
     val snapOffsets = snapRanges.map(SnapRange::snapOffset)
 
     var snapOffset =
@@ -123,9 +110,6 @@ class ScrollableItemSnapLayoutInfoProvider(
         }
     return snapOffset ?: 0f
   }
-
-  /** Snap step size of zero to always allow decay animation. */
-  override fun Density.calculateSnapStepSize(): Float = 0f
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -136,7 +120,6 @@ fun rememberScrollableItemSnapFlingBehavior(
   highVelocityAnimationSpec: DecayAnimationSpec<Float> = rememberSplineBasedDecay(),
   snapAnimationSpec: AnimationSpec<Float> = spring(stiffness = Spring.StiffnessMediumLow),
   smallItemSnapPosition: SnapPositionInLayout = SnapPositionInLayout.CenterToCenter,
-  minFlingVelocity: Dp = MinFlingVelocity,
   minOverFlingVelocity: Dp = MinOverFlingVelocity,
 ): SnapFlingBehavior {
   val density = LocalDensity.current
@@ -146,7 +129,6 @@ fun rememberScrollableItemSnapFlingBehavior(
     highVelocityAnimationSpec,
     snapAnimationSpec,
     smallItemSnapPosition,
-    minFlingVelocity,
     minOverFlingVelocity,
     density
   ) {
@@ -155,18 +137,16 @@ fun rememberScrollableItemSnapFlingBehavior(
         lazyListState = lazyListState,
         decayAnimationSpec = highVelocityAnimationSpec,
         minOverFlingVelocity = minOverFlingVelocity,
-        smallItemSnapPosition = smallItemSnapPosition
+        smallItemSnapPosition = smallItemSnapPosition,
+        density = density,
       )
     SnapFlingBehavior(
       snapLayoutInfoProvider = snapLayoutInfoProvider,
       lowVelocityAnimationSpec = lowVelocityAnimationSpec,
       highVelocityAnimationSpec = highVelocityAnimationSpec,
       snapAnimationSpec = snapAnimationSpec,
-      density = density,
-      shortSnapVelocityThreshold = minFlingVelocity
     )
   }
 }
 
-internal val MinFlingVelocity = 400.dp
 internal val MinOverFlingVelocity = 6000.dp
