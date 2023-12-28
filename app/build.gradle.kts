@@ -1,7 +1,8 @@
 plugins {
   id("com.android.application")
   kotlin("android")
-  id("com.google.devtools.ksp") version "1.9.0-1.0.12"
+  id("com.google.devtools.ksp")
+  id("androidx.room")
 }
 
 android {
@@ -39,6 +40,8 @@ android {
   packaging { resources { excludes.add("/META-INF/{AL2.0,LGPL2.1}") } }
 }
 
+room { schemaDirectory("$projectDir/schemas") }
+
 dependencies {
   // Core Android Libraries
   implementation("androidx.core:core-ktx:1.10.1")
@@ -55,10 +58,15 @@ dependencies {
   implementation("androidx.compose.material3:material3:1.2.0-beta01")
 
   // Room
-  val roomVersion = "2.5.2"
+  val roomVersion = "2.6.1"
   implementation("androidx.room:room-runtime:$roomVersion")
   ksp("androidx.room:room-compiler:$roomVersion")
   implementation("androidx.room:room-ktx:$roomVersion")
+
+  // Paging
+  val pagingVersion = "3.2.1"
+  implementation("androidx.paging:paging-runtime:$pagingVersion")
+  implementation("androidx.paging:paging-compose:$pagingVersion")
 
   // Utilities
   implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.5")
