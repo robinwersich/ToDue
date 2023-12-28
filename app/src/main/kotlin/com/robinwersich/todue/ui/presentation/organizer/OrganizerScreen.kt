@@ -26,7 +26,7 @@ import kotlinx.collections.immutable.toImmutableList
 @Composable
 fun OrganizerScreen(state: OrganizerState, onEvent: (OrganizerEvent) -> Unit = {}) {
   Scaffold(
-    containerColor = MaterialTheme.colorScheme.background,
+    containerColor = MaterialTheme.colorScheme.surface,
     floatingActionButton = {
       FloatingActionButton(onClick = { onEvent(AddTask) }) {
         Icon(imageVector = Icons.Default.Add, contentDescription = null)
@@ -64,13 +64,13 @@ private fun TaskList(
         modifier =
           remember(taskState.id, taskState.focusLevel, onEvent, interactionSource) {
             when (taskState.focusLevel) {
-              FokusLevel.FOCUSSED ->
+              FocusLevel.FOCUSSED ->
                 Modifier.clickable(interactionSource = interactionSource, indication = null) {}
-              FokusLevel.NEUTRAL ->
+              FocusLevel.NEUTRAL ->
                 Modifier.clickable(interactionSource = interactionSource, indication = null) {
                   onEvent(ExpandTask(taskState.id))
                 }
-              FokusLevel.BACKGROUND -> Modifier
+              FocusLevel.BACKGROUND -> Modifier
             }
           },
       )
@@ -82,9 +82,9 @@ private fun taskStateList(size: Int, focussedTask: Int? = null): List<TaskViewSt
   return List(size) {
     val focusLevel =
       when (focussedTask) {
-        null -> FokusLevel.NEUTRAL
-        it -> FokusLevel.FOCUSSED
-        else -> FokusLevel.BACKGROUND
+        null -> FocusLevel.NEUTRAL
+        it -> FocusLevel.FOCUSSED
+        else -> FocusLevel.BACKGROUND
       }
     TaskViewState(it.toLong(), "Task $it", dueDate = LocalDate.now(), focusLevel = focusLevel)
   }

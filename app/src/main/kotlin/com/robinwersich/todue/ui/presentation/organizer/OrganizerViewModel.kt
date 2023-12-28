@@ -6,6 +6,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TimeBlock
+import com.robinwersich.todue.domain.model.TimeUnitInstance
 import com.robinwersich.todue.domain.repository.TaskRepository
 import com.robinwersich.todue.toDueApplication
 import java.time.LocalDate
@@ -32,14 +33,14 @@ class OrganizerViewModel(
           TaskViewState(
             id = task.id,
             text = task.text,
-            timeBlock = task.timeBlock,
+            timeBlock = task.scheduledTimeBlock,
             dueDate = task.dueDate,
             doneDate = task.doneDate,
             focusLevel =
               when (focussedTaskId) {
-                null -> FokusLevel.NEUTRAL
-                task.id -> FokusLevel.FOCUSSED
-                else -> FokusLevel.BACKGROUND
+                null -> FocusLevel.NEUTRAL
+                task.id -> FocusLevel.FOCUSSED
+                else -> FocusLevel.BACKGROUND
               }
           )
         }
@@ -61,7 +62,12 @@ class OrganizerViewModel(
         viewModelScope.launch {
           focussedTaskIdFlow.value =
             taskRepository.insertTask(
-              Task(text = "", timeBlock = TimeBlock.Day(), dueDate = LocalDate.now())
+              Task(
+                text = "",
+                // TODO: Use real timeline ID.
+                scheduledTimeBlock = TimeBlock(0, TimeUnitInstance.Day()),
+                dueDate = LocalDate.now()
+              )
             )
         }
       is ExpandTask -> focussedTaskIdFlow.value = event.taskId

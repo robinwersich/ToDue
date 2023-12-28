@@ -1,11 +1,14 @@
 package com.robinwersich.todue.ui.presentation.utility
 
 import com.robinwersich.todue.domain.model.TimeBlock
+import com.robinwersich.todue.domain.model.TimeUnitInstance
 
-val TimeBlock.name: String
-  get() =
-    when (this) {
-      is TimeBlock.Day -> date.toString()
-      is TimeBlock.Week -> yearWeek.toString()
-      is TimeBlock.Month -> yearMonth.toString()
-    }
+val TimeUnitInstance.displayName: String
+  get() = when (this) {
+    is TimeUnitInstance.Day -> date.toString()
+    is TimeUnitInstance.Week -> "$startDate - $endDate"
+    is TimeUnitInstance.Month -> yearMonth.toString()
+  }
+
+val TimeBlock.displayName: String
+  get() = "$start - $end"

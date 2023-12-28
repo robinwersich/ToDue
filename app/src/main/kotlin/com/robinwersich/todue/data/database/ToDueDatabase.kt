@@ -6,8 +6,9 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.robinwersich.todue.data.entity.TaskEntity
+import com.robinwersich.todue.data.entity.TimelineEntity
 
-@Database(entities = [TaskEntity::class], version = 3, exportSchema = false)
+@Database(entities = [TaskEntity::class, TimelineEntity::class], version = 4, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class ToDueDatabase : RoomDatabase() {
   abstract fun todoDao(): TaskDao

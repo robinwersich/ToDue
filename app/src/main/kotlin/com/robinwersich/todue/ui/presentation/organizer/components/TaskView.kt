@@ -10,6 +10,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -56,10 +57,11 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.TimeBlock
-import com.robinwersich.todue.ui.presentation.organizer.FokusLevel
+import com.robinwersich.todue.domain.model.TimeUnitInstance
+import com.robinwersich.todue.ui.presentation.organizer.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.ModifyTaskEvent
 import com.robinwersich.todue.ui.presentation.organizer.TaskViewState
-import com.robinwersich.todue.ui.presentation.utility.name
+import com.robinwersich.todue.ui.presentation.utility.displayName
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.ui.utility.DebouncedUpdate
 import com.robinwersich.todue.ui.utility.signedPadding
@@ -86,56 +88,55 @@ fun TaskView(
 @Composable
 fun TaskView(
   text: String,
-  timeBlock: TimeBlock,
+  timeBlock: TimeBlock?,
   dueDate: LocalDate,
   doneDate: LocalDate?,
-  focusLevel: FokusLevel,
+  focusLevel: FocusLevel,
   onEvent: (ModifyTaskEvent) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   val focusRequester = remember { FocusRequester() }
   // auto focus on create
-  LaunchedEffect(true) { if (focusLevel == FokusLevel.FOCUSSED) focusRequester.requestFocus() }
+  LaunchedEffect(true) { if (focusLevel == FocusLevel.FOCUSSED) focusRequester.requestFocus() }
 
   val focusManager = LocalFocusManager.current
   // clear focus on collapse
-  if (focusLevel == FokusLevel.FOCUSSED)
+  if (focusLevel == FocusLevel.FOCUSSED)
     DisposableEffect(true) { onDispose { focusManager.clearFocus() } }
 
   val focusTransition = updateTransition(focusLevel, label = "Focus Level")
 
   val surfaceColor by
     focusTransition.animateColor(label = "Task Color") {
-      if (it == FokusLevel.FOCUSSED) MaterialTheme.colorScheme.surface
-      else Color.Transparent
+      if (it == FocusLevel.FOCUSSED) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent
     }
-  Surface(shape = RoundedCornerShape(16.dp), color = surfaceColor, modifier = modifier) {
+  Surface(shape = RoundedCornerShape(24.dp), color = surfaceColor, modifier = modifier) {
     val checkBoxWidth = 48.dp
     Column(modifier = Modifier.padding(end = 16.dp).fillMaxWidth()) {
       Row(verticalAlignment = Alignment.CenterVertically) {
         TaskCheckbox(
           checked = doneDate != null,
           onCheckedChange = { onEvent(ModifyTaskEvent.SetDone(it)) },
-          enabled = focusLevel != FokusLevel.BACKGROUND,
+          enabled = focusLevel != FocusLevel.BACKGROUND,
           modifier = Modifier.width(checkBoxWidth)
         )
 
         val textColor =
           LocalContentColor.current.copy(
-            alpha = if (focusLevel == FokusLevel.BACKGROUND) 0.38f else 1f
+            alpha = if (focusLevel == FocusLevel.BACKGROUND) 0.38f else 1f
           )
         val textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = textColor))
         Column(modifier = Modifier.padding(vertical = 8.dp)) {
           DebouncedUpdate(
             value = text,
             onValueChanged = { onEvent(ModifyTaskEvent.SetText(it)) },
-            emitUpdates = focusLevel == FokusLevel.FOCUSSED
+            emitUpdates = focusLevel == FocusLevel.FOCUSSED
           ) {
             val (cachedText, setCachedText) = it
             BasicTextField(
               value = cachedText,
               onValueChange = setCachedText,
-              enabled = focusLevel == FokusLevel.FOCUSSED,
+              enabled = focusLevel == FocusLevel.FOCUSSED,
               textStyle = textStyle,
               cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
               modifier = Modifier.focusRequester(focusRequester)
@@ -147,7 +148,7 @@ fun TaskView(
 
       val animationAnchor = Alignment.Top
       focusTransition.AnimatedVisibility(
-        visible = { it == FokusLevel.FOCUSSED },
+        visible = { it == FocusLevel.FOCUSSED },
         enter = fadeIn() + expandVertically(expandFrom = animationAnchor),
         exit = fadeOut() + shrinkVertically(shrinkTowards = animationAnchor)
       ) {
@@ -187,7 +188,7 @@ private fun TaskCheckbox(
 
 @Composable
 private fun TaskProperties(
-  timeBlock: TimeBlock,
+  timeBlock: TimeBlock?,
   dueDate: LocalDate,
   onEvent: (ModifyTaskEvent) -> Unit,
   modifier: Modifier = Modifier,
@@ -216,19 +217,21 @@ private fun TaskProperties(
 }
 
 @Composable
-private fun ScheduledTimeBlockProperty(timeBlock: TimeBlock, onEvent: (ModifyTaskEvent) -> Unit) {
+private fun ScheduledTimeBlockProperty(timeBlock: TimeBlock?, onEvent: (ModifyTaskEvent) -> Unit) {
   var showSelection by rememberSaveable { mutableStateOf(false) }
   if (showSelection) {
     DueDatePicker(
-      initialSelection = timeBlock.endDate,
+      initialSelection = timeBlock?.endDate ?: LocalDate.now(),
       onConfirm = {
-        onEvent(ModifyTaskEvent.SetTimeBlock(TimeBlock.Day(it)))
+        // TODO: put meaningful timeline ID here
+        onEvent(ModifyTaskEvent.SetTimeBlock(TimeBlock(0, TimeUnitInstance.Day(it))))
         showSelection = false
       },
       onCancel = { showSelection = false },
     )
   }
-  TaskProperty(R.drawable.scheduled_date, timeBlock.name, onClick = { showSelection = true })
+  val timeBlockName = timeBlock?.displayName ?: "unscheduled"
+  TaskProperty(R.drawable.scheduled_date, timeBlockName, onClick = { showSelection = true })
 }
 
 @Composable
@@ -287,7 +290,7 @@ private fun TaskAction(
 
 class TaskPreviewProvider : PreviewParameterProvider<TaskViewState> {
   override val values: Sequence<TaskViewState> = sequence {
-    for (focusLevel in FokusLevel.values()) {
+    for (focusLevel in FocusLevel.entries) {
       for (doneDate in listOf(null, LocalDate.now())) {
         yield(TaskViewState(text = "Create Todo App", doneDate = doneDate, focusLevel = focusLevel))
       }
@@ -304,11 +307,15 @@ class TaskPreviewProvider : PreviewParameterProvider<TaskViewState> {
 @Preview()
 @Composable
 private fun TaskPreview(@PreviewParameter(TaskPreviewProvider::class) state: TaskViewState) {
-  ToDueTheme { Surface(color = MaterialTheme.colorScheme.background) { TaskView(state) } }
+  ToDueTheme {
+    TaskView(state, modifier = Modifier.background(MaterialTheme.colorScheme.background))
+  }
 }
 
 @Preview(uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun TaskPreviewDark(@PreviewParameter(TaskPreviewProvider::class) state: TaskViewState) {
-  ToDueTheme { Surface(color = MaterialTheme.colorScheme.background) { TaskView(state) } }
+  ToDueTheme {
+    TaskView(state, modifier = Modifier.background(MaterialTheme.colorScheme.background))
+  }
 }
