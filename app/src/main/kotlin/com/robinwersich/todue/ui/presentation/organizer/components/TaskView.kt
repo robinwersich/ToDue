@@ -56,7 +56,6 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.R
-import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimeUnitInstance
 import com.robinwersich.todue.ui.presentation.organizer.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.ModifyTaskEvent
@@ -88,7 +87,7 @@ fun TaskView(
 @Composable
 fun TaskView(
   text: String,
-  timeBlock: TimeBlock?,
+  timeBlock: TimeUnitInstance?,
   dueDate: LocalDate,
   doneDate: LocalDate?,
   focusLevel: FocusLevel,
@@ -108,7 +107,8 @@ fun TaskView(
 
   val surfaceColor by
     focusTransition.animateColor(label = "Task Color") {
-      if (it == FocusLevel.FOCUSSED) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent
+      if (it == FocusLevel.FOCUSSED) MaterialTheme.colorScheme.surfaceContainer
+      else Color.Transparent
     }
   Surface(shape = RoundedCornerShape(24.dp), color = surfaceColor, modifier = modifier) {
     val checkBoxWidth = 48.dp
@@ -188,7 +188,7 @@ private fun TaskCheckbox(
 
 @Composable
 private fun TaskProperties(
-  timeBlock: TimeBlock?,
+  timeBlock: TimeUnitInstance?,
   dueDate: LocalDate,
   onEvent: (ModifyTaskEvent) -> Unit,
   modifier: Modifier = Modifier,
@@ -217,14 +217,17 @@ private fun TaskProperties(
 }
 
 @Composable
-private fun ScheduledTimeBlockProperty(timeBlock: TimeBlock?, onEvent: (ModifyTaskEvent) -> Unit) {
+private fun ScheduledTimeBlockProperty(
+  timeBlock: TimeUnitInstance?,
+  onEvent: (ModifyTaskEvent) -> Unit
+) {
   var showSelection by rememberSaveable { mutableStateOf(false) }
   if (showSelection) {
     DueDatePicker(
       initialSelection = timeBlock?.endDate ?: LocalDate.now(),
       onConfirm = {
         // TODO: put meaningful timeline ID here
-        onEvent(ModifyTaskEvent.SetTimeBlock(TimeBlock(0, TimeUnitInstance.Day(it))))
+        onEvent(ModifyTaskEvent.SetTimeBlock(TimeUnitInstance.Day(it)))
         showSelection = false
       },
       onCancel = { showSelection = false },

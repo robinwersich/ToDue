@@ -6,8 +6,8 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.robinwersich.todue.domain.model.Task
-import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimeUnitInstance
+import java.time.Duration
 import java.time.LocalDate
 
 @Entity(
@@ -36,6 +36,8 @@ data class TaskEntity(
   @ColumnInfo(name = "scheduled_end") val scheduledEnd: LocalDate,
   /** The date on which the task must be done at latest. */
   @ColumnInfo(name = "due_date") val dueDate: LocalDate,
+  /** The estimated time this task takes to execute. */
+  @ColumnInfo(name = "estimated_duration") val estimatedDuration: Duration,
   /** The date on which the task was done (null if it wasn't done yet). */
   @ColumnInfo(name = "done_date") val doneDate: LocalDate? = null
 )
@@ -44,15 +46,10 @@ fun TaskEntity.toModel() =
   Task(
     id = id,
     text = text,
-    // TODO: This is a hack to make the app work with the new data model. Remove this once the new
-    // data model is fully implemented.
-    scheduledTimeBlock =
-      TimeBlock(
-        timelineId,
-        start = TimeUnitInstance.Day(scheduledStart),
-        TimeUnitInstance.Day(scheduledEnd)
-      ),
+    // FIXME
+    scheduledTimeBlock = TimeUnitInstance.Day(scheduledEnd),
     dueDate = dueDate,
+    estimatedDuration = estimatedDuration,
     doneDate = doneDate
   )
 
@@ -60,9 +57,11 @@ fun Task.toEntity() =
   TaskEntity(
     id = id,
     text = text,
-    timelineId = scheduledTimeBlock.timelineId,
+    // FIXME
+    timelineId = 0,
     scheduledStart = scheduledTimeBlock.startDate,
     scheduledEnd = scheduledTimeBlock.endDate,
     dueDate = dueDate,
+    estimatedDuration = estimatedDuration,
     doneDate = doneDate
   )

@@ -4,7 +4,7 @@ import com.robinwersich.todue.data.database.TaskDao
 import com.robinwersich.todue.data.entity.toEntity
 import com.robinwersich.todue.data.entity.toModel
 import com.robinwersich.todue.domain.model.Task
-import com.robinwersich.todue.domain.model.TimeBlock
+import com.robinwersich.todue.domain.model.TimeUnitInstance
 import com.robinwersich.todue.domain.repository.TaskRepository
 import java.time.LocalDate
 import kotlinx.coroutines.flow.map
@@ -16,7 +16,7 @@ class DatabaseTaskRepository(private val taskDao: TaskDao) : TaskRepository {
 
   override suspend fun deleteTask(id: Long) = taskDao.delete(id)
 
-  override suspend fun setTimeBlock(id: Long, timeBlock: TimeBlock) =
+  override suspend fun setTimeBlock(id: Long, timeBlock: TimeUnitInstance) =
     taskDao.setScheduledRange(id, startDate = timeBlock.startDate, endDate = timeBlock.endDate)
 
   override suspend fun setDueDate(id: Long, date: LocalDate) = taskDao.setDueDate(id, date)

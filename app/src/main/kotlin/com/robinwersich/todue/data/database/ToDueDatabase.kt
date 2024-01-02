@@ -37,10 +37,7 @@ private object CreateInitialTimelines : RoomDatabase.Callback() {
     db.insert(
       "timeline",
       SQLiteDatabase.CONFLICT_ABORT,
-      ContentValues().apply {
-        put("time_block_unit", "DAY")
-        put("time_block_size", 1)
-      }
+      ContentValues().apply { put("time_block_unit", "DAY") }
     )
   }
 }

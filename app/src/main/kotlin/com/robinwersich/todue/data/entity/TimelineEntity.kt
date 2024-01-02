@@ -9,5 +9,4 @@ import com.robinwersich.todue.domain.model.TimeUnit
 data class TimelineEntity(
   @ColumnInfo("id") @PrimaryKey(autoGenerate = true) val id: Int = 0,
   @ColumnInfo("time_block_unit") val timeBlockUnit: TimeUnit,
-  @ColumnInfo("time_block_size") val timeBlockSize: Int,
 )

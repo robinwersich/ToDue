@@ -5,10 +5,10 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.robinwersich.todue.domain.model.Task
-import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimeUnitInstance
 import com.robinwersich.todue.domain.repository.TaskRepository
 import com.robinwersich.todue.toDueApplication
+import java.time.Duration
 import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
@@ -64,8 +64,8 @@ class OrganizerViewModel(
             taskRepository.insertTask(
               Task(
                 text = "",
-                // TODO: Use real timeline ID.
-                scheduledTimeBlock = TimeBlock(0, TimeUnitInstance.Day()),
+                scheduledTimeBlock = TimeUnitInstance.Day(),
+                estimatedDuration = Duration.ofHours(1),
                 dueDate = LocalDate.now()
               )
             )

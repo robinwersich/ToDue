@@ -42,6 +42,8 @@ android {
 
 room { schemaDirectory("$projectDir/schemas") }
 
+ksp { arg("room.generateKotlin", "true") }
+
 dependencies {
   // Core Android Libraries
   implementation("androidx.core:core-ktx:1.10.1")

@@ -13,10 +13,27 @@ enum class TimeUnit(private val instanceConstructor: (LocalDate) -> TimeUnitInst
   fun instanceFrom(date: LocalDate) = instanceConstructor(date)
 }
 
+/**
+ * A time unit instance is a specific instance of a time unit. For example, a time unit instance of
+ * the time unit [week][TimeUnit.WEEK] is the week 2021-W02. All time unit instances can either be
+ * created from a corresponding [Temporal][java.time.temporal.Temporal] or from a [LocalDate], which
+ * results in the time unit instance that *contains* this date.
+ */
 sealed interface TimeUnitInstance {
+  /** The earliest date that is contained in this time unit instance. */
   abstract val startDate: LocalDate
+  /** The latest date that is contained in this time unit instance. */
   abstract val endDate: LocalDate
+  /** The [TimeUnit] enum entry of this instance. */
   abstract val unit: TimeUnit
+
+  /** Returns a new instance that is [amount] time units after this instance. */
+  abstract operator fun plus(amount: Long): TimeUnitInstance
+  /** Returns a new instance that is [amount] time units before this instance. */
+  operator fun minus(amount: Long): TimeUnitInstance = this + -amount
+
+  val sequence: Sequence<TimeUnitInstance>
+    get() = generateSequence(this) { it + 1 }
 
   data class Day(val date: LocalDate = LocalDate.now()) : TimeUnitInstance {
     override val unit: TimeUnit
@@ -24,6 +41,8 @@ sealed interface TimeUnitInstance {
 
     override val startDate: LocalDate = date
     override val endDate: LocalDate = date
+
+    override operator fun plus(amount: Long) = Day(date.plusDays(amount))
 
     override fun toString() = date.toString()
   }
@@ -37,6 +56,8 @@ sealed interface TimeUnitInstance {
 
     constructor(date: LocalDate) : this(YearWeek.from(date))
 
+    override operator fun plus(amount: Long) = Week(yearWeek.plusWeeks(amount))
+
     override fun toString() = yearWeek.toString()
   }
 
@@ -49,25 +70,13 @@ sealed interface TimeUnitInstance {
 
     constructor(date: LocalDate) : this(YearMonth.from(date))
 
+    override operator fun plus(amount: Long) = Month(yearMonth.plusMonths(amount))
+
     override fun toString() = yearMonth.toString()
   }
 }
 
-data class TimeBlock(
-  val timelineId: Int,
-  val start: TimeUnitInstance,
-  val end: TimeUnitInstance
-) {
-  val startDate: LocalDate
-    get() = start.startDate
-
-  val endDate: LocalDate
-    get() = end.endDate
-
-  constructor(
-    timelineId: Int,
-    timeUnitInstance: TimeUnitInstance
-  ) : this(timelineId = timelineId, start = timeUnitInstance, end = timeUnitInstance)
+data class Timeline(val id: Int, val timeBlockUnit: TimeUnit) {
+  val now
+    get() = timeBlockUnit.instanceFrom(LocalDate.now())
 }
-
-data class Timeline(val id: Int, val timeBlockUnit: TimeUnit, val timeBlockSize: Int)
