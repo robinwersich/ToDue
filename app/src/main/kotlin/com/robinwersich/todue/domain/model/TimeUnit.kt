@@ -5,10 +5,13 @@ import java.time.LocalDate
 import java.time.YearMonth
 import org.threeten.extra.YearWeek
 
-enum class TimeUnit(private val instanceConstructor: (LocalDate) -> TimeUnitInstance) {
-  DAY(TimeUnitInstance::Day),
-  WEEK(TimeUnitInstance::Week),
-  MONTH(TimeUnitInstance::Month);
+enum class TimeUnit(
+  val referenceSize: Float,
+  private val instanceConstructor: (LocalDate) -> TimeUnitInstance
+) {
+  DAY(1f, TimeUnitInstance::Day),
+  WEEK(7f, TimeUnitInstance::Week),
+  MONTH(30.5f, TimeUnitInstance::Month);
 
   fun instanceFrom(date: LocalDate) = instanceConstructor(date)
 }
@@ -79,4 +82,7 @@ sealed interface TimeUnitInstance {
 data class Timeline(val id: Int, val timeBlockUnit: TimeUnit) {
   val now
     get() = timeBlockUnit.instanceFrom(LocalDate.now())
+
+  operator fun compareTo(other: Timeline) =
+    timeBlockUnit.referenceSize.compareTo(other.timeBlockUnit.referenceSize)
 }
