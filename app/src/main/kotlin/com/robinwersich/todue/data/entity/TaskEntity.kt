@@ -5,8 +5,8 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.Task
-import com.robinwersich.todue.domain.model.TimeUnitInstance
 import java.time.Duration
 import java.time.LocalDate
 
@@ -47,7 +47,7 @@ fun TaskEntity.toModel() =
     id = id,
     text = text,
     // FIXME
-    scheduledTimeBlock = TimeUnitInstance.Day(scheduledEnd),
+    scheduledTimeBlock = Day(scheduledEnd),
     dueDate = dueDate,
     estimatedDuration = estimatedDuration,
     doneDate = doneDate

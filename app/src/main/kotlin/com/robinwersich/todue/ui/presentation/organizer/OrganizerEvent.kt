@@ -18,7 +18,7 @@ sealed interface ModifyTaskEvent {
 
   data class SetText(val text: String) : ModifyTaskEvent
 
-  data class SetTimeBlock(val timeBlock: TimeUnitInstance) : ModifyTaskEvent
+  data class SetTimeBlock(val timeBlock: TimeUnitInstance<*>) : ModifyTaskEvent
 
   data class SetDueDate(val date: LocalDate) : ModifyTaskEvent
 

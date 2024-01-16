@@ -14,7 +14,7 @@ enum class FocusLevel {
 data class TaskViewState(
   val id: Long = 0,
   val text: String = "",
-  val timeBlock: TimeUnitInstance? = null,
+  val timeBlock: TimeUnitInstance<*>? = null,
   val dueDate: LocalDate = LocalDate.now(),
   val doneDate: LocalDate? = null,
   val focusLevel: FocusLevel = FocusLevel.NEUTRAL,

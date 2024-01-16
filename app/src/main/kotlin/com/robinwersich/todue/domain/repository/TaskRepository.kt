@@ -14,7 +14,7 @@ interface TaskRepository {
 
   suspend fun setText(id: Long, text: String)
 
-  suspend fun setTimeBlock(id: Long, timeBlock: TimeUnitInstance)
+  suspend fun setTimeBlock(id: Long, timeBlock: TimeUnitInstance<*>)
 
   suspend fun setDueDate(id: Long, date: LocalDate)
 

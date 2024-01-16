@@ -4,8 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.Task
-import com.robinwersich.todue.domain.model.TimeUnitInstance
 import com.robinwersich.todue.domain.repository.TaskRepository
 import com.robinwersich.todue.toDueApplication
 import java.time.Duration
@@ -64,7 +64,7 @@ class OrganizerViewModel(
             taskRepository.insertTask(
               Task(
                 text = "",
-                scheduledTimeBlock = TimeUnitInstance.Day(),
+                scheduledTimeBlock = Day(),
                 estimatedDuration = Duration.ofHours(1),
                 dueDate = LocalDate.now()
               )

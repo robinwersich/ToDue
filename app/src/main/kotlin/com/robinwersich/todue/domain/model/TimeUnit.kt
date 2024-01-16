@@ -7,11 +7,11 @@ import org.threeten.extra.YearWeek
 
 enum class TimeUnit(
   val referenceSize: Float,
-  private val instanceConstructor: (LocalDate) -> TimeUnitInstance
+  private val instanceConstructor: (LocalDate) -> TimeUnitInstance<*>
 ) {
-  DAY(1f, TimeUnitInstance::Day),
-  WEEK(7f, TimeUnitInstance::Week),
-  MONTH(30.5f, TimeUnitInstance::Month);
+  DAY(1f, ::Day),
+  WEEK(7f, ::Week),
+  MONTH(30.5f, ::Month);
 
   fun instanceFrom(date: LocalDate) = instanceConstructor(date)
 }
@@ -21,8 +21,11 @@ enum class TimeUnit(
  * the time unit [week][TimeUnit.WEEK] is the week 2021-W02. All time unit instances can either be
  * created from a corresponding [Temporal][java.time.temporal.Temporal] or from a [LocalDate], which
  * results in the time unit instance that *contains* this date.
+ *
+ * @param T The type of the time unit instance. This is used to make sure that only instances of the
+ *   same time unit can be compared.
  */
-sealed interface TimeUnitInstance {
+sealed interface TimeUnitInstance<T : TimeUnitInstance<T>> {
   /** The earliest date that is contained in this time unit instance. */
   abstract val startDate: LocalDate
   /** The latest date that is contained in this time unit instance. */
@@ -31,52 +34,63 @@ sealed interface TimeUnitInstance {
   abstract val unit: TimeUnit
 
   /** Returns a new instance that is [amount] time units after this instance. */
-  abstract operator fun plus(amount: Long): TimeUnitInstance
+  abstract operator fun plus(amount: Long): T
   /** Returns a new instance that is [amount] time units before this instance. */
-  operator fun minus(amount: Long): TimeUnitInstance = this + -amount
+  operator fun minus(amount: Long): T = this + -amount
 
-  val sequence: Sequence<TimeUnitInstance>
-    get() = generateSequence(this) { it + 1 }
+  abstract operator fun compareTo(other: TimeUnitInstance<T>): Int
 
-  data class Day(val date: LocalDate = LocalDate.now()) : TimeUnitInstance {
-    override val unit: TimeUnit
-      get() = TimeUnit.DAY
+  val sequence: Sequence<T>
+    get() = generateSequence(this as T) { it + 1 }
+}
 
-    override val startDate: LocalDate = date
-    override val endDate: LocalDate = date
+data class Day(val date: LocalDate = LocalDate.now()) : TimeUnitInstance<Day> {
+  override val unit: TimeUnit
+    get() = TimeUnit.DAY
 
-    override operator fun plus(amount: Long) = Day(date.plusDays(amount))
+  override val startDate: LocalDate = date
+  override val endDate: LocalDate = date
 
-    override fun toString() = date.toString()
-  }
+  override operator fun plus(amount: Long) = Day(date.plusDays(amount))
 
-  data class Week(val yearWeek: YearWeek = YearWeek.now()) : TimeUnitInstance {
-    override val unit
-      get() = TimeUnit.WEEK
+  override operator fun compareTo(other: TimeUnitInstance<Day>) =
+    date.compareTo((other as Day).date)
 
-    override val startDate: LocalDate = yearWeek.atDay(DayOfWeek.MONDAY)
-    override val endDate: LocalDate = yearWeek.atDay(DayOfWeek.SUNDAY)
+  override fun toString() = date.toString()
+}
 
-    constructor(date: LocalDate) : this(YearWeek.from(date))
+data class Week(val yearWeek: YearWeek = YearWeek.now()) : TimeUnitInstance<Week> {
+  override val unit
+    get() = TimeUnit.WEEK
 
-    override operator fun plus(amount: Long) = Week(yearWeek.plusWeeks(amount))
+  override val startDate: LocalDate = yearWeek.atDay(DayOfWeek.MONDAY)
+  override val endDate: LocalDate = yearWeek.atDay(DayOfWeek.SUNDAY)
 
-    override fun toString() = yearWeek.toString()
-  }
+  constructor(date: LocalDate) : this(YearWeek.from(date))
 
-  data class Month(val yearMonth: YearMonth = YearMonth.now()) : TimeUnitInstance {
-    override val unit
-      get() = TimeUnit.MONTH
+  override operator fun plus(amount: Long) = Week(yearWeek.plusWeeks(amount))
 
-    override val startDate: LocalDate = yearMonth.atDay(1)
-    override val endDate: LocalDate = yearMonth.atEndOfMonth()
+  override operator fun compareTo(other: TimeUnitInstance<Week>) =
+    yearWeek.compareTo((other as Week).yearWeek)
 
-    constructor(date: LocalDate) : this(YearMonth.from(date))
+  override fun toString() = yearWeek.toString()
+}
 
-    override operator fun plus(amount: Long) = Month(yearMonth.plusMonths(amount))
+data class Month(val yearMonth: YearMonth = YearMonth.now()) : TimeUnitInstance<Month> {
+  override val unit
+    get() = TimeUnit.MONTH
 
-    override fun toString() = yearMonth.toString()
-  }
+  override val startDate: LocalDate = yearMonth.atDay(1)
+  override val endDate: LocalDate = yearMonth.atEndOfMonth()
+
+  constructor(date: LocalDate) : this(YearMonth.from(date))
+
+  override operator fun plus(amount: Long) = Month(yearMonth.plusMonths(amount))
+
+  override operator fun compareTo(other: TimeUnitInstance<Month>) =
+    yearMonth.compareTo((other as Month).yearMonth)
+
+  override fun toString() = yearMonth.toString()
 }
 
 data class Timeline(val id: Int, val timeBlockUnit: TimeUnit) {
