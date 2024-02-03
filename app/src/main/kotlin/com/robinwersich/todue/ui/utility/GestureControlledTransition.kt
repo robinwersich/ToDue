@@ -24,31 +24,47 @@ fun <S, T> AnchoredDraggableState<S>.animateValue(
   targetValueByAnchor: (anchor: S) -> T
 ): State<T> {
   return remember(interpolateValue, targetValueByAnchor) {
-    derivedStateOf {
-      val currentAnchors = anchors
-      if (
-        offset.isNaN() ||
-          currentAnchors.size == 0 ||
-          currentAnchors.positionOf(currentValue) == offset
-      ) {
-        return@derivedStateOf targetValueByAnchor(currentValue)
-      }
-
-      val prevAnchor = currentAnchors.closestAnchor(offset, searchUpwards = false)!!
-      val nextAnchor = currentAnchors.closestAnchor(offset, searchUpwards = true)!!
-
-      val prevAnchorPosition = currentAnchors.positionOf(prevAnchor)
-      val nextAnchorPosition = currentAnchors.positionOf(nextAnchor)
-      val prevValue = targetValueByAnchor(prevAnchor)
-      val nextValue = targetValueByAnchor(nextAnchor)
-
-      if (prevValue == nextValue) return@derivedStateOf prevValue
-
-      return@derivedStateOf interpolateValue(
-        prevValue,
-        nextValue,
-        (offset - prevAnchorPosition) / (nextAnchorPosition - prevAnchorPosition)
-      )
-    }
+    derivedStateOf { getInterpolatedValue(interpolateValue, targetValueByAnchor) }
   }
 }
+
+/**
+ * Returns a smoothly interpolated value derived from the current [AnchoredDraggableState] value.
+ *
+ * @param interpolateValue A function that interpolates between two values of the target type.
+ * @param targetValueByAnchor A function that returns the target value for a given anchor.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+fun <S, T> AnchoredDraggableState<S>.getInterpolatedValue(
+  interpolateValue: (start: T, end: T, progress: Float) -> T,
+  targetValueByAnchor: (anchor: S) -> T
+): T {
+  val currentAnchors = anchors
+  if (
+    offset.isNaN() || currentAnchors.size == 0 || currentAnchors.positionOf(currentValue) == offset
+  ) {
+    return targetValueByAnchor(currentValue)
+  }
+
+  val prevAnchor = currentAnchors.closestAnchor(offset, searchUpwards = false)!!
+  val nextAnchor = currentAnchors.closestAnchor(offset, searchUpwards = true)!!
+
+  val prevAnchorPosition = currentAnchors.positionOf(prevAnchor)
+  val nextAnchorPosition = currentAnchors.positionOf(nextAnchor)
+  val prevValue = targetValueByAnchor(prevAnchor)
+  val nextValue = targetValueByAnchor(nextAnchor)
+
+  return if (prevValue == nextValue) {
+    prevValue
+  } else {
+    interpolateValue(
+      prevValue,
+      nextValue,
+      (offset - prevAnchorPosition) / (nextAnchorPosition - prevAnchorPosition)
+    )
+  }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+val <S> AnchoredDraggableState<S>.isSettled: Boolean
+  get() = anchors.positionOf(currentValue) == offset

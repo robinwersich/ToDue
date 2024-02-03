@@ -40,6 +40,7 @@ sealed interface TimeUnitInstance<T : TimeUnitInstance<T>> {
 
   abstract operator fun compareTo(other: TimeUnitInstance<T>): Int
 
+  @Suppress("UNCHECKED_CAST")
   val sequence: Sequence<T>
     get() = generateSequence(this as T) { it + 1 }
 }
@@ -93,10 +94,3 @@ data class Month(val yearMonth: YearMonth = YearMonth.now()) : TimeUnitInstance<
   override fun toString() = yearMonth.toString()
 }
 
-data class Timeline(val id: Int, val timeBlockUnit: TimeUnit) {
-  val now
-    get() = timeBlockUnit.instanceFrom(LocalDate.now())
-
-  operator fun compareTo(other: Timeline) =
-    timeBlockUnit.referenceSize.compareTo(other.timeBlockUnit.referenceSize)
-}

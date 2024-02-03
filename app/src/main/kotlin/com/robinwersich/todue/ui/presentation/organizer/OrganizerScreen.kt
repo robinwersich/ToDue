@@ -64,8 +64,8 @@ fun OrganizerScreen(state: OrganizerState, onEvent: (OrganizerEvent) -> Unit = {
         NavigationState(
           timelines = timelines,
           organizerSize = IntSize(maxWidth, maxHeight),
-          timelinePositionalThreshold = { it * positionalThreshold },
-          timelineVelocityThreshold = { velocityThreshold },
+          positionalThreshold = { it * positionalThreshold },
+          velocityThreshold = { velocityThreshold },
           childTimelineSizeFraction = childTimelineSizeFraction,
         )
       }
