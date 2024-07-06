@@ -40,9 +40,12 @@ android {
   packaging { resources { excludes.add("/META-INF/{AL2.0,LGPL2.1}") } }
 }
 
-composeCompiler { enableStrongSkippingMode = true }
+composeCompiler {
+  enableStrongSkippingMode = true
+  stabilityConfigurationFile = project.layout.projectDirectory.file("compose-stability.conf")
+}
 
-room { schemaDirectory("$projectDir/schemas") }
+room { schemaDirectory(project.layout.projectDirectory.dir("schemas").toString()) }
 
 ksp { arg("room.generateKotlin", "true") }
 
