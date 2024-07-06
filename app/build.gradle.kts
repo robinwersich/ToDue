@@ -51,18 +51,18 @@ ksp { arg("room.generateKotlin", "true") }
 
 dependencies {
   // Core Android Libraries
-  implementation("androidx.core:core-ktx:1.10.1")
-  implementation("androidx.activity:activity-compose:1.7.2")
-  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.1")
-  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+  implementation("androidx.core:core-ktx:1.13.1")
+  implementation("androidx.activity:activity-compose:1.9.0")
+  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.3")
+  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
 
   // Compose
-  val composeUiVersion = "1.6.0-beta03"
+  val composeUiVersion = "1.6.8"
   implementation("androidx.compose.ui:ui:$composeUiVersion")
   implementation("androidx.compose.ui:ui-tooling-preview:$composeUiVersion")
   debugImplementation("androidx.compose.ui:ui-tooling:$composeUiVersion")
   debugImplementation("androidx.compose.ui:ui-test-manifest:$composeUiVersion")
-  implementation("androidx.compose.material3:material3:1.2.0-beta01")
+  implementation("androidx.compose.material3:material3:1.2.1")
 
   // Room
   val roomVersion = "2.6.1"
@@ -71,7 +71,7 @@ dependencies {
   implementation("androidx.room:room-ktx:$roomVersion")
 
   // Paging
-  val pagingVersion = "3.2.1"
+  val pagingVersion = "3.3.0"
   implementation("androidx.paging:paging-runtime:$pagingVersion")
   implementation("androidx.paging:paging-compose:$pagingVersion")
 
@@ -81,10 +81,10 @@ dependencies {
 
   // Tests
   testImplementation("junit:junit:4.13.2")
-  androidTestImplementation("androidx.test.ext:junit:1.1.5")
-  androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+  androidTestImplementation("androidx.test.ext:junit:1.2.1")
+  androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
   androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeUiVersion")
 
   // Desugaring
-  coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.3")
+  coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
