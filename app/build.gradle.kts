@@ -1,6 +1,7 @@
 plugins {
   id("com.android.application")
   kotlin("android")
+  kotlin("plugin.compose")
   id("com.google.devtools.ksp")
   id("androidx.room")
 }
@@ -36,9 +37,10 @@ android {
   }
   kotlinOptions { jvmTarget = "1.8" }
   buildFeatures { compose = true }
-  composeOptions { kotlinCompilerExtensionVersion = "1.5.2" }
   packaging { resources { excludes.add("/META-INF/{AL2.0,LGPL2.1}") } }
 }
+
+composeCompiler { enableStrongSkippingMode = true }
 
 room { schemaDirectory("$projectDir/schemas") }
 
