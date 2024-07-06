@@ -17,7 +17,7 @@ class DatabaseTaskRepository(private val taskDao: TaskDao) : TaskRepository {
   override suspend fun deleteTask(id: Long) = taskDao.delete(id)
 
   override suspend fun setTimeBlock(id: Long, timeBlock: TimeUnitInstance<*>) =
-    taskDao.setScheduledRange(id, startDate = timeBlock.startDate, endDate = timeBlock.endDate)
+    taskDao.setScheduledRange(id, startDate = timeBlock.start, endDate = timeBlock.endInclusive)
 
   override suspend fun setDueDate(id: Long, date: LocalDate) = taskDao.setDueDate(id, date)
 

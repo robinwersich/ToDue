@@ -60,21 +60,21 @@ class NavigationState(
     get() = taskBlockDraggableState.currentValue
 
   private val currentTimeBlock
-    get() = currentTimeline.timeBlockUnit.instanceFrom(currentDate)
+    get() = currentTimeline.timeUnit.instanceFrom(currentDate)
 
   val visibleDateRange by derivedStateOf {
     if (!timelineDraggableState.isSettled) {
       timelineDraggableState.getInterpolatedValue(
         interpolateValue = { start, end, progress -> start.interpolateTo(end, progress) },
-        targetValueByAnchor = { getVisibleDateRange(currentTimeBlock, it) }
+        targetValueByAnchor = { getVisibleDateRange(currentTimeBlock, it) },
       )
     } else {
       taskBlockDraggableState.getInterpolatedValue(
         interpolateValue = { start, end, progress -> start.interpolateTo(end, progress) },
         targetValueByAnchor = {
-          val timeBlock = currentTimeline.timeBlockUnit.instanceFrom(it)
+          val timeBlock = currentTimeline.timeUnit.instanceFrom(it)
           getVisibleDateRange(timeBlock, currentVisibleTimelines)
-        }
+        },
       )
     }
   }
@@ -85,12 +85,12 @@ class NavigationState(
 
   fun update(
     newTimelines: List<Timeline> = this.timelines,
-    newOrganizerSize: IntSize = this.organizerSize
+    newOrganizerSize: IntSize = this.organizerSize,
   ) {
     timelines = newTimelines
     organizerSize = newOrganizerSize
     timelineDraggableState.updateAnchors(getTimelineAnchors(newTimelines))
-    val currentTimeBlock = currentTimeline.timeBlockUnit.instanceFrom(currentDate)
+    val currentTimeBlock = currentTimeline.timeUnit.instanceFrom(currentDate)
     taskBlockDraggableState.updateAnchors(getTaskBlockAnchors(currentTimeBlock))
   }
 
@@ -123,34 +123,34 @@ class NavigationState(
       val prevTimeBlock = currentTimeBlock - 1
       val nextTimeBlock = currentTimeBlock + 1
 
-      prevTimeBlock.startDate at getSwipeDistance(prevTimeBlock)
+      prevTimeBlock.start at getSwipeDistance(prevTimeBlock)
       currentDate at 0f
-      nextTimeBlock.startDate at getSwipeDistance(nextTimeBlock)
+      nextTimeBlock.start at getSwipeDistance(nextTimeBlock)
     }
   }
 
   private fun getVisibleDateRange(
     timeBlock: TimeUnitInstance<*>,
-    visibleTimelines: VisibleTimelines
+    visibleTimelines: VisibleTimelines,
   ): ClosedFloatingPointRange<Double> {
     return when (visibleTimelines) {
       is VisibleTimelines.Single -> {
-        val start = timeBlock.startDate.toEpochDay().toDouble()
-        val end = timeBlock.endDate.toEpochDay().toDouble()
+        val start = timeBlock.start.toEpochDay().toDouble()
+        val end = timeBlock.endInclusive.toEpochDay().toDouble()
         start..end
       }
       is VisibleTimelines.Double -> {
         // TODO: better formatting
         val start =
-          visibleTimelines.child.timeBlockUnit
-            .instanceFrom(timeBlock.startDate)
-            .startDate
+          visibleTimelines.child.timeUnit
+            .instanceFrom(timeBlock.start)
+            .start
             .toEpochDay()
             .toDouble()
         val end =
-          visibleTimelines.parent.timeBlockUnit
-            .instanceFrom(timeBlock.endDate)
-            .endDate
+          visibleTimelines.parent.timeUnit
+            .instanceFrom(timeBlock.endInclusive)
+            .endInclusive
             .toEpochDay()
             .toDouble()
         start..end

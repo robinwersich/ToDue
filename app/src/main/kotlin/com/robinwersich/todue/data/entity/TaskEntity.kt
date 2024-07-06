@@ -59,8 +59,8 @@ fun Task.toEntity() =
     text = text,
     // FIXME
     timelineId = 0,
-    scheduledStart = scheduledTimeBlock.startDate,
-    scheduledEnd = scheduledTimeBlock.endDate,
+    scheduledStart = scheduledTimeBlock.start,
+    scheduledEnd = scheduledTimeBlock.endInclusive,
     dueDate = dueDate,
     estimatedDuration = estimatedDuration,
     doneDate = doneDate

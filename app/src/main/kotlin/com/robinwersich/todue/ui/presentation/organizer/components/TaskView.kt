@@ -57,11 +57,10 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.Day
-import com.robinwersich.todue.domain.model.TimeUnitInstance
+import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.ui.presentation.organizer.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.ModifyTaskEvent
 import com.robinwersich.todue.ui.presentation.organizer.TaskViewState
-import com.robinwersich.todue.ui.presentation.utility.displayName
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.ui.utility.DebouncedUpdate
 import com.robinwersich.todue.ui.utility.signedPadding
@@ -71,7 +70,7 @@ import java.time.LocalDate
 fun TaskView(
   state: TaskViewState,
   modifier: Modifier = Modifier,
-  onEvent: (ModifyTaskEvent) -> Unit = {}
+  onEvent: (ModifyTaskEvent) -> Unit = {},
 ) {
   TaskView(
     text = state.text,
@@ -88,7 +87,7 @@ fun TaskView(
 @Composable
 fun TaskView(
   text: String,
-  timeBlock: TimeUnitInstance<*>?,
+  timeBlock: TimeBlock?,
   dueDate: LocalDate,
   doneDate: LocalDate?,
   focusLevel: FocusLevel,
@@ -119,7 +118,7 @@ fun TaskView(
           checked = doneDate != null,
           onCheckedChange = { onEvent(ModifyTaskEvent.SetDone(it)) },
           enabled = focusLevel != FocusLevel.BACKGROUND,
-          modifier = Modifier.width(checkBoxWidth)
+          modifier = Modifier.width(checkBoxWidth),
         )
 
         val textColor =
@@ -131,7 +130,7 @@ fun TaskView(
           DebouncedUpdate(
             value = text,
             onValueChanged = { onEvent(ModifyTaskEvent.SetText(it)) },
-            emitUpdates = focusLevel == FocusLevel.FOCUSSED
+            emitUpdates = focusLevel == FocusLevel.FOCUSSED,
           ) {
             val (cachedText, setCachedText) = it
             BasicTextField(
@@ -140,7 +139,7 @@ fun TaskView(
               enabled = focusLevel == FocusLevel.FOCUSSED,
               textStyle = textStyle,
               cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-              modifier = Modifier.focusRequester(focusRequester)
+              modifier = Modifier.focusRequester(focusRequester),
             )
           }
           // put task info here if collapsed
@@ -151,7 +150,7 @@ fun TaskView(
       focusTransition.AnimatedVisibility(
         visible = { it == FocusLevel.FOCUSSED },
         enter = fadeIn() + expandVertically(expandFrom = animationAnchor),
-        exit = fadeOut() + shrinkVertically(shrinkTowards = animationAnchor)
+        exit = fadeOut() + shrinkVertically(shrinkTowards = animationAnchor),
       ) {
         TaskProperties(
           timeBlock = timeBlock,
@@ -159,7 +158,7 @@ fun TaskView(
           onEvent = onEvent,
           modifier =
             Modifier.padding(start = checkBoxWidth)
-              .wrapContentHeight(animationAnchor, unbounded = true)
+              .wrapContentHeight(animationAnchor, unbounded = true),
         )
       }
     }
@@ -177,19 +176,19 @@ private fun TaskCheckbox(
     checked = checked,
     onCheckedChange = onCheckedChange,
     enabled = enabled,
-    modifier = modifier
+    modifier = modifier,
   ) {
     Icon(
       painter =
         painterResource(if (checked) R.drawable.circle_checked else R.drawable.circle_unchecked),
-      contentDescription = null
+      contentDescription = null,
     )
   }
 }
 
 @Composable
 private fun TaskProperties(
-  timeBlock: TimeUnitInstance<*>?,
+  timeBlock: TimeBlock?,
   dueDate: LocalDate,
   onEvent: (ModifyTaskEvent) -> Unit,
   modifier: Modifier = Modifier,
@@ -206,26 +205,23 @@ private fun TaskProperties(
     HorizontalDivider()
     Row(
       horizontalArrangement = Arrangement.End,
-      modifier = Modifier.signedPadding(end = (-12).dp)
+      modifier = Modifier.signedPadding(end = (-12).dp),
     ) {
       TaskAction(
         R.drawable.delete,
         onClick = { onEvent(ModifyTaskEvent.Delete) },
-        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End)
+        modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End),
       )
     }
   }
 }
 
 @Composable
-private fun ScheduledTimeBlockProperty(
-  timeBlock: TimeUnitInstance<*>?,
-  onEvent: (ModifyTaskEvent) -> Unit
-) {
+private fun ScheduledTimeBlockProperty(timeBlock: TimeBlock?, onEvent: (ModifyTaskEvent) -> Unit) {
   var showSelection by rememberSaveable { mutableStateOf(false) }
   if (showSelection) {
     DueDatePicker(
-      initialSelection = timeBlock?.endDate ?: LocalDate.now(),
+      initialSelection = timeBlock?.endInclusive ?: LocalDate.now(),
       onConfirm = {
         // TODO: put meaningful timeline ID here
         onEvent(ModifyTaskEvent.SetTimeBlock(Day(it)))
@@ -260,7 +256,7 @@ private fun TaskProperty(
   @DrawableRes iconId: Int,
   text: String,
   onClick: () -> Unit,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
 ) {
   // additional space for the ripple effect, does not influence layout
   val clickAreaMargin = 8.dp
@@ -285,7 +281,7 @@ private fun TaskProperty(
 private fun TaskAction(
   @DrawableRes iconId: Int,
   onClick: () -> Unit,
-  modifier: Modifier = Modifier
+  modifier: Modifier = Modifier,
 ) {
   IconButton(onClick = onClick, modifier = modifier) {
     Icon(painterResource(id = iconId), contentDescription = null)
@@ -301,7 +297,7 @@ class TaskPreviewProvider : PreviewParameterProvider<TaskViewState> {
       yield(
         TaskViewState(
           text = "This is a relatively long task spanning over two lines.",
-          focusLevel = focusLevel
+          focusLevel = focusLevel,
         )
       )
     }
