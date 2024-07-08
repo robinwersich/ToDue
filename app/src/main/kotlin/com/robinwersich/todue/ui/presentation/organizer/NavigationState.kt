@@ -1,6 +1,7 @@
 package com.robinwersich.todue.ui.presentation.organizer
 
 import androidx.annotation.FloatRange
+import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.AnchoredDraggableState
@@ -34,16 +35,18 @@ class NavigationState(
   val timelineDraggableState: AnchoredDraggableState<VisibleTimelines> =
     AnchoredDraggableState(
       initialValue = VisibleTimelines.Single(timelines[initialTimelineIndex]),
+      snapAnimationSpec = tween(),
+      decayAnimationSpec = exponentialDecay(),
       positionalThreshold = positionalThreshold,
       velocityThreshold = velocityThreshold,
-      animationSpec = tween(),
     )
   val taskBlockDraggableState: AnchoredDraggableState<LocalDate> =
     AnchoredDraggableState(
       initialValue = initialDate,
+      snapAnimationSpec = tween(),
+      decayAnimationSpec = exponentialDecay(),
       positionalThreshold = positionalThreshold,
       velocityThreshold = velocityThreshold,
-      animationSpec = tween(),
     )
 
   private val currentVisibleTimelines: VisibleTimelines

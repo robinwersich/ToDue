@@ -57,11 +57,12 @@ dependencies {
   implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
 
   // Compose
-  val composeUiVersion = "1.6.8"
-  implementation("androidx.compose.ui:ui:$composeUiVersion")
-  implementation("androidx.compose.ui:ui-tooling-preview:$composeUiVersion")
-  debugImplementation("androidx.compose.ui:ui-tooling:$composeUiVersion")
-  debugImplementation("androidx.compose.ui:ui-test-manifest:$composeUiVersion")
+  val composeVersion = "1.7.0-beta04"
+  implementation("androidx.compose.ui:ui:$composeVersion")
+  implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
+  debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
+  debugImplementation("androidx.compose.ui:ui-test-manifest:$composeVersion")
+  implementation("androidx.compose.foundation:foundation:$composeVersion")
   implementation("androidx.compose.material3:material3:1.2.1")
 
   // Room
@@ -83,7 +84,7 @@ dependencies {
   testImplementation("junit:junit:4.13.2")
   androidTestImplementation("androidx.test.ext:junit:1.2.1")
   androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-  androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeUiVersion")
+  androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
 
   // Desugaring
   coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
