@@ -16,7 +16,7 @@ interface TimeBlock : ClosedRange<LocalDate> {
  */
 enum class TimeUnit(
   val referenceSize: Float,
-  private val instanceConstructor: (LocalDate) -> TimeUnitInstance<*>,
+  private val instanceConstructor: (LocalDate) -> TimeUnitInstance,
 ) {
   DAY(1f, ::Day),
   WEEK(7f, ::Week),
@@ -34,17 +34,16 @@ enum class TimeUnit(
  * @param T The type of the time unit instance. This is used to make sure that only instances of the
  *   same time unit can be compared.
  */
-sealed interface TimeUnitInstance<T : TimeUnitInstance<T>> :
-  TimeBlock, Comparable<TimeUnitInstance<T>> {
+sealed interface TimeUnitInstance : TimeBlock, Comparable<TimeUnitInstance> {
 
   /** The [TimeUnit] enum entry of this instance. */
   val unit: TimeUnit
 
   /** Returns a new instance that is [amount] time units after this instance. */
-  operator fun plus(amount: Long): T
+  operator fun plus(amount: Long): TimeUnitInstance
 
   /** Returns a new instance that is [amount] time units before this instance. */
-  operator fun minus(amount: Long): T = this + -amount
+  operator fun minus(amount: Long) = this + -amount
 
   /** Returns the next [TimeUnitInstance]. */
   operator fun inc() = this + 1
@@ -52,11 +51,10 @@ sealed interface TimeUnitInstance<T : TimeUnitInstance<T>> :
   /** Returns the previous [TimeUnitInstance]. */
   operator fun dec() = this - 1
 
-  @Suppress("UNCHECKED_CAST")
-  operator fun rangeTo(other: TimeUnitInstance<T>) = TimeUnitInstanceRange(this as T, other as T)
+  operator fun rangeTo(other: TimeUnitInstance) = TimeUnitInstanceRange(this, other)
 }
 
-data class Day(val date: LocalDate = LocalDate.now()) : TimeUnitInstance<Day> {
+data class Day(val date: LocalDate = LocalDate.now()) : TimeUnitInstance {
   override val unit
     get() = TimeUnit.DAY
 
@@ -66,13 +64,15 @@ data class Day(val date: LocalDate = LocalDate.now()) : TimeUnitInstance<Day> {
 
   override operator fun plus(amount: Long) = Day(date.plusDays(amount))
 
-  override operator fun compareTo(other: TimeUnitInstance<Day>) =
-    date.compareTo((other as Day).date)
+  override operator fun compareTo(other: TimeUnitInstance): Int {
+    require(other is Day) { "Cannot compare different time units." }
+    return date.compareTo(other.date)
+  }
 
   override fun toString() = date.toString()
 }
 
-data class Week(val yearWeek: YearWeek = YearWeek.now()) : TimeUnitInstance<Week> {
+data class Week(val yearWeek: YearWeek = YearWeek.now()) : TimeUnitInstance {
   override val unit
     get() = TimeUnit.WEEK
 
@@ -84,13 +84,15 @@ data class Week(val yearWeek: YearWeek = YearWeek.now()) : TimeUnitInstance<Week
 
   override operator fun plus(amount: Long) = Week(yearWeek.plusWeeks(amount))
 
-  override operator fun compareTo(other: TimeUnitInstance<Week>) =
-    yearWeek.compareTo((other as Week).yearWeek)
+  override operator fun compareTo(other: TimeUnitInstance): Int {
+    require(other is Week) { "Cannot compare different time units." }
+    return yearWeek.compareTo(other.yearWeek)
+  }
 
   override fun toString() = yearWeek.toString()
 }
 
-data class Month(val yearMonth: YearMonth = YearMonth.now()) : TimeUnitInstance<Month> {
+data class Month(val yearMonth: YearMonth = YearMonth.now()) : TimeUnitInstance {
   override val unit
     get() = TimeUnit.MONTH
 
@@ -102,18 +104,24 @@ data class Month(val yearMonth: YearMonth = YearMonth.now()) : TimeUnitInstance<
 
   override operator fun plus(amount: Long) = Month(yearMonth.plusMonths(amount))
 
-  override operator fun compareTo(other: TimeUnitInstance<Month>) =
-    yearMonth.compareTo((other as Month).yearMonth)
+  override operator fun compareTo(other: TimeUnitInstance): Int {
+    require(other is Month) { "Cannot compare different time units." }
+    return yearMonth.compareTo(other.yearMonth)
+  }
 
   override fun toString() = yearMonth.toString()
 }
 
-class TimeUnitInstanceRange<T : TimeUnitInstance<T>>(
-  override val start: T,
-  override val endInclusive: T,
-) : ClosedRange<T>, Sequence<T>, Iterable<T> {
+class TimeUnitInstanceRange(
+  override val start: TimeUnitInstance,
+  override val endInclusive: TimeUnitInstance,
+) : ClosedRange<TimeUnitInstance>, Sequence<TimeUnitInstance>, Iterable<TimeUnitInstance> {
+  init {
+    require(start.unit == endInclusive.unit) { "Cannot create range from different time units." }
+  }
+
   override fun iterator() =
-    object : Iterator<T> {
+    object : Iterator<TimeUnitInstance> {
       private var current = start
 
       override fun hasNext() = current <= endInclusive

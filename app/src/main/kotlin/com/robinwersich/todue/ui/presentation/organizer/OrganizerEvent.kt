@@ -1,6 +1,6 @@
 package com.robinwersich.todue.ui.presentation.organizer
 
-import com.robinwersich.todue.domain.model.TimeUnitInstance
+import com.robinwersich.todue.domain.model.TimeBlock
 import java.time.LocalDate
 
 sealed interface OrganizerEvent
@@ -18,7 +18,7 @@ sealed interface ModifyTaskEvent {
 
   data class SetText(val text: String) : ModifyTaskEvent
 
-  data class SetTimeBlock(val timeBlock: TimeUnitInstance<*>) : ModifyTaskEvent
+  data class SetTimeBlock(val timeBlock: TimeBlock) : ModifyTaskEvent
 
   data class SetDueDate(val date: LocalDate) : ModifyTaskEvent
 

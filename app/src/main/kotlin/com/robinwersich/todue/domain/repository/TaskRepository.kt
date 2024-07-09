@@ -1,7 +1,7 @@
 package com.robinwersich.todue.domain.repository
 
 import com.robinwersich.todue.domain.model.Task
-import com.robinwersich.todue.domain.model.TimeUnitInstance
+import com.robinwersich.todue.domain.model.TimeBlock
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 
@@ -14,7 +14,7 @@ interface TaskRepository {
 
   suspend fun setText(id: Long, text: String)
 
-  suspend fun setTimeBlock(id: Long, timeBlock: TimeUnitInstance<*>)
+  suspend fun setTimeBlock(id: Long, timeBlock: TimeBlock)
 
   suspend fun setDueDate(id: Long, date: LocalDate)
 

@@ -108,12 +108,10 @@ class NavigationState(
       }
     }
 
-  private fun <T : TimeUnitInstance<T>> getTaskBlockAnchors(
-    currentTimeBlock: TimeUnitInstance<T>
-  ): DraggableAnchors<LocalDate> {
+  private fun getTaskBlockAnchors(currentTimeBlock: TimeUnitInstance): DraggableAnchors<LocalDate> {
     val currentDateRange = getVisibleDateRange(currentTimeBlock, currentVisibleTimelines)
 
-    fun getSwipeDistance(timeBlock: T): Float {
+    fun getSwipeDistance(timeBlock: TimeUnitInstance): Float {
       val dateRange = getVisibleDateRange(timeBlock, currentVisibleTimelines)
       val dateDistance =
         if (timeBlock > currentTimeBlock) (currentDateRange.start - dateRange.start)
@@ -133,7 +131,7 @@ class NavigationState(
   }
 
   private fun getVisibleDateRange(
-    timeBlock: TimeUnitInstance<*>,
+    timeBlock: TimeUnitInstance,
     visibleTimelines: VisibleTimelines,
   ): ClosedFloatingPointRange<Double> {
     return when (visibleTimelines) {
