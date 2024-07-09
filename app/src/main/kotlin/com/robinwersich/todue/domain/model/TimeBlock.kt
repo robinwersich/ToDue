@@ -5,8 +5,8 @@ import java.time.LocalDate
 import java.time.YearMonth
 import org.threeten.extra.YearWeek
 
-/** A time range with a name */
-interface TimeBlock : ClosedRange<LocalDate> {
+/** A date range with a name */
+interface TimeBlock : DateRange {
   /** The human-readable name of this block. */
   val displayName: String
 }
@@ -46,10 +46,10 @@ sealed interface TimeUnitInstance : TimeBlock, Comparable<TimeUnitInstance> {
   operator fun minus(amount: Long) = this + -amount
 
   /** Returns the next [TimeUnitInstance]. */
-  operator fun inc() = this + 1
+  fun next() = this + 1
 
   /** Returns the previous [TimeUnitInstance]. */
-  operator fun dec() = this - 1
+  fun previous() = this - 1
 
   operator fun rangeTo(other: TimeUnitInstance) = TimeUnitInstanceRange(this, other)
 }
@@ -115,17 +115,23 @@ data class Month(val yearMonth: YearMonth = YearMonth.now()) : TimeUnitInstance 
 class TimeUnitInstanceRange(
   override val start: TimeUnitInstance,
   override val endInclusive: TimeUnitInstance,
-) : ClosedRange<TimeUnitInstance>, Sequence<TimeUnitInstance>, Iterable<TimeUnitInstance> {
+) : ClosedRange<TimeUnitInstance>, Sequence<TimeUnitInstance> {
   init {
     require(start.unit == endInclusive.unit) { "Cannot create range from different time units." }
   }
 
-  override fun iterator() =
+  override fun iterator(): Iterator<TimeUnitInstance> =
     object : Iterator<TimeUnitInstance> {
-      private var current = start
+      private var next: TimeUnitInstance? = start
 
-      override fun hasNext() = current <= endInclusive
+      override fun hasNext() = next != null
 
-      override fun next() = current++
+      override fun next(): TimeUnitInstance {
+        next?.let {
+          next = if (it == endInclusive) null else it.next()
+          return it
+        }
+        throw NoSuchElementException()
+      }
     }
 }
