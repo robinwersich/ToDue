@@ -43,6 +43,7 @@ android {
 composeCompiler {
   enableStrongSkippingMode = true
   stabilityConfigurationFile = project.layout.projectDirectory.file("compose-stability.conf")
+  reportsDestination = project.layout.buildDirectory.dir("reports")
 }
 
 room { schemaDirectory(project.layout.projectDirectory.dir("schemas").toString()) }
