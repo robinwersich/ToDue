@@ -22,9 +22,9 @@ data class TimelineNavigationPosition(
   }
 
   /**
-   * Creates a new [TimelineNavigationPosition] based on a list of [Timeline]s.
+   * Creates a new [TimelineNavigationPosition] based on a list of [Timelines][Timeline].
    *
-   * @param sortedTimelines A list of [Timeline]s, sorted by their time unit size.
+   * @param sortedTimelines A list of [Timelines][Timeline], sorted by their time unit size.
    * @param index The index of the main timeline of this position in the [sortedTimelines] list.
    * @param showChild Whether the child timeline should be visible.
    */
@@ -40,10 +40,10 @@ data class TimelineNavigationPosition(
   )
 
   /**
-   * Creates a new [TimelineNavigationPosition] based on a list of [Timeline]s and a focussed
-   * timeline.
+   * Creates a new [TimelineNavigationPosition] based on a list of [Timelines][Timeline] and a
+   * focussed timeline.
    *
-   * @param sortedTimelines A list of [Timeline]s, sorted by their time unit size.
+   * @param sortedTimelines A list of [Timelines][Timeline], sorted by their time unit size.
    * @param focussedTimeline The main timeline of this position. If it is not in the list, the first
    *   timeline will be used.
    * @param showChild Whether the child timeline should be visible.
