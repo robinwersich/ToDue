@@ -30,9 +30,6 @@ enum class TimeUnit(
  * the time unit [week][TimeUnit.WEEK] is the week 2021-W02. All time unit instances can either be
  * created from a corresponding [Temporal][java.time.temporal.Temporal] or from a [LocalDate], which
  * results in the time unit instance that *contains* this date.
- *
- * @param T The type of the time unit instance. This is used to make sure that only instances of the
- *   same time unit can be compared.
  */
 sealed interface TimeUnitInstance : TimeBlock, Comparable<TimeUnitInstance> {
 
@@ -62,6 +59,8 @@ data class Day(val date: LocalDate = LocalDate.now()) : TimeUnitInstance {
   override val endInclusive: LocalDate = date
   override val displayName: String = date.toString()
 
+  constructor(year: Int, month: Int, day: Int) : this(LocalDate.of(year, month, day))
+
   override operator fun plus(amount: Long) = Day(date.plusDays(amount))
 
   override operator fun compareTo(other: TimeUnitInstance): Int {
@@ -79,6 +78,8 @@ data class Week(val yearWeek: YearWeek = YearWeek.now()) : TimeUnitInstance {
   override val start: LocalDate = yearWeek.atDay(DayOfWeek.MONDAY)
   override val endInclusive: LocalDate = yearWeek.atDay(DayOfWeek.SUNDAY)
   override val displayName: String = "$start - $endInclusive"
+
+  constructor(weekBasedYear: Int, week: Int) : this(YearWeek.of(weekBasedYear, week))
 
   constructor(date: LocalDate) : this(YearWeek.from(date))
 
@@ -99,6 +100,8 @@ data class Month(val yearMonth: YearMonth = YearMonth.now()) : TimeUnitInstance 
   override val start: LocalDate = yearMonth.atDay(1)
   override val endInclusive: LocalDate = yearMonth.atEndOfMonth()
   override val displayName: String = yearMonth.toString()
+
+  constructor(year: Int, month: Int) : this(YearMonth.of(year, month))
 
   constructor(date: LocalDate) : this(YearMonth.from(date))
 
