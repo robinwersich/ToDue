@@ -1,12 +1,9 @@
 package com.robinwersich.todue.domain.model
 
+import com.google.common.truth.Truth.assertThat
 import java.time.LocalDate
-import java.time.YearMonth
 import kotlin.test.assertFailsWith
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.threeten.extra.YearWeek
 
 class TimeBlockTest {
   @Test
@@ -14,30 +11,30 @@ class TimeBlockTest {
     val date = LocalDate.of(2020, 1, 1)
 
     val dayBlock = TimeUnit.DAY.instanceFrom(date)
-    assertEquals(date, dayBlock.start)
-    assertEquals(date, dayBlock.endInclusive)
+    assertThat(dayBlock.start).isEqualTo(date)
+    assertThat(dayBlock.endInclusive).isEqualTo(date)
 
     val weekBlock = TimeUnit.WEEK.instanceFrom(date)
-    assertEquals(LocalDate.of(2019, 12, 30), weekBlock.start)
-    assertEquals(LocalDate.of(2020, 1, 5), weekBlock.endInclusive)
+    assertThat(weekBlock.start).isEqualTo(LocalDate.of(2019, 12, 30))
+    assertThat(weekBlock.endInclusive).isEqualTo(LocalDate.of(2020, 1, 5))
 
     val monthBlock = TimeUnit.MONTH.instanceFrom(date)
-    assertEquals(LocalDate.of(2020, 1, 1), monthBlock.start)
-    assertEquals(LocalDate.of(2020, 1, 31), monthBlock.endInclusive)
+    assertThat(monthBlock.start).isEqualTo(LocalDate.of(2020, 1, 1))
+    assertThat(monthBlock.endInclusive).isEqualTo(LocalDate.of(2020, 1, 31))
   }
 
   @Test
   fun `TimeBlock arithmetic works correctly`() {
-    assertEquals(Day(2020, 1, 2), Day(LocalDate.of(2020, 1, 1)) + 1)
-    assertEquals(Week(2020, 3), Week(YearWeek.of(2020, 1)) + 2)
-    assertEquals(Month(2020, 4), Month(YearMonth.of(2020, 1)) + 3)
+    assertThat(Day(2020, 1, 1) + 1).isEqualTo(Day(2020, 1, 2))
+    assertThat(Week(2020, 1) + 2).isEqualTo(Week(2020, 3))
+    assertThat(Month(2020, 1) + 3).isEqualTo(Month(2020, 4))
   }
 
   @Test
   fun `valid TimeBlock comparisons work correctly`() {
-    assertTrue(Day(2020, 1, 1) < Day(2020, 1, 2))
-    assertTrue(Week(2020, 1) == Week(2020, 1))
-    assertTrue(Month(2020, 1) > Month(2019, 1))
+    assertThat(Day(2020, 1, 1) < Day(2020, 1, 2)).isTrue()
+    assertThat(Week(2020, 1) > Week(2019, 52)).isTrue()
+    assertThat(Month(2020, 1) >= Month(2020, 1)).isTrue()
   }
 
   @Test
@@ -48,7 +45,8 @@ class TimeBlockTest {
   @Test
   fun `TimeBlock range contains correct elements`() {
     val range = Week(2020, 1)..Week(2020, 3)
-    val expectedBlocks = listOf(Week(2020, 1), Week(2020, 2), Week(2020, 3))
-    assertEquals(expectedBlocks, range.toList())
+    assertThat(range.toList())
+      .containsExactly(Week(2020, 1), Week(2020, 2), Week(2020, 3))
+      .inOrder()
   }
 }

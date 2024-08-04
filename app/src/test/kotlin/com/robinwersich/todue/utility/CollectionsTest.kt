@@ -1,22 +1,18 @@
 package com.robinwersich.todue.utility
 
-import kotlinx.collections.immutable.ImmutableList
-import org.junit.Assert.*
+import com.google.common.truth.Truth.assertThat
 import org.junit.Test
 
 class CollectionsTest {
   @Test
   fun `toImmutableList creates list with same entries`() {
-    val expectedList = listOf(1 to "one", 2 to "two", 3 to "three")
-    val map = expectedList.toMap()
-    val list: ImmutableList<Pair<Int, String>> = map.toImmutableList()
-    assertEquals(expectedList, list)
+    val entryList = listOf(1 to "one", 2 to "two", 3 to "three")
+    assertThat(entryList.toMap().toImmutableList()).containsExactlyElementsIn(entryList)
   }
 
   @Test
-  fun `mapToImmutableList with identity creates list with same entries`() {
-    val expectedList = listOf(1, 2, 3)
-    val list: ImmutableList<Int> = expectedList.mapToImmutableList { it }
-    assertEquals(expectedList, list)
+  fun `mapToImmutableList maps values correctly`() {
+    val elementList = listOf(1, 2, 3)
+    assertThat(elementList.mapToImmutableList { it * 2 }).containsExactly(2, 4, 6).inOrder()
   }
 }

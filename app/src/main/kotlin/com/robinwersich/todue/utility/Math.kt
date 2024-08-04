@@ -24,7 +24,7 @@ fun ClosedRange<Double>.interpolateTo(
   progress: Float,
 ): ClosedRange<Double> = interpolateDoubleRange(this, target, progress)
 
-fun <T : Comparable<T>, R : Comparable<R>> ClosedRange<T>.map(transform: (T) -> R) =
+fun <T : Comparable<T>, R : Comparable<R>> ClosedRange<T>.mapBounds(transform: (T) -> R) =
   transform(start)..transform(endInclusive)
 
 /** Returns true if start and end of [other] are both contained in this range. */
