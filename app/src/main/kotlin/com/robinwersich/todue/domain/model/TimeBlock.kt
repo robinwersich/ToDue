@@ -9,6 +9,10 @@ import org.threeten.extra.YearWeek
 interface TimeBlock : DateRange {
   /** The human-readable name of this block. */
   val displayName: String
+
+  /** The sequence of days contained in this block */
+  val days: DateSequence
+    get() = start..endInclusive
 }
 
 /**
@@ -115,7 +119,7 @@ data class Month(val yearMonth: YearMonth = YearMonth.now()) : TimeUnitInstance 
   override fun toString() = yearMonth.toString()
 }
 
-class TimeUnitInstanceRange(
+data class TimeUnitInstanceRange(
   override val start: TimeUnitInstance,
   override val endInclusive: TimeUnitInstance,
 ) : ClosedRange<TimeUnitInstance>, Sequence<TimeUnitInstance> {
@@ -125,7 +129,7 @@ class TimeUnitInstanceRange(
 
   override fun iterator(): Iterator<TimeUnitInstance> =
     object : Iterator<TimeUnitInstance> {
-      private var next: TimeUnitInstance? = start
+      private var next: TimeUnitInstance? = if (start <= endInclusive) start else null
 
       override fun hasNext() = next != null
 

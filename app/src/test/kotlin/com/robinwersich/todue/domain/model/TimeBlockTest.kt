@@ -43,7 +43,19 @@ class TimeBlockTest {
   }
 
   @Test
-  fun `TimeBlock range contains correct elements`() {
+  fun `empty TimeBlock range contains no elements`() {
+    val range = Day(2020, 1, 1)..Day(2019, 12, 31)
+    assertThat(range.toList()).isEmpty()
+  }
+
+  @Test
+  fun `TimeBlock range with one block contains correct element`() {
+    val range = Week(2020, 1)..Week(2020, 1)
+    assertThat(range.toList()).containsExactly(Week(2020, 1))
+  }
+
+  @Test
+  fun `TimeBlock range with more than one block contains correct elements`() {
     val range = Week(2020, 1)..Week(2020, 3)
     assertThat(range.toList())
       .containsExactly(Week(2020, 1), Week(2020, 2), Week(2020, 3))

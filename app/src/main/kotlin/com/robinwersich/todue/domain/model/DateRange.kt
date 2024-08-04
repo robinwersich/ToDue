@@ -33,3 +33,26 @@ fun DateRange.toDateTimeRange() =
 
 /** Returns the (signed) number of days from this date until the other date. */
 fun LocalDate.daysUntil(other: LocalDate) = other.toEpochDay() - this.toEpochDay()
+
+/** A sequence of dates from [start] to [endInclusive]. */
+data class DateSequence(override val start: LocalDate, override val endInclusive: LocalDate) :
+  DateRange, Sequence<LocalDate> {
+
+  override fun iterator(): Iterator<LocalDate> =
+    object : Iterator<LocalDate> {
+      private var next: LocalDate? = if (start <= endInclusive) start else null
+
+      override fun hasNext() = next != null
+
+      override fun next(): LocalDate {
+        next?.let {
+          next = if (it == endInclusive) null else it.plusDays(1)
+          return it
+        }
+        throw NoSuchElementException()
+      }
+    }
+}
+
+/** Returns a [DateRange] from [this] to [other]. */
+operator fun LocalDate.rangeTo(other: LocalDate) = DateSequence(this, other)

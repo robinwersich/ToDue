@@ -29,4 +29,24 @@ class DateRangeTest {
   fun `daysUntil returns correct number of days`() {
     assertThat(LocalDate.of(2020, 1, 1).daysUntil(LocalDate.of(2020, 1, 10))).isEqualTo(9)
   }
+
+  @Test
+  fun `empty DateRange contains no elements`() {
+    val range = LocalDate.of(2020, 1, 1)..LocalDate.of(2019, 12, 31)
+    assertThat(range.toList()).isEmpty()
+  }
+
+  @Test
+  fun `DateRange with one day contains correct element`() {
+    val range = LocalDate.of(2020, 1, 1)..LocalDate.of(2020, 1, 1)
+    assertThat(range.toList()).containsExactly(LocalDate.of(2020, 1, 1))
+  }
+
+  @Test
+  fun `DateRange with more than one day contains correct elements`() {
+    val range = LocalDate.of(2020, 1, 1)..LocalDate.of(2020, 1, 3)
+    assertThat(range.toList())
+      .containsExactly(LocalDate.of(2020, 1, 1), LocalDate.of(2020, 1, 2), LocalDate.of(2020, 1, 3))
+      .inOrder()
+  }
 }
