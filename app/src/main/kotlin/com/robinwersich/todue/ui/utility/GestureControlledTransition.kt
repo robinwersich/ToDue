@@ -95,8 +95,9 @@ fun <S> AnchoredDraggableState<S>.getAdjacentToOffsetAnchors(): Pair<S, S> {
 
 /**
  * Returns the closest anchor with a smaller offset and the closest anchor with a larger offset than
- * the current [offset][AnchoredDraggableState.offset]. If the draggable is settled or is not
- * initialized, the same anchor is returned twice.
+ * the current [offset][AnchoredDraggableState.offset]. If there is no such, the current anchor will
+ * be returned for the corresponding bound. Consequently, for uninitialized anchors, the current
+ * anchor will be returned twice.
  */
 @OptIn(ExperimentalFoundationApi::class)
 fun <S> AnchoredDraggableState<S>.getAdjacentToCurrentAnchors(): Pair<S, S> {
@@ -110,7 +111,10 @@ fun <S> AnchoredDraggableState<S>.getAdjacentToCurrentAnchors(): Pair<S, S> {
 fun <T> DraggableAnchors<T>.previousAnchor(anchor: T): T? {
   val anchorOffset = positionOf(anchor)
   if (anchorOffset.isNaN()) return null
-  return closestAnchor(anchorOffset.nextDown(), searchUpwards = false)
+  // closestAnchor(searchUpwards = false) may return larger anchor if there are no smaller anchors
+  return closestAnchor(anchorOffset.nextDown(), searchUpwards = false)?.takeIf {
+    positionOf(it) < anchorOffset
+  }
 }
 
 /** Returns the anchor after (in terms of offset) the given [anchor]. */
@@ -118,18 +122,27 @@ fun <T> DraggableAnchors<T>.previousAnchor(anchor: T): T? {
 fun <T> DraggableAnchors<T>.nextAnchor(anchor: T): T? {
   val anchorOffset = positionOf(anchor)
   if (anchorOffset.isNaN()) return null
-  return closestAnchor(anchorOffset.nextUp(), searchUpwards = true)
+  // closestAnchor(searchUpwards = true) may return smaller anchor if there are no larger anchors
+  return closestAnchor(anchorOffset.nextUp(), searchUpwards = true)?.takeIf {
+    positionOf(it) > anchorOffset
+  }
 }
 
-/** Distance between [current anchor][AnchoredDraggableState.currentValue] and current offset. */
+/**
+ * Distance between [current anchor][AnchoredDraggableState.currentValue] and current offset. If the
+ * anchors are not initialized yet, this will always return 0.
+ */
 @OptIn(ExperimentalFoundationApi::class)
-val <S> AnchoredDraggableState<S>.offsetToCurrent
-  get() = offset - anchors.positionOf(currentValue)
+val <S> AnchoredDraggableState<S>.offsetToCurrent: Float
+  get() = if (offset.isNaN()) 0f else offset - anchors.positionOf(currentValue)
 
-/** Returns whether the [AnchoredDraggableState] is currently settled at an anchor. */
+/**
+ * Returns whether the [AnchoredDraggableState] is currently settled at an anchor. If the anchors
+ * are not initialized yet, this will always return true.
+ */
 @OptIn(ExperimentalFoundationApi::class)
 val <S> AnchoredDraggableState<S>.isSettled: Boolean
-  get() = anchors.positionOf(settledValue) == offset
+  get() = offset.isNaN() || anchors.positionOf(settledValue) == offset
 
 // --- Fixed Version of DraggableAnchors ---
 
