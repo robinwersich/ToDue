@@ -1,6 +1,5 @@
 package com.robinwersich.todue.ui.presentation.organizer.state
 
-import android.util.Log
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -191,7 +190,6 @@ class NavigationState(
 
   val activeTimelineBlocks:
     ImmutableList<Pair<Timeline, ImmutableList<TimeBlock>>> by derivedStateOf {
-    Log.d("Organizer", "recomputing activeTimelineBlocks")
     val (prevPos, nextPos) = activeNavigationPositions
     val activeTimelines = buildList {
       prevPos.timelinePosition.visibleTimelines.forEach { add(it) }
