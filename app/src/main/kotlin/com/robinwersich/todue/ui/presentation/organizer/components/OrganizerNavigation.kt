@@ -3,13 +3,13 @@ package com.robinwersich.todue.ui.presentation.organizer.components
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.clipScrollableContainer
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -53,8 +53,17 @@ fun OrganizerNavigation(
     navigationState = navigationState,
     modifier =
       modifier
-        .anchoredDraggable(timelineDraggableState, Orientation.Horizontal)
-        .anchoredDraggable(dateDraggableState, Orientation.Vertical)
+        .clipToBounds()
+        .anchoredDraggable(
+          timelineDraggableState,
+          orientation = Orientation.Horizontal,
+          reverseDirection = true,
+        )
+        .anchoredDraggable(
+          dateDraggableState,
+          orientation = Orientation.Vertical,
+          reverseDirection = true,
+        )
         .onSizeChanged { navigationState.updateViewportSize(it) },
     timelineBlockContent = timelineBlockContent,
   )
@@ -65,10 +74,13 @@ fun OrganizerNavigation(
 fun OrganizerNavigationLayout(
   navigationState: NavigationState,
   modifier: Modifier = Modifier,
-  timelineBlockContent: @Composable (timeline: Timeline, timeBlock: TimeBlock) -> Unit,
+  timelineBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
 ) =
   Layout(
     content = {
+      // reading the activeNavigationPositions here directly somehow fixes the issue of
+      // activeTimelineBlocks not updating
+      navigationState.activeNavigationPositions
       for ((timeline, timeBlocks) in navigationState.activeTimelineBlocks) {
         TimelineLayout(
           timeBlocks = timeBlocks,
@@ -78,7 +90,7 @@ fun OrganizerNavigationLayout(
         }
       }
     },
-    modifier = modifier.clipScrollableContainer(Orientation.Vertical),
+    modifier = modifier,
     measurePolicy = { measurables, constraints ->
       val placeables =
         measurables.zip(navigationState.activeTimelineBlocks) { measurable, (timeline, _) ->

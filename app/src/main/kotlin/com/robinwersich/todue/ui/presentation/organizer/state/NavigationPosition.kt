@@ -68,6 +68,8 @@ data class TimelineNavigationPosition(
       if (showChild && child != null) yield(child)
       yield(timeline)
     }
+
+  override fun toString() = visibleTimelines.joinToString(prefix = "[", postfix = "]")
 }
 
 /** Describes the current navigation position in the organizer. */
@@ -78,4 +80,6 @@ data class NavigationPosition(
   val datePosition: LocalDate,
   /** The date range that will be visible in this navigation position. */
   val dateRange: DateRange,
-)
+) {
+  override fun toString() = "NavigationPosition(timeline=$timelinePosition, date=$datePosition)"
+}

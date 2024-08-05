@@ -1,5 +1,6 @@
 package com.robinwersich.todue.ui.presentation.organizer.state
 
+import android.util.Log
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -9,7 +10,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.runtime.structuralEqualityPolicy
 import androidx.compose.ui.unit.IntSize
 import com.robinwersich.todue.domain.model.DateRange
 import com.robinwersich.todue.domain.model.DateTimeRange
@@ -22,6 +22,7 @@ import com.robinwersich.todue.ui.utility.MyDraggableAnchors
 import com.robinwersich.todue.ui.utility.getAdjacentToCurrentAnchors
 import com.robinwersich.todue.ui.utility.isSettled
 import com.robinwersich.todue.ui.utility.offsetToCurrent
+import com.robinwersich.todue.ui.utility.pairReferentialEqualityPolicy
 import com.robinwersich.todue.utility.interpolateTo
 import com.robinwersich.todue.utility.mapToImmutableList
 import com.robinwersich.todue.utility.toImmutableList
@@ -72,15 +73,12 @@ class NavigationState(
   private val currentDate: LocalDate
     get() = dateDraggableState.currentValue
 
-  private val currentNavigationPosition: NavigationPosition
-    get() = adjacentNavigationPositions.current
-
   /**
    * This function needs to be launched in the [CoroutineScope][kotlinx.coroutines.CoroutineScope]
    * of the composable using this state to correctly update the internal [DraggableAnchors].
    */
   suspend fun updateDateAnchorsOnSwipe() {
-    snapshotFlow { currentNavigationPosition }
+    snapshotFlow { currentTimelinePosition to currentDate }
       .collect { viewportSize?.let { updateDateAnchors(it.height) } }
   }
 
@@ -94,11 +92,10 @@ class NavigationState(
     val newAnchors = MyDraggableAnchors {
       for (i in timelines.indices) {
         val position = TimelineNavigationPosition(timelines, i, showChild = false)
-        // offset is negative because timelines are scrolling to the left
-        val offset = -(viewportLength * i).toFloat()
+        val offset = (viewportLength * i).toFloat()
         position at offset
         if (i != 0) {
-          position.copy(showChild = true) at offset + viewportLength * childTimelineSizeRatio
+          position.copy(showChild = true) at offset - viewportLength * childTimelineSizeRatio
         }
       }
     }
@@ -118,15 +115,15 @@ class NavigationState(
         currentDateRange.start.daysUntil(getVisibleStart(currentTimelinePosition, nextBlock))
 
       val pxPerDay = viewportLength / currentDateRange.duration
-      prevBlock.start at (prevDateDistance * pxPerDay).toFloat()
+      prevBlock.start at -(prevDateDistance * pxPerDay).toFloat()
       currentDate at 0f
-      nextBlock.start at -(nextDateDistance * pxPerDay).toFloat()
+      nextBlock.start at (nextDateDistance * pxPerDay).toFloat()
     }
     // By updating the anchors, the offset for the current anchor may jump.
     // To keep the relation between offset and current anchor, we also need to update the offset.
-    val offsetJump = -dateDraggableState.anchors.positionOf(currentDate)
+    val prevCurrentDatePos = dateDraggableState.anchors.positionOf(currentDate)
     dateDraggableState.updateAnchors(newAnchors, newTarget = currentDate)
-    dateDraggableState.dispatchRawDelta(offsetJump)
+    if (!prevCurrentDatePos.isNaN()) dateDraggableState.dispatchRawDelta(-prevCurrentDatePos)
   }
 
   /**
@@ -172,7 +169,7 @@ class NavigationState(
   }
 
   val activeNavigationPositions: Pair<NavigationPosition, NavigationPosition> by
-    derivedStateOf(structuralEqualityPolicy()) {
+    derivedStateOf(pairReferentialEqualityPolicy()) {
       with(adjacentNavigationPositions) {
         if (!timelineDraggableState.isSettled) {
           val offsetToCurrent = timelineDraggableState.offsetToCurrent
@@ -194,6 +191,7 @@ class NavigationState(
 
   val activeTimelineBlocks:
     ImmutableList<Pair<Timeline, ImmutableList<TimeBlock>>> by derivedStateOf {
+    Log.d("Organizer", "recomputing activeTimelineBlocks")
     val (prevPos, nextPos) = activeNavigationPositions
     val activeTimelines = buildList {
       prevPos.timelinePosition.visibleTimelines.forEach { add(it) }
