@@ -1,7 +1,8 @@
 package com.robinwersich.todue.ui.presentation.organizer.components
 
-import androidx.compose.animation.core.exponentialDecay
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
@@ -20,6 +21,7 @@ import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.duration
 import com.robinwersich.todue.domain.model.toDateTimeRange
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
+import com.robinwersich.todue.ui.utility.instantStop
 import com.robinwersich.todue.ui.utility.interpolateFloat
 import kotlinx.collections.immutable.ImmutableList
 
@@ -31,8 +33,8 @@ fun OrganizerNavigation(
   childTimelineSizeFraction: Float = 0.3f,
   timelineBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
 ) {
-  val positionalThreshold = 0.0f
-  val velocityThreshold = with(LocalDensity.current) { 100.dp.toPx() }
+  val positionalThreshold = 0.3f
+  val velocityThreshold = with(LocalDensity.current) { 500.dp.toPx() }
 
   val navigationState =
     remember(timelines, childTimelineSizeFraction) {
@@ -41,8 +43,12 @@ fun OrganizerNavigation(
         childTimelineSizeRatio = childTimelineSizeFraction,
         positionalThreshold = { it * positionalThreshold },
         velocityThreshold = { velocityThreshold },
-        snapAnimationSpec = tween(),
-        decayAnimationSpec = exponentialDecay(),
+        snapAnimationSpec =
+          spring(
+            stiffness = Spring.StiffnessMediumLow,
+            visibilityThreshold = Int.VisibilityThreshold.toFloat(),
+          ),
+        decayAnimationSpec = instantStop(),
       )
     }
   val timelineDraggableState = navigationState.timelineDraggableState
