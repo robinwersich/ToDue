@@ -14,7 +14,7 @@ import com.robinwersich.todue.domain.model.DateRange
 import com.robinwersich.todue.domain.model.DateTimeRange
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
-import com.robinwersich.todue.domain.model.daysUntil
+import com.robinwersich.todue.domain.model.center
 import com.robinwersich.todue.domain.model.duration
 import com.robinwersich.todue.domain.model.toDateTimeRange
 import com.robinwersich.todue.ui.utility.MyDraggableAnchors
@@ -103,20 +103,23 @@ class NavigationState(
 
   private fun updateDateAnchors(viewportLength: Int) {
     val newAnchors = MyDraggableAnchors {
-      val currentTimeBlock = currentTimeline.timeBlockFrom(currentDate)
-      val prevBlock = currentTimeBlock - 1
-      val nextBlock = currentTimeBlock + 1
+      val currentBlock = currentTimeline.timeBlockFrom(currentDate)
+      val prevBlock = currentBlock - 1
+      val nextBlock = currentBlock + 1
 
-      val currentDateRange = getVisibleDateRange(currentTimelinePosition, currentTimeBlock)
-      val prevDateDistance =
-        getVisibleEnd(currentTimelinePosition, prevBlock).daysUntil(currentDateRange.endInclusive)
-      val nextDateDistance =
-        currentDateRange.start.daysUntil(getVisibleStart(currentTimelinePosition, nextBlock))
+      val currentDateRange =
+        getVisibleDateRange(currentTimelinePosition, currentBlock).toDateTimeRange()
+      val prevDateRange = getVisibleDateRange(currentTimelinePosition, prevBlock).toDateTimeRange()
+      val nextDateRange = getVisibleDateRange(currentTimelinePosition, nextBlock).toDateTimeRange()
 
-      val pxPerDay = viewportLength / currentDateRange.duration
-      prevBlock.start at -(prevDateDistance * pxPerDay).toFloat()
+      val prevDateDistance = prevDateRange.center - currentDateRange.center
+      val nextDateDistance = nextDateRange.center - currentDateRange.center
+      val prevPxPerDay = (viewportLength * 2) / (prevDateRange.duration + currentDateRange.duration)
+      val nextPxPerDay = (viewportLength * 2) / (nextDateRange.duration + currentDateRange.duration)
+
+      prevBlock.start at (prevDateDistance * prevPxPerDay).toFloat()
       currentDate at 0f
-      nextBlock.start at (nextDateDistance * pxPerDay).toFloat()
+      nextBlock.start at (nextDateDistance * nextPxPerDay).toFloat()
     }
     // By updating the anchors, the offset for the current anchor may jump.
     // To keep the relation between offset and current anchor, we also need to update the offset.

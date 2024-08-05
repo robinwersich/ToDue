@@ -23,6 +23,10 @@ typealias DateTimeRange = ClosedRange<Double>
 val DateTimeRange.duration: Double
   get() = endInclusive - start
 
+/** Returns the center value of the range. */
+val DateTimeRange.center: Double
+  get() = (start + endInclusive) / 2
+
 /**
  * Converts a [DateRange] to a [DateTimeRange]. Note that a [DateRange] of a single day, thus having
  * a size of 0, is equivalent to a [DateTimeRange] from the start of the day to the end of the day,
