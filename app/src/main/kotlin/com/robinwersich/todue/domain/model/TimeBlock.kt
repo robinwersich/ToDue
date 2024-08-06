@@ -67,6 +67,10 @@ data class Day(val date: LocalDate = LocalDate.now()) : TimeUnitInstance {
 
   override operator fun plus(amount: Long) = Day(date.plusDays(amount))
 
+  /**
+   * @throws IllegalArgumentException if [other] is not a [Day]
+   * @see Comparable.compareTo
+   */
   override operator fun compareTo(other: TimeUnitInstance): Int {
     require(other is Day) { "Cannot compare different time units." }
     return date.compareTo(other.date)
@@ -89,6 +93,10 @@ data class Week(val yearWeek: YearWeek = YearWeek.now()) : TimeUnitInstance {
 
   override operator fun plus(amount: Long) = Week(yearWeek.plusWeeks(amount))
 
+  /**
+   * @throws IllegalArgumentException if [other] is not a [Day]
+   * @see Comparable.compareTo
+   */
   override operator fun compareTo(other: TimeUnitInstance): Int {
     require(other is Week) { "Cannot compare different time units." }
     return yearWeek.compareTo(other.yearWeek)
@@ -111,6 +119,10 @@ data class Month(val yearMonth: YearMonth = YearMonth.now()) : TimeUnitInstance 
 
   override operator fun plus(amount: Long) = Month(yearMonth.plusMonths(amount))
 
+  /**
+   * @throws IllegalArgumentException if [other] is not a [Day]
+   * @see Comparable.compareTo
+   */
   override operator fun compareTo(other: TimeUnitInstance): Int {
     require(other is Month) { "Cannot compare different time units." }
     return yearMonth.compareTo(other.yearMonth)
