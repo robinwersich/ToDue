@@ -94,15 +94,31 @@ fun <S> AnchoredDraggableState<S>.getAdjacentToOffsetAnchors(): Pair<S, S> {
 }
 
 /**
- * Returns the closest anchor with a smaller offset and the closest anchor with a larger offset than
- * the current [offset][AnchoredDraggableState.offset]. If there is no such, the current anchor will
- * be returned for the corresponding bound. Consequently, for uninitialized anchors, the current
- * anchor will be returned twice.
+ * Returns the adjacent anchors to the current [current value][AnchoredDraggableState.currentValue].
+ *
+ * @see getAdjacentAnchors
  */
 @OptIn(ExperimentalFoundationApi::class)
-fun <S> AnchoredDraggableState<S>.getAdjacentToCurrentAnchors(): Pair<S, S> {
-  val prevAnchor = anchors.previousAnchor(currentValue) ?: currentValue
-  val nextAnchor = anchors.nextAnchor(currentValue) ?: currentValue
+fun <S> AnchoredDraggableState<S>.getAdjacentToCurrentAnchors() = getAdjacentAnchors(currentValue)
+
+/**
+ * Returns the adjacent anchors to the current [settled value][AnchoredDraggableState.settledValue].
+ *
+ * @see getAdjacentAnchors
+ */
+@OptIn(ExperimentalFoundationApi::class)
+fun <S> AnchoredDraggableState<S>.getAdjacentToSettledAnchors() = getAdjacentAnchors(settledValue)
+
+/**
+ * Returns the closest anchor with a smaller offset and the closest anchor with a larger offset than
+ * the given [anchor]. If there is no such, the given [anchor] will be returned for the
+ * corresponding bound. Consequently, for uninitialized anchors, the given [anchor] will be returned
+ * twice.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+fun <S> AnchoredDraggableState<S>.getAdjacentAnchors(anchor: S): Pair<S, S> {
+  val prevAnchor = anchors.previousAnchor(anchor) ?: anchor
+  val nextAnchor = anchors.nextAnchor(anchor) ?: anchor
   return Pair(prevAnchor, nextAnchor)
 }
 

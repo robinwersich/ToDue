@@ -11,3 +11,6 @@ fun <K, V> Map<K, V>.toImmutableList(): ImmutableList<Pair<K, V>> =
 /** Maps the elements of this iterable to a new [ImmutableList]. */
 fun <T, R> Iterable<T>.mapToImmutableList(transform: (T) -> R): ImmutableList<R> =
   mapTo(persistentListOf<R>().builder(), transform).build()
+
+/** Returns if the pair contains the [element]. */
+operator fun <T> Pair<T, T>.contains(element: T): Boolean = first == element || second == element
