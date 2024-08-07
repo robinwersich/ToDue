@@ -31,15 +31,18 @@ class TimeBlockTest {
   }
 
   @Test
-  fun `valid TimeBlock comparisons work correctly`() {
+  fun `TimeBlock comparisons with same unit work correctly`() {
     assertThat(Day(2020, 1, 1) < Day(2020, 1, 2)).isTrue()
     assertThat(Week(2020, 1) > Week(2019, 52)).isTrue()
     assertThat(Month(2020, 1) >= Month(2020, 1)).isTrue()
   }
 
   @Test
-  fun `incompatible TimeBlock comparisons throw exception`() {
-    assertFailsWith<IllegalArgumentException> { Day(2020, 1, 1) < Week(2020, 1) }
+  fun `TimeBlock comparisons with different units work as expected`() {
+    assertThat(Day(2020, 1, 1) < Week(2020, 2)).isTrue()
+    assertThat(Week(2020, 2) < Month(2020, 1)).isFalse()
+    assertThat(Week(2020, 2) > Month(2020, 1)).isFalse()
+    assertThat(Week(2020, 6) > Month(2020, 1)).isTrue()
   }
 
   @Test
@@ -60,5 +63,13 @@ class TimeBlockTest {
     assertThat(range.toList())
       .containsExactly(Week(2020, 1), Week(2020, 2), Week(2020, 3))
       .inOrder()
+  }
+
+  @Test
+  fun `creating TimeUnitInstanceSequence with different units throws exception`() {
+    val day = Day(2020, 1, 1)
+    val week = Week(2020, 2)
+
+    assertFailsWith<IllegalArgumentException> { day..week }
   }
 }

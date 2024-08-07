@@ -24,6 +24,12 @@ fun ClosedRange<Double>.interpolateTo(
   progress: Float,
 ): ClosedRange<Double> = interpolateDoubleRange(this, target, progress)
 
+val ClosedRange<Double>.size: Double
+  get() = endInclusive - start
+
+val ClosedRange<Double>.center: Double
+  get() = (start + endInclusive) / 2
+
 fun <T : Comparable<T>, R : Comparable<R>> ClosedRange<T>.mapBounds(transform: (T) -> R) =
   transform(start)..transform(endInclusive)
 

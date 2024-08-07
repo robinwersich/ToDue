@@ -14,32 +14,18 @@ val DateRange.duration: Long
   get() = endInclusive.toEpochDay() + 1 - start.toEpochDay()
 
 /**
- * A smoothly interpolatable range of date times in the form of a [Double] range, representing the
- * inclusive end points as fractional epoch days.
+ * Converts a [DateRange] to a [Double] range, representing epoch days. This is useful for
+ * interpolating. Note that a [DateRange] of a single day, thus having a size of 0, is equivalent to
+ * a [Double] range from the start of the day to the end of the day, thus having a size of 1.
  */
-typealias DateTimeRange = ClosedRange<Double>
-
-/** Returns how many days this range spans. */
-val DateTimeRange.duration: Double
-  get() = endInclusive - start
-
-/** Returns the center value of the range. */
-val DateTimeRange.center: Double
-  get() = (start + endInclusive) / 2
-
-/**
- * Converts a [DateRange] to a [DateTimeRange]. Note that a [DateRange] of a single day, thus having
- * a size of 0, is equivalent to a [DateTimeRange] from the start of the day to the end of the day,
- * thus having a size of 1.
- */
-fun DateRange.toDateTimeRange() =
+fun DateRange.toDoubleRange() =
   start.toEpochDay().toDouble()..(endInclusive.toEpochDay() + 1).toDouble()
 
 /** Returns the (signed) number of days from this date until the other date. */
 fun LocalDate.daysUntil(other: LocalDate) = other.toEpochDay() - this.toEpochDay()
 
 /** A sequence of dates from [start] to [endInclusive]. */
-data class DateSequence(override val start: LocalDate, override val endInclusive: LocalDate) :
+class DateSequence(override val start: LocalDate, override val endInclusive: LocalDate) :
   DateRange, Sequence<LocalDate> {
 
   override fun iterator(): Iterator<LocalDate> =
@@ -56,6 +42,14 @@ data class DateSequence(override val start: LocalDate, override val endInclusive
         throw NoSuchElementException()
       }
     }
+
+  override fun equals(other: Any?) =
+    other is DateSequence &&
+      (isEmpty() && other.isEmpty() || start == other.start && endInclusive == other.endInclusive)
+
+  override fun hashCode() = if (isEmpty()) -1 else 31 * start.hashCode() + endInclusive.hashCode()
+
+  override fun toString() = "$start..$endInclusive"
 }
 
 /** Returns a [DateRange] from [this] to [other]. */

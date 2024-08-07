@@ -11,19 +11,19 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.IntSize
 import com.robinwersich.todue.domain.model.DateRange
-import com.robinwersich.todue.domain.model.DateTimeRange
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
-import com.robinwersich.todue.domain.model.center
-import com.robinwersich.todue.domain.model.duration
-import com.robinwersich.todue.domain.model.toDateTimeRange
+import com.robinwersich.todue.domain.model.rangeTo
+import com.robinwersich.todue.domain.model.toDoubleRange
 import com.robinwersich.todue.ui.utility.MyDraggableAnchors
 import com.robinwersich.todue.ui.utility.getAdjacentToCurrentAnchors
 import com.robinwersich.todue.ui.utility.isSettled
 import com.robinwersich.todue.ui.utility.offsetToCurrent
 import com.robinwersich.todue.ui.utility.pairReferentialEqualityPolicy
+import com.robinwersich.todue.utility.center
 import com.robinwersich.todue.utility.interpolateTo
 import com.robinwersich.todue.utility.mapToImmutableList
+import com.robinwersich.todue.utility.size
 import com.robinwersich.todue.utility.toImmutableList
 import com.robinwersich.todue.utility.union
 import java.time.LocalDate
@@ -108,14 +108,14 @@ class NavigationState(
       val nextBlock = currentBlock + 1
 
       val currentDateRange =
-        getVisibleDateRange(currentTimelinePosition, currentBlock).toDateTimeRange()
-      val prevDateRange = getVisibleDateRange(currentTimelinePosition, prevBlock).toDateTimeRange()
-      val nextDateRange = getVisibleDateRange(currentTimelinePosition, nextBlock).toDateTimeRange()
+        getVisibleDateRange(currentTimelinePosition, currentBlock).toDoubleRange()
+      val prevDateRange = getVisibleDateRange(currentTimelinePosition, prevBlock).toDoubleRange()
+      val nextDateRange = getVisibleDateRange(currentTimelinePosition, nextBlock).toDoubleRange()
 
       val prevDateDistance = prevDateRange.center - currentDateRange.center
       val nextDateDistance = nextDateRange.center - currentDateRange.center
-      val prevPxPerDay = (viewportLength * 2) / (prevDateRange.duration + currentDateRange.duration)
-      val nextPxPerDay = (viewportLength * 2) / (nextDateRange.duration + currentDateRange.duration)
+      val prevPxPerDay = (viewportLength * 2) / (prevDateRange.size + currentDateRange.size)
+      val nextPxPerDay = (viewportLength * 2) / (nextDateRange.size + currentDateRange.size)
 
       prevBlock.start at (prevDateDistance * prevPxPerDay).toFloat()
       currentDate at 0f
@@ -206,7 +206,7 @@ class NavigationState(
     }
   }
 
-  val visibleDateTimeRange: DateTimeRange by derivedStateOf {
+  val visibleDateTimeRange by derivedStateOf {
     val (prevPos, nextPos) = activeNavigationPositions
     val progress =
       if (!timelineDraggableState.isSettled) {
@@ -214,7 +214,7 @@ class NavigationState(
       } else {
         dateDraggableState.progress(prevPos.datePosition, nextPos.datePosition)
       }
-    prevPos.dateRange.toDateTimeRange().interpolateTo(nextPos.dateRange.toDateTimeRange(), progress)
+    prevPos.dateRange.toDoubleRange().interpolateTo(nextPos.dateRange.toDoubleRange(), progress)
   }
 }
 

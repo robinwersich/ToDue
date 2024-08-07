@@ -1,6 +1,7 @@
 package com.robinwersich.todue.domain.model
 
 import com.google.common.truth.Truth.assertThat
+import com.robinwersich.todue.utility.size
 import java.time.LocalDate
 import org.junit.Test
 
@@ -21,8 +22,8 @@ class DateRangeTest {
   @Test
   fun `DateRange and derived DateTimeRange have same duration`() {
     val dateRange = LocalDate.of(2020, 1, 1)..LocalDate.of(2020, 1, 10)
-    val dateTimeRange = dateRange.toDateTimeRange()
-    assertThat(dateTimeRange.duration).isEqualTo(dateRange.duration.toDouble())
+    val dateTimeRange = dateRange.toDoubleRange()
+    assertThat(dateTimeRange.size).isEqualTo(dateRange.duration.toDouble())
   }
 
   @Test

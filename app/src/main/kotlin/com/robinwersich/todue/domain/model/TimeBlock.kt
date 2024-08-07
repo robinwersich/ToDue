@@ -1,18 +1,36 @@
 package com.robinwersich.todue.domain.model
 
+import com.robinwersich.todue.utility.requireSame
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
+import java.time.temporal.WeekFields
+import java.util.Locale
+import kotlin.ranges.rangeTo as nativeRangeTo
 import org.threeten.extra.YearWeek
 
-/** A date range with a name */
-interface TimeBlock : DateRange {
+/** A range with a semantic meaning */
+interface TimeBlock : DateRange, Comparable<TimeBlock> {
   /** The human-readable name of this block. */
   val displayName: String
 
   /** The sequence of days contained in this block */
   val days: DateSequence
     get() = start..endInclusive
+
+  /**
+   * While comparison mostly makes sense for non-overlapping or exactly overlapping TimeBlocks, the
+   * comparison for overlapping TimeBlocks is also defined as follows:
+   * - If all dates of this block are before or in the other block, this block is smaller.
+   * - If all dates of this block are in or after the other block, this block is larger.
+   * - Otherwise, the blocks are considered equal. Note that this is *not consistent with [equals]*!
+   */
+  override fun compareTo(other: TimeBlock) =
+    when {
+      this.start < other.start && this.endInclusive < other.endInclusive -> -1
+      this.start > other.start && this.endInclusive > other.endInclusive -> 1
+      else -> 0
+    }
 }
 
 /**
@@ -35,8 +53,7 @@ enum class TimeUnit(
  * created from a corresponding [Temporal][java.time.temporal.Temporal] or from a [LocalDate], which
  * results in the time unit instance that *contains* this date.
  */
-sealed interface TimeUnitInstance : TimeBlock, Comparable<TimeUnitInstance> {
-
+sealed interface TimeUnitInstance : TimeBlock {
   /** The [TimeUnit] enum entry of this instance. */
   val unit: TimeUnit
 
@@ -52,7 +69,12 @@ sealed interface TimeUnitInstance : TimeBlock, Comparable<TimeUnitInstance> {
   /** Returns the previous [TimeUnitInstance]. */
   fun previous() = this - 1
 
-  operator fun rangeTo(other: TimeUnitInstance) = TimeUnitInstanceRange(this, other)
+  /**
+   * Creates a sequence of instances from this instance to [other]. Must only be called with
+   * instances of the same [TimeUnit].
+   */
+  operator fun rangeTo(other: TimeUnitInstance): TimeUnitInstanceSequence =
+    TimeUnitInstanceSequence(this, other)
 }
 
 data class Day(val date: LocalDate = LocalDate.now()) : TimeUnitInstance {
@@ -67,25 +89,32 @@ data class Day(val date: LocalDate = LocalDate.now()) : TimeUnitInstance {
 
   override operator fun plus(amount: Long) = Day(date.plusDays(amount))
 
-  /**
-   * @throws IllegalArgumentException if [other] is not a [Day]
-   * @see Comparable.compareTo
-   */
-  override operator fun compareTo(other: TimeUnitInstance): Int {
-    require(other is Day) { "Cannot compare different time units." }
-    return date.compareTo(other.date)
-  }
+  override fun compareTo(other: TimeBlock) =
+    when (other) {
+      is Day -> date.compareTo(other.date)
+      else -> super.compareTo(other)
+    }
 
   override fun toString() = date.toString()
 }
 
 data class Week(val yearWeek: YearWeek = YearWeek.now()) : TimeUnitInstance {
+  companion object {
+    var firstDayOfWeek: DayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+      set(value) {
+        field = value
+        lastDayOfWeek = value.minus(1)
+      }
+
+    private var lastDayOfWeek: DayOfWeek = firstDayOfWeek.minus(1)
+  }
+
   override val unit
     get() = TimeUnit.WEEK
 
-  override val start: LocalDate = yearWeek.atDay(DayOfWeek.MONDAY)
-  override val endInclusive: LocalDate = yearWeek.atDay(DayOfWeek.SUNDAY)
-  override val displayName: String = "$start - $endInclusive"
+  override val start: LocalDate = yearWeek.atDay(firstDayOfWeek)
+  override val endInclusive: LocalDate = yearWeek.atDay(lastDayOfWeek)
+  override val displayName: String = yearWeek.toString()
 
   constructor(weekBasedYear: Int, week: Int) : this(YearWeek.of(weekBasedYear, week))
 
@@ -93,14 +122,11 @@ data class Week(val yearWeek: YearWeek = YearWeek.now()) : TimeUnitInstance {
 
   override operator fun plus(amount: Long) = Week(yearWeek.plusWeeks(amount))
 
-  /**
-   * @throws IllegalArgumentException if [other] is not a [Day]
-   * @see Comparable.compareTo
-   */
-  override operator fun compareTo(other: TimeUnitInstance): Int {
-    require(other is Week) { "Cannot compare different time units." }
-    return yearWeek.compareTo(other.yearWeek)
-  }
+  override fun compareTo(other: TimeBlock) =
+    when (other) {
+      is Week -> yearWeek.compareTo(other.yearWeek)
+      else -> super.compareTo(other)
+    }
 
   override fun toString() = yearWeek.toString()
 }
@@ -119,35 +145,67 @@ data class Month(val yearMonth: YearMonth = YearMonth.now()) : TimeUnitInstance 
 
   override operator fun plus(amount: Long) = Month(yearMonth.plusMonths(amount))
 
-  /**
-   * @throws IllegalArgumentException if [other] is not a [Day]
-   * @see Comparable.compareTo
-   */
-  override operator fun compareTo(other: TimeUnitInstance): Int {
-    require(other is Month) { "Cannot compare different time units." }
-    return yearMonth.compareTo(other.yearMonth)
-  }
+  override fun compareTo(other: TimeBlock) =
+    when (other) {
+      is Month -> yearMonth.compareTo(other.yearMonth)
+      else -> super.compareTo(other)
+    }
 
   override fun toString() = yearMonth.toString()
 }
 
-data class TimeUnitInstanceRange(
-  override val start: TimeUnitInstance,
-  override val endInclusive: TimeUnitInstance,
-) : ClosedRange<TimeUnitInstance>, Sequence<TimeUnitInstance> {
-  init {
-    require(start.unit == endInclusive.unit) { "Cannot create range from different time units." }
-  }
+/**
+ * A sequence of [TimeUnitInstances][TimeUnitInstance] that are all of the same [TimeUnit]. While
+ * representing a sequence of TimeBlocks, this class is also a [TimeBlock] itself.
+ */
+class TimeUnitInstanceSequence
+private constructor(private val range: ClosedRange<TimeUnitInstance>, val unit: TimeUnit) :
+  Sequence<TimeUnitInstance>, TimeBlock {
+  constructor(
+    start: TimeUnitInstance,
+    endInclusive: TimeUnitInstance,
+  ) : this(
+    start.nativeRangeTo(endInclusive),
+    requireSame(start.unit, endInclusive.unit) {
+      "TimeUnitInstanceSequence must be created with instances of the same TimeUnit, " +
+        "but got ${start.unit} and ${endInclusive.unit}"
+    },
+  )
+
+  override val displayName: String =
+    "${range.start.displayName} - ${range.endInclusive.displayName}"
+
+  /** The first [date][LocalDate] of this [TimeBlock]. */
+  override val start: LocalDate
+    get() = range.start.start
+
+  /** The last [date][LocalDate] of this [TimeBlock]. */
+  override val endInclusive: LocalDate
+    get() = range.endInclusive.endInclusive
+
+  /** The first [TimeUnitInstance] of this range. */
+  val startBlock: TimeUnitInstance
+    get() = range.start
+
+  /** The last [TimeUnitInstance] of this range. */
+  val endBlock: TimeUnitInstance
+    get() = range.endInclusive
+
+  /**
+   * Returns this as a [ClosedRange] of [TimeUnitInstances][TimeUnitInstance]. Because this class is
+   * also a [TimeBlock] itself and thus a [DateRange], it cannot implement this interface directly.
+   */
+  fun asTimeBlockRange() = range
 
   override fun iterator(): Iterator<TimeUnitInstance> =
     object : Iterator<TimeUnitInstance> {
-      private var next: TimeUnitInstance? = if (start <= endInclusive) start else null
+      private var next: TimeUnitInstance? = if (startBlock <= endBlock) startBlock else null
 
       override fun hasNext() = next != null
 
       override fun next(): TimeUnitInstance {
         next?.let {
-          next = if (it == endInclusive) null else it.next()
+          next = if (it >= endBlock) null else it.next()
           return it
         }
         throw NoSuchElementException()

@@ -15,14 +15,14 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.robinwersich.todue.domain.model.DateTimeRange
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.duration
-import com.robinwersich.todue.domain.model.toDateTimeRange
+import com.robinwersich.todue.domain.model.toDoubleRange
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.utility.instantStop
 import com.robinwersich.todue.ui.utility.interpolateFloat
+import com.robinwersich.todue.utility.size
 import kotlinx.collections.immutable.ImmutableList
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -134,7 +134,7 @@ fun OrganizerNavigationLayout(
 @Composable
 fun TimelineLayout(
   timeBlocks: ImmutableList<TimeBlock>,
-  visibleDateRange: () -> DateTimeRange,
+  visibleDateRange: () -> ClosedRange<Double>,
   modifier: Modifier = Modifier,
   timeBlockContent: @Composable (timeBlock: TimeBlock) -> Unit,
 ) =
@@ -145,7 +145,7 @@ fun TimelineLayout(
       val timelineRange = visibleDateRange()
       val placeables =
         measurables.zip(timeBlocks) { measurable, timeBlock ->
-          val relativeSize = timeBlock.duration / timelineRange.duration
+          val relativeSize = timeBlock.duration / timelineRange.size
           val itemSize = (relativeSize * constraints.maxHeight).toInt()
           measurable.measure(constraints.copy(minHeight = itemSize, maxHeight = itemSize))
         }
@@ -153,7 +153,7 @@ fun TimelineLayout(
       layout(width = constraints.maxWidth, height = constraints.maxHeight) {
         placeables.zip(timeBlocks) { placeable, timeBlock ->
           val relativeOffset =
-            (timeBlock.toDateTimeRange().start - timelineRange.start) / timelineRange.duration
+            (timeBlock.toDoubleRange().start - timelineRange.start) / timelineRange.size
           val itemOffset = (relativeOffset * constraints.maxHeight).toInt()
           placeable.place(0, itemOffset)
         }
