@@ -63,6 +63,7 @@ import com.robinwersich.todue.ui.presentation.organizer.ModifyTaskEvent
 import com.robinwersich.todue.ui.presentation.organizer.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.ui.utility.DebouncedUpdate
+import com.robinwersich.todue.ui.utility.rememberTimeBlockFormatter
 import com.robinwersich.todue.ui.utility.signedPadding
 import java.time.LocalDate
 
@@ -218,6 +219,7 @@ private fun TaskProperties(
 
 @Composable
 private fun ScheduledTimeBlockProperty(timeBlock: TimeBlock?, onEvent: (ModifyTaskEvent) -> Unit) {
+  val timeBlockFormatter = rememberTimeBlockFormatter()
   var showSelection by rememberSaveable { mutableStateOf(false) }
   if (showSelection) {
     DueDatePicker(
@@ -230,7 +232,7 @@ private fun ScheduledTimeBlockProperty(timeBlock: TimeBlock?, onEvent: (ModifyTa
       onCancel = { showSelection = false },
     )
   }
-  val timeBlockName = timeBlock?.displayName ?: "unscheduled"
+  val timeBlockName = timeBlock?.let { timeBlockFormatter.format(it) } ?: "unscheduled"
   TaskProperty(R.drawable.scheduled_date, timeBlockName, onClick = { showSelection = true })
 }
 

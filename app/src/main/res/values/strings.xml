@@ -7,4 +7,24 @@
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="select_due_date">Select Due Date</string>
+
+    <!-- Date Notations -->
+    <string name="today">Today</string>
+    <string name="tomorrow">Tomorrow</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="this_week">This Week</string>
+    <string name="next_week">Next Week</string>
+    <string name="last_week">Last Week</string>
+    <string name="format_day">EEE, MMM d</string>
+    <string name="format_day_with_year">EEE, MMM d, yyyy</string>
+    <string name="format_date_range_start">MMM d</string>
+    <string name="format_date_range_start_with_year">MMM d, yyyy</string>
+    <string name="format_date_range_end">MMM d</string>
+    <string name="format_date_range_end_with_year">MMM d, yyyy</string>
+    <string name="format_date_range_start_same_month">MMM d</string>
+    <string name="format_date_range_end_same_month">d</string>
+    <string name="format_date_range_end_same_month_with_year">d, yyyy</string>
+    <string name="format_month">LLLL</string>
+    <string name="format_month_with_year">MMMM yyyy</string>
+    <string name="format_year">yyyy</string>
 </resources>

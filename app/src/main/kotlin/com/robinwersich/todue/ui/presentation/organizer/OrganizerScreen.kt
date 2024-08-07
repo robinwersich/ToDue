@@ -21,6 +21,7 @@ import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.ui.presentation.organizer.components.OrganizerNavigation
 import com.robinwersich.todue.ui.presentation.organizer.components.TaskView
 import com.robinwersich.todue.ui.theme.ToDueTheme
+import com.robinwersich.todue.ui.utility.rememberTimeBlockFormatter
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 
@@ -68,9 +69,10 @@ fun OrganizerScreen(state: OrganizerState, onEvent: (OrganizerEvent) -> Unit = {
       Timeline(1, TimeUnit.WEEK),
       Timeline(2, TimeUnit.MONTH),
     )
+  val formatter = rememberTimeBlockFormatter()
   OrganizerNavigation(timelines = timelines) { _, timeBlock ->
     Text(
-      timeBlock.displayName,
+      formatter.format(timeBlock),
       modifier = Modifier.fillMaxSize().padding(4.dp).background(Color.LightGray),
     )
   }

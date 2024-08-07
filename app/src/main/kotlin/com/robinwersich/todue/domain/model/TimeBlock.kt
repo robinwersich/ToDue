@@ -4,16 +4,11 @@ import com.robinwersich.todue.utility.requireSame
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.temporal.WeekFields
-import java.util.Locale
 import kotlin.ranges.rangeTo as nativeRangeTo
 import org.threeten.extra.YearWeek
 
 /** A range with a semantic meaning */
 interface TimeBlock : DateRange, Comparable<TimeBlock> {
-  /** The human-readable name of this block. */
-  val displayName: String
-
   /** The sequence of days contained in this block */
   val days: DateSequence
     get() = start..endInclusive
@@ -83,7 +78,6 @@ data class Day(val date: LocalDate = LocalDate.now()) : TimeUnitInstance {
 
   override val start: LocalDate = date
   override val endInclusive: LocalDate = date
-  override val displayName: String = date.toString()
 
   constructor(year: Int, month: Int, day: Int) : this(LocalDate.of(year, month, day))
 
@@ -99,22 +93,11 @@ data class Day(val date: LocalDate = LocalDate.now()) : TimeUnitInstance {
 }
 
 data class Week(val yearWeek: YearWeek = YearWeek.now()) : TimeUnitInstance {
-  companion object {
-    var firstDayOfWeek: DayOfWeek = WeekFields.of(Locale.getDefault()).firstDayOfWeek
-      set(value) {
-        field = value
-        lastDayOfWeek = value.minus(1)
-      }
-
-    private var lastDayOfWeek: DayOfWeek = firstDayOfWeek.minus(1)
-  }
-
   override val unit
     get() = TimeUnit.WEEK
 
-  override val start: LocalDate = yearWeek.atDay(firstDayOfWeek)
-  override val endInclusive: LocalDate = yearWeek.atDay(lastDayOfWeek)
-  override val displayName: String = yearWeek.toString()
+  override val start: LocalDate = yearWeek.atDay(DayOfWeek.MONDAY)
+  override val endInclusive: LocalDate = yearWeek.atDay(DayOfWeek.SUNDAY)
 
   constructor(weekBasedYear: Int, week: Int) : this(YearWeek.of(weekBasedYear, week))
 
@@ -137,7 +120,6 @@ data class Month(val yearMonth: YearMonth = YearMonth.now()) : TimeUnitInstance 
 
   override val start: LocalDate = yearMonth.atDay(1)
   override val endInclusive: LocalDate = yearMonth.atEndOfMonth()
-  override val displayName: String = yearMonth.toString()
 
   constructor(year: Int, month: Int) : this(YearMonth.of(year, month))
 
@@ -171,9 +153,6 @@ private constructor(private val range: ClosedRange<TimeUnitInstance>, val unit: 
         "but got ${start.unit} and ${endInclusive.unit}"
     },
   )
-
-  override val displayName: String =
-    "${range.start.displayName} - ${range.endInclusive.displayName}"
 
   /** The first [date][LocalDate] of this [TimeBlock]. */
   override val start: LocalDate
