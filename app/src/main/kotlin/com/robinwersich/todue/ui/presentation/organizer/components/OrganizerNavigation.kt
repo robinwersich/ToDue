@@ -25,6 +25,18 @@ import com.robinwersich.todue.ui.utility.interpolateFloat
 import com.robinwersich.todue.utility.size
 import kotlinx.collections.immutable.ImmutableList
 
+/**
+ * A 2-dimensional navigation component that allows the user to navigate through [TimeBlock]s on a
+ * time axis (vertical) and a granularity axis (horizontal). To be able to drag tasks between
+ * [TimeBlock]s, there is a navigation state which shows a parent [TimeBlock] together with all its
+ * children from the next smaller granularity level.
+ *
+ * @param timelines The timelines (i.e. granularity levels) to display.
+ * @param modifier The modifier to apply to this layout.
+ * @param childTimelineSizeFraction The fraction of the screen width that the child timeline should
+ *   take up in a split view with two timelines.
+ * @param timelineBlockContent The content to display for each [TimeBlock] in each [Timeline].
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OrganizerNavigation(
@@ -75,9 +87,10 @@ fun OrganizerNavigation(
   )
 }
 
+/** Lays out visible [Timeline]s horizontally based on a [NavigationState]. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun OrganizerNavigationLayout(
+private fun OrganizerNavigationLayout(
   navigationState: NavigationState,
   modifier: Modifier = Modifier,
   timelineBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
@@ -131,8 +144,9 @@ fun OrganizerNavigationLayout(
     },
   )
 
+/** Lays out [TimeBlock]s vertically based on the currently visible [DateTimeRange]. */
 @Composable
-fun TimelineLayout(
+private fun TimelineLayout(
   timeBlocks: ImmutableList<TimeBlock>,
   visibleDateRange: () -> ClosedRange<Double>,
   modifier: Modifier = Modifier,
