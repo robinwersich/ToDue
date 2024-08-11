@@ -19,9 +19,9 @@ import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.duration
 import com.robinwersich.todue.domain.model.toDoubleRange
+import com.robinwersich.todue.ui.composeextensions.instantStop
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
-import com.robinwersich.todue.ui.utility.instantStop
-import com.robinwersich.todue.ui.utility.interpolateFloat
+import com.robinwersich.todue.ui.presentation.organizer.state.TimelinePresentation
 import com.robinwersich.todue.utility.size
 import kotlinx.collections.immutable.ImmutableList
 
@@ -94,7 +94,7 @@ private fun OrganizerNavigationLayout(
   navigationState: NavigationState,
   modifier: Modifier = Modifier,
   timelineBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
-) =
+) {
   Layout(
     content = {
       // reading the activeNavigationPositions here directly somehow fixes the issue of
@@ -114,11 +114,13 @@ private fun OrganizerNavigationLayout(
       val placeables =
         measurables.zip(navigationState.activeTimelineBlocks) { measurable, (timeline, _) ->
           val relativeWidth =
-            navigationState.timelineDraggableState.interpolateFloat { navPos ->
-              when {
-                timeline < navPos.timeline -> navigationState.childTimelineSizeRatio
-                timeline == navPos.timeline && !navPos.showChild -> 1f
-                else -> 1 - navigationState.childTimelineSizeRatio
+            navigationState.timelinePresentationTransitions[timeline]!!.interpolateFloat {
+              when (it) {
+                TimelinePresentation.CHILD,
+                TimelinePresentation.HIDDEN_CHILD -> navigationState.childTimelineSizeRatio
+                TimelinePresentation.FULLSCREEN -> 1f
+                TimelinePresentation.PARENT,
+                TimelinePresentation.HIDDEN_PARENT -> 1f - navigationState.childTimelineSizeRatio
               }
             }
           val width = (relativeWidth * constraints.maxWidth).toInt()
@@ -127,14 +129,13 @@ private fun OrganizerNavigationLayout(
       layout(width = constraints.maxWidth, height = constraints.maxHeight) {
         placeables.zip(navigationState.activeTimelineBlocks) { placeable, (timeline, _) ->
           val relativeOffset =
-            navigationState.timelineDraggableState.interpolateFloat { navPos ->
-              when {
-                timeline < navPos.visibleTimelines.first() ->
-                  -navigationState.childTimelineSizeRatio
-                timeline == navPos.visibleTimelines.first() -> 0f
-                timeline == navPos.timeline && navPos.showChild ->
-                  navigationState.childTimelineSizeRatio
-                else -> 1f
+            navigationState.timelinePresentationTransitions[timeline]!!.interpolateFloat {
+              when (it) {
+                TimelinePresentation.HIDDEN_CHILD -> -navigationState.childTimelineSizeRatio
+                TimelinePresentation.CHILD,
+                TimelinePresentation.FULLSCREEN -> 0f
+                TimelinePresentation.PARENT -> navigationState.childTimelineSizeRatio
+                TimelinePresentation.HIDDEN_PARENT -> 1f
               }
             }
           val offset = (relativeOffset * constraints.maxWidth).toInt()
@@ -143,6 +144,7 @@ private fun OrganizerNavigationLayout(
       }
     },
   )
+}
 
 /** Lays out [TimeBlock]s vertically based on the currently visible [DateTimeRange]. */
 @Composable

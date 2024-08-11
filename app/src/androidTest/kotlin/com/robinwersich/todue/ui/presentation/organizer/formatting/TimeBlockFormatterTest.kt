@@ -1,4 +1,4 @@
-package com.robinwersich.todue.ui.utility
+package com.robinwersich.todue.ui.presentation.organizer.formatting
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.test.junit4.createAndroidComposeRule

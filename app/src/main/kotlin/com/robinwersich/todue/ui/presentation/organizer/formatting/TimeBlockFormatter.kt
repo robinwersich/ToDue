@@ -1,4 +1,4 @@
-package com.robinwersich.todue.ui.utility
+package com.robinwersich.todue.ui.presentation.organizer.formatting
 
 import android.content.res.Resources
 import androidx.annotation.StringRes

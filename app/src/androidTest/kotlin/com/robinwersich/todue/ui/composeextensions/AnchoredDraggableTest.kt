@@ -1,4 +1,4 @@
-package com.robinwersich.todue.ui.utility
+package com.robinwersich.todue.ui.composeextensions
 
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.tween
@@ -16,7 +16,7 @@ enum class TestAnchor(val value: Float) {
 }
 
 @OptIn(ExperimentalFoundationApi::class)
-class GestureControlledTransitionTest {
+class AnchoredDraggableTest {
   private lateinit var state: AnchoredDraggableState<TestAnchor>
   private val anchors = MyDraggableAnchors {
     TestAnchor.START at 0f
@@ -35,24 +35,6 @@ class GestureControlledTransitionTest {
         snapAnimationSpec = tween(),
         decayAnimationSpec = exponentialDecay(),
       )
-  }
-
-  @Test
-  fun interpolateFloat_ReturnsInitialAnchorValue_ForUninitializedAnchors() {
-    assertThat(state.interpolateFloat(TestAnchor::value)).isEqualTo(1f)
-  }
-
-  @Test
-  fun interpolateFloat_ReturnsSettledValue_ForInitializeState() {
-    state.updateAnchors(anchors)
-    assertThat(state.interpolateFloat(TestAnchor::value)).isEqualTo(1f)
-  }
-
-  @Test
-  fun interpolateFloat_ReturnsInterpolatedValue_ForInitializedUnsettledState() {
-    state.updateAnchors(anchors)
-    state.dispatchRawDelta(25f)
-    assertThat(state.interpolateFloat(TestAnchor::value)).isEqualTo(1.5f)
   }
 
   @Test

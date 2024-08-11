@@ -1,4 +1,4 @@
-package com.robinwersich.todue.ui.utility
+package com.robinwersich.todue.ui.composeextensions
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect

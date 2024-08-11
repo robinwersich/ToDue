@@ -24,9 +24,9 @@ import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Week
 import com.robinwersich.todue.ui.presentation.organizer.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.TaskViewState
+import com.robinwersich.todue.ui.presentation.organizer.formatting.TimeBlockFormatter
+import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
 import com.robinwersich.todue.ui.theme.ToDueTheme
-import com.robinwersich.todue.ui.utility.TimeBlockFormatter
-import com.robinwersich.todue.ui.utility.rememberTimeBlockFormatter
 import com.robinwersich.todue.utility.mapIndexedToImmutableList
 
 @Composable

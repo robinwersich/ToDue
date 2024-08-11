@@ -15,11 +15,13 @@ import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.rangeTo
 import com.robinwersich.todue.domain.model.toDoubleRange
-import com.robinwersich.todue.ui.utility.MyDraggableAnchors
-import com.robinwersich.todue.ui.utility.getAdjacentToCurrentAnchors
-import com.robinwersich.todue.ui.utility.isSettled
-import com.robinwersich.todue.ui.utility.offsetToCurrent
-import com.robinwersich.todue.ui.utility.pairReferentialEqualityPolicy
+import com.robinwersich.todue.ui.composeextensions.MyDraggableAnchors
+import com.robinwersich.todue.ui.composeextensions.getAdjacentToCurrentAnchors
+import com.robinwersich.todue.ui.composeextensions.isSettled
+import com.robinwersich.todue.ui.composeextensions.offsetToCurrent
+import com.robinwersich.todue.ui.composeextensions.pairReferentialEqualityPolicy
+import com.robinwersich.todue.ui.composeextensions.toSwipeableTransition
+import com.robinwersich.todue.ui.transition.SwipeableTransition
 import com.robinwersich.todue.utility.center
 import com.robinwersich.todue.utility.interpolateTo
 import com.robinwersich.todue.utility.mapToImmutableList
@@ -42,7 +44,18 @@ class NavigationState(
   initialTimeline: Timeline = timelines.first(),
   initialDate: LocalDate = LocalDate.now(),
 ) {
-  private val timelines = timelines.sorted().toImmutableList()
+  private val timelines = timelines.sorted()
+  private val timelineNavPositions =
+    buildList(capacity = timelines.size * 2 - 1) {
+      for (i in timelines.indices) {
+        val navPos = TimelineNavigationPosition(timelines, i, showChild = false)
+        val relativeOffset = i.toFloat()
+        add(navPos to relativeOffset)
+        if (i != 0) {
+          add(navPos.copy(showChild = true) to relativeOffset - childTimelineSizeRatio)
+        }
+      }
+    }
 
   val dateDraggableState =
     AnchoredDraggableState(
@@ -72,6 +85,25 @@ class NavigationState(
   private val currentDate: LocalDate
     get() = dateDraggableState.currentValue
 
+  /** The [SwipeableTransition] for the timeline navigation position. */
+  val timelineNavPosTransition: SwipeableTransition<TimelineNavigationPosition> =
+    timelineDraggableState.toSwipeableTransition()
+
+  /** The [SwipeableTransition] for the [TimelinePresentation] of each [Timeline]. */
+  val timelinePresentationTransitions: Map<Timeline, SwipeableTransition<TimelinePresentation>> =
+    timelines.associateWith { timeline ->
+      timelineNavPosTransition.derived { navPos ->
+        when {
+          timeline < (navPos.visibleChild ?: navPos.timeline) -> TimelinePresentation.HIDDEN_CHILD
+          timeline == navPos.visibleChild -> TimelinePresentation.CHILD
+          timeline == navPos.timeline && !navPos.showChild -> TimelinePresentation.FULLSCREEN
+          timeline == navPos.timeline && navPos.showChild -> TimelinePresentation.PARENT
+          timeline > navPos.timeline -> TimelinePresentation.HIDDEN_PARENT
+          else -> error("Unhandled TimelinePresentation case.")
+        }
+      }
+    }
+
   /**
    * This function needs to be launched in the [CoroutineScope][kotlinx.coroutines.CoroutineScope]
    * of the composable using this state to correctly update the internal [DraggableAnchors].
@@ -89,13 +121,8 @@ class NavigationState(
 
   private fun updateTimelineAnchors(viewportLength: Int) {
     val newAnchors = MyDraggableAnchors {
-      for (i in timelines.indices) {
-        val position = TimelineNavigationPosition(timelines, i, showChild = false)
-        val offset = (viewportLength * i).toFloat()
-        position at offset
-        if (i != 0) {
-          position.copy(showChild = true) at offset - viewportLength * childTimelineSizeRatio
-        }
+      for ((navPos, relativeOffset) in timelineNavPositions) {
+        navPos at relativeOffset * viewportLength
       }
     }
     timelineDraggableState.updateAnchors(newAnchors, newTarget = currentTimelinePosition)

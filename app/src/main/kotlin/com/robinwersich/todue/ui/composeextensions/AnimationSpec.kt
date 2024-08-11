@@ -1,4 +1,4 @@
-package com.robinwersich.todue.ui.utility
+package com.robinwersich.todue.ui.composeextensions
 
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.FloatDecayAnimationSpec

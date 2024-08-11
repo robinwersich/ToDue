@@ -1,4 +1,4 @@
-package com.robinwersich.todue.ui.utility
+package com.robinwersich.todue.ui.composeextensions
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout

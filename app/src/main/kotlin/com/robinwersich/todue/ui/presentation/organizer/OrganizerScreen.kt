@@ -7,8 +7,8 @@ import com.robinwersich.todue.domain.model.TimeUnit
 import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.ui.presentation.organizer.components.OrganizerNavigation
 import com.robinwersich.todue.ui.presentation.organizer.components.TimeBlockView
+import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
 import com.robinwersich.todue.ui.theme.ToDueTheme
-import com.robinwersich.todue.ui.utility.rememberTimeBlockFormatter
 import kotlinx.collections.immutable.persistentListOf
 
 @OptIn(ExperimentalFoundationApi::class)

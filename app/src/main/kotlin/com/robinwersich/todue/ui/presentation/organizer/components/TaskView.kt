@@ -3,7 +3,6 @@ package com.robinwersich.todue.ui.presentation.organizer.components
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.animateColor
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.expandVertically
@@ -58,13 +57,13 @@ import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.TimeBlock
+import com.robinwersich.todue.ui.composeextensions.DebouncedUpdate
+import com.robinwersich.todue.ui.composeextensions.signedPadding
 import com.robinwersich.todue.ui.presentation.organizer.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.ModifyTaskEvent
 import com.robinwersich.todue.ui.presentation.organizer.TaskViewState
+import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
 import com.robinwersich.todue.ui.theme.ToDueTheme
-import com.robinwersich.todue.ui.utility.DebouncedUpdate
-import com.robinwersich.todue.ui.utility.rememberTimeBlockFormatter
-import com.robinwersich.todue.ui.utility.signedPadding
 import java.time.LocalDate
 
 @Composable
@@ -84,7 +83,6 @@ fun TaskView(
   )
 }
 
-@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun TaskView(
   text: String,

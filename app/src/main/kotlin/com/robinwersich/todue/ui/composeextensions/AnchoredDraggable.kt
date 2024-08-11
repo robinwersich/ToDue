@@ -1,4 +1,4 @@
-package com.robinwersich.todue.ui.utility
+package com.robinwersich.todue.ui.composeextensions
 
 import androidx.collection.FloatList
 import androidx.collection.MutableFloatList
@@ -9,72 +9,29 @@ import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.structuralEqualityPolicy
+import com.robinwersich.todue.ui.transition.SwipeableTransition
+import com.robinwersich.todue.ui.transition.SwipeableTransitionState
 import kotlin.math.abs
 import kotlin.math.nextDown
 import kotlin.math.nextUp
 
-/**
- * Returns a smoothly interpolated [Float] derived from the current [AnchoredDraggableState] value.
- * This composable function avoids calling [targetValueByAnchor] for every offset change.
- *
- * @param targetValueByAnchor A function that returns a [Float] for a given anchor.
- */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun <S> AnchoredDraggableState<S>.animateFloat(targetValueByAnchor: (anchor: S) -> Float) =
-  animateValue(
-    interpolateValue = { start, end, progress -> start * (1 - progress) + end * progress },
-    targetValueByAnchor = targetValueByAnchor,
-  )
+fun <T> AnchoredDraggableState<T>.rememberSwipeableTransition() =
+  remember(this) { toSwipeableTransition() }
 
 /**
- * Returns a smoothly interpolated value derived from the current [AnchoredDraggableState] value.
- * This composable function avoids calling [targetValueByAnchor] for every offset change.
- *
- * @param interpolateValue A function that interpolates between two values of the target type.
- * @param targetValueByAnchor A function that returns the target value for a given anchor.
+ * Creates a [SwipeableTransition] controlled by this [AnchoredDraggableState]. When used in a
+ * composable, [rememberSwipeableTransition] should be used instead to ensure that the same
+ * transition is used across recompositions.
  */
 @OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun <S, T> AnchoredDraggableState<S>.animateValue(
-  interpolateValue: (start: T, end: T, progress: Float) -> T,
-  targetValueByAnchor: (anchor: S) -> T,
-): T {
-  val (prevAnchor, nextAnchor) =
-    remember { derivedStateOf(structuralEqualityPolicy()) { getAdjacentToOffsetAnchors() } }.value
-  val prevValue = remember(prevAnchor, targetValueByAnchor) { targetValueByAnchor(prevAnchor) }
-  val nextValue = remember(nextAnchor, targetValueByAnchor) { targetValueByAnchor(nextAnchor) }
-  return interpolateValue(prevValue, nextValue, progress(prevAnchor, nextAnchor))
-}
-
-/**
- * Returns a smoothly interpolated [Float] derived from the current [AnchoredDraggableState] value.
- *
- * @param targetValueByAnchor A function that returns a [Float] for a given anchor.
- */
-@OptIn(ExperimentalFoundationApi::class)
-fun <S> AnchoredDraggableState<S>.interpolateFloat(targetValueByAnchor: (anchor: S) -> Float) =
-  interpolateValue(
-    interpolateValue = { start, end, progress -> start * (1 - progress) + end * progress },
-    targetValueByAnchor = targetValueByAnchor,
-  )
-
-/**
- * Returns a smoothly interpolated value derived from the current [AnchoredDraggableState] value.
- *
- * @param interpolateValue A function that interpolates between two values of the target type.
- * @param targetValueByAnchor A function that returns the target value for a given anchor.
- */
-@OptIn(ExperimentalFoundationApi::class)
-fun <S, T> AnchoredDraggableState<S>.interpolateValue(
-  interpolateValue: (start: T, end: T, progress: Float) -> T,
-  targetValueByAnchor: (anchor: S) -> T,
-): T {
-  val (prevAnchor, nextAnchor) = getAdjacentToOffsetAnchors()
-  val prevValue = targetValueByAnchor(prevAnchor)
-  val nextValue = targetValueByAnchor(nextAnchor)
-  return interpolateValue(prevValue, nextValue, progress(prevAnchor, nextAnchor))
+fun <T> AnchoredDraggableState<T>.toSwipeableTransition() = SwipeableTransition {
+  derivedStateOf {
+      val (prev, next) = getAdjacentToOffsetAnchors()
+      SwipeableTransitionState(prev, next, progress(prev, next))
+    }
+    .value
 }
 
 /**
@@ -82,7 +39,7 @@ fun <S, T> AnchoredDraggableState<S>.interpolateValue(
  * draggable is settled or is not initialized, the same anchor is returned twice.
  */
 @OptIn(ExperimentalFoundationApi::class)
-fun <S> AnchoredDraggableState<S>.getAdjacentToOffsetAnchors(): Pair<S, S> {
+fun <T> AnchoredDraggableState<T>.getAdjacentToOffsetAnchors(): Pair<T, T> {
   if (offset.isNaN() || anchors.size == 0 || anchors.positionOf(settledValue) == offset) {
     return Pair(settledValue, settledValue)
   } else {
@@ -99,7 +56,7 @@ fun <S> AnchoredDraggableState<S>.getAdjacentToOffsetAnchors(): Pair<S, S> {
  * @see getAdjacentAnchors
  */
 @OptIn(ExperimentalFoundationApi::class)
-fun <S> AnchoredDraggableState<S>.getAdjacentToCurrentAnchors() = getAdjacentAnchors(currentValue)
+fun <T> AnchoredDraggableState<T>.getAdjacentToCurrentAnchors() = getAdjacentAnchors(currentValue)
 
 /**
  * Returns the adjacent anchors to the current [settled value][AnchoredDraggableState.settledValue].
@@ -107,7 +64,7 @@ fun <S> AnchoredDraggableState<S>.getAdjacentToCurrentAnchors() = getAdjacentAnc
  * @see getAdjacentAnchors
  */
 @OptIn(ExperimentalFoundationApi::class)
-fun <S> AnchoredDraggableState<S>.getAdjacentToSettledAnchors() = getAdjacentAnchors(settledValue)
+fun <T> AnchoredDraggableState<T>.getAdjacentToSettledAnchors() = getAdjacentAnchors(settledValue)
 
 /**
  * Returns the closest anchor with a smaller offset and the closest anchor with a larger offset than
@@ -116,7 +73,7 @@ fun <S> AnchoredDraggableState<S>.getAdjacentToSettledAnchors() = getAdjacentAnc
  * twice.
  */
 @OptIn(ExperimentalFoundationApi::class)
-fun <S> AnchoredDraggableState<S>.getAdjacentAnchors(anchor: S): Pair<S, S> {
+fun <T> AnchoredDraggableState<T>.getAdjacentAnchors(anchor: T): Pair<T, T> {
   val prevAnchor = anchors.previousAnchor(anchor) ?: anchor
   val nextAnchor = anchors.nextAnchor(anchor) ?: anchor
   return Pair(prevAnchor, nextAnchor)
@@ -149,7 +106,7 @@ fun <T> DraggableAnchors<T>.nextAnchor(anchor: T): T? {
  * anchors are not initialized yet, this will always return 0.
  */
 @OptIn(ExperimentalFoundationApi::class)
-val <S> AnchoredDraggableState<S>.offsetToCurrent: Float
+val <T> AnchoredDraggableState<T>.offsetToCurrent: Float
   get() = if (offset.isNaN()) 0f else offset - anchors.positionOf(currentValue)
 
 /**
@@ -157,7 +114,7 @@ val <S> AnchoredDraggableState<S>.offsetToCurrent: Float
  * are not initialized yet, this will always return true.
  */
 @OptIn(ExperimentalFoundationApi::class)
-val <S> AnchoredDraggableState<S>.isSettled: Boolean
+val <T> AnchoredDraggableState<T>.isSettled: Boolean
   get() = offset.isNaN() || anchors.positionOf(settledValue) == offset
 
 // --- Fixed Version of DraggableAnchors ---
