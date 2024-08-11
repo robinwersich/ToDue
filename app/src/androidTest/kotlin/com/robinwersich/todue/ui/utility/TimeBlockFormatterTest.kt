@@ -69,5 +69,5 @@ class TimeBlockFormatterTest {
 
   @Test fun format_Month() = assertFormats(Month(2020, 1), "January 2020")
 
-  @Test fun format_Month_ThisYear() = assertFormats(Month(2020, 1), "January", today = today)
+  @Test fun format_Month_ThisYear() = assertFormats(Month(2020, 12), "December", today = today)
 }

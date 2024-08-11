@@ -24,8 +24,8 @@
     <string name="format_date_range_end_same_month">d</string>
     <string name="format_date_range_end_same_month_with_year">d, yyyy</string>
     <string name="format_date_range_end_with_year">MMM d, yyyy</string>
-    <string name="format_month">LLLL</string>
-    <string name="format_month_with_year">LLLL yyyy</string>
+    <string name="format_month">MMMM</string>
+    <string name="format_month_with_year">MMMM yyyy</string>
     <string name="format_year">yyyy</string>
     <!-- Narrow Date Notations -->
     <string name="today_narrow">Today</string>
@@ -43,7 +43,7 @@
     <string name="format_date_range_end_same_month_narrow">d</string>
     <string name="format_date_range_end_same_month_with_year_narrow">d\nyyyy</string>
     <string name="format_date_range_end_with_year_narrow">MMM d\nyyyy</string>
-    <string name="format_month_narrow">LLLL</string>
-    <string name="format_month_with_year_narrow">LLLL\nyyyy</string>
+    <string name="format_month_narrow">MMMM</string>
+    <string name="format_month_with_year_narrow">MMMM\nyyyy</string>
     <string name="format_year_narrow">yyyy</string>
 </resources>
