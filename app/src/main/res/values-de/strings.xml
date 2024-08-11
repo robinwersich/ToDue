@@ -14,9 +14,9 @@
     <string name="last_week">Letzte Woche</string>
     <string name="format_day">EEE, d. MMM</string>
     <string name="format_day_with_year">EEE, d. MMM yyyy</string>
-    <string name="format_date_range_start">d. MMM – </string>
-    <string name="format_date_range_start_same_month">d. – </string>
-    <string name="format_date_range_start_with_year">d. MMM yyyy – </string>
+    <string name="format_date_range_start">d. MMM\' – \'</string>
+    <string name="format_date_range_start_same_month">d.\' – \'</string>
+    <string name="format_date_range_start_with_year">d. MMM yyyy\' – \'</string>
     <string name="format_date_range_end">d. MMM</string>
     <string name="format_date_range_end_same_month">d. MMM</string>
     <string name="format_date_range_end_same_month_with_year">d. MMM yyyy</string>
