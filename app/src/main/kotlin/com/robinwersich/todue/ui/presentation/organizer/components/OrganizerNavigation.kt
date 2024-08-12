@@ -88,7 +88,6 @@ fun OrganizerNavigation(
 }
 
 /** Lays out visible [Timeline]s horizontally based on a [NavigationState]. */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun OrganizerNavigationLayout(
   navigationState: NavigationState,
@@ -146,7 +145,7 @@ private fun OrganizerNavigationLayout(
   )
 }
 
-/** Lays out [TimeBlock]s vertically based on the currently visible [DateTimeRange]. */
+/** Lays out [TimeBlock]s vertically based on the currently visible date range. */
 @Composable
 private fun TimelineLayout(
   timeBlocks: ImmutableList<TimeBlock>,

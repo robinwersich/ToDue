@@ -4,7 +4,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.mutate
 import kotlinx.collections.immutable.persistentListOf
 
-/** Converts a map to an [ImmutableList] of [Pairs][Pair]. */
+/** Converts a map to an [ImmutableList] of [Pair]s. */
 fun <K, V> Map<K, V>.toImmutableList(): ImmutableList<Pair<K, V>> =
   persistentListOf<Pair<K, V>>().mutate { list -> this.forEach { list.add(it.toPair()) } }
 

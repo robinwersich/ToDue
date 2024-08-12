@@ -32,6 +32,14 @@ import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
+/**
+ * Holds information about the current navigation position of the organizer. This is mainly defined
+ * by a [timelineDraggableState] and a [dateDraggableState]. Other derived properties, such as the
+ * [visibleDateTimeRange] are exposed as observable state.
+ *
+ * @param timelines The timelines to navigate through. These do not need to be sorted initially, but
+ *   they will be internally.
+ */
 @Stable
 @OptIn(ExperimentalFoundationApi::class)
 class NavigationState(
@@ -44,19 +52,20 @@ class NavigationState(
   initialTimeline: Timeline = timelines.first(),
   initialDate: LocalDate = LocalDate.now(),
 ) {
-  private val timelines = timelines.sorted()
+  /** The ordered list of possible [TimelineNavigationPosition]s to navigate through. */
   private val timelineNavPositions =
     buildList(capacity = timelines.size * 2 - 1) {
-      for (i in timelines.indices) {
-        val navPos = TimelineNavigationPosition(timelines, i, showChild = false)
-        val relativeOffset = i.toFloat()
-        add(navPos to relativeOffset)
+      val sortedTimelines = timelines.sorted()
+      for (i in sortedTimelines.indices) {
+        val navPos = TimelineNavigationPosition(sortedTimelines, i, showChild = false)
         if (i != 0) {
-          add(navPos.copy(showChild = true) to relativeOffset - childTimelineSizeRatio)
+          add(navPos.copy(showChild = true))
         }
+        add(navPos)
       }
     }
 
+  /** The [AnchoredDraggableState] controlling the time navigation. */
   val dateDraggableState =
     AnchoredDraggableState(
       initialValue = initialDate,
@@ -65,9 +74,10 @@ class NavigationState(
       positionalThreshold = positionalThreshold,
       velocityThreshold = velocityThreshold,
     )
+  /** The [AnchoredDraggableState] controlling the granularity navigation. */
   val timelineDraggableState =
     AnchoredDraggableState(
-      initialValue = TimelineNavigationPosition(timelines, initialTimeline),
+      initialValue = timelineNavPosFor(initialTimeline) ?: timelineNavPositions.first(),
       snapAnimationSpec = snapAnimationSpec,
       decayAnimationSpec = decayAnimationSpec,
       positionalThreshold = positionalThreshold,
@@ -76,17 +86,17 @@ class NavigationState(
 
   private var viewportSize: IntSize? = null
 
-  private val currentTimelinePosition: TimelineNavigationPosition
+  private val currentTimelineNavPos: TimelineNavigationPosition
     get() = timelineDraggableState.currentValue
 
   private val currentTimeline: Timeline
-    get() = currentTimelinePosition.timeline
+    get() = currentTimelineNavPos.timeline
 
   private val currentDate: LocalDate
     get() = dateDraggableState.currentValue
 
   /** The [SwipeableTransition] for the timeline navigation position. */
-  val timelineNavPosTransition: SwipeableTransition<TimelineNavigationPosition> =
+  private val timelineNavPosTransition: SwipeableTransition<TimelineNavigationPosition> =
     timelineDraggableState.toSwipeableTransition()
 
   /** The [SwipeableTransition] for the [TimelinePresentation] of each [Timeline]. */
@@ -104,15 +114,23 @@ class NavigationState(
       }
     }
 
+  /** Attempts to find the [TimelineNavigationPosition] that shows the given [timeline]. */
+  private fun timelineNavPosFor(timeline: Timeline): TimelineNavigationPosition? =
+    timelineNavPositions.find { it.timeline == timeline && !it.showChild }
+
   /**
    * This function needs to be launched in the [CoroutineScope][kotlinx.coroutines.CoroutineScope]
    * of the composable using this state to correctly update the internal [DraggableAnchors].
    */
   suspend fun updateDateAnchorsOnSwipe() {
-    snapshotFlow { currentTimelinePosition to currentDate }
+    snapshotFlow { currentTimelineNavPos to currentDate }
       .collect { viewportSize?.let { updateDateAnchors(it.height) } }
   }
 
+  /**
+   * Should be called whenever the viewport size changes. To ensure the [DraggableAnchors] are of
+   * this state are spaced correctly.
+   */
   fun updateViewportSize(size: IntSize) {
     if (size.width != viewportSize?.width) updateTimelineAnchors(size.width)
     if (size.height != viewportSize?.height) updateDateAnchors(size.height)
@@ -121,11 +139,12 @@ class NavigationState(
 
   private fun updateTimelineAnchors(viewportLength: Int) {
     val newAnchors = MyDraggableAnchors {
-      for ((navPos, relativeOffset) in timelineNavPositions) {
+      timelineNavPositions.forEachIndexed { index, navPos ->
+        val relativeOffset = (index / 2) + (index % 2) * (1 - childTimelineSizeRatio)
         navPos at relativeOffset * viewportLength
       }
     }
-    timelineDraggableState.updateAnchors(newAnchors, newTarget = currentTimelinePosition)
+    timelineDraggableState.updateAnchors(newAnchors, newTarget = currentTimelineNavPos)
   }
 
   private fun updateDateAnchors(viewportLength: Int) {
@@ -135,9 +154,9 @@ class NavigationState(
       val nextBlock = currentBlock + 1
 
       val currentDateRange =
-        getVisibleDateRange(currentTimelinePosition, currentBlock).toDoubleRange()
-      val prevDateRange = getVisibleDateRange(currentTimelinePosition, prevBlock).toDoubleRange()
-      val nextDateRange = getVisibleDateRange(currentTimelinePosition, nextBlock).toDoubleRange()
+        getVisibleDateRange(currentTimelineNavPos, currentBlock).toDoubleRange()
+      val prevDateRange = getVisibleDateRange(currentTimelineNavPos, prevBlock).toDoubleRange()
+      val nextDateRange = getVisibleDateRange(currentTimelineNavPos, nextBlock).toDoubleRange()
 
       val prevDateDistance = prevDateRange.center - currentDateRange.center
       val nextDateDistance = nextDateRange.center - currentDateRange.center
@@ -178,18 +197,21 @@ class NavigationState(
       NavigationPosition(timeline, date, getVisibleDateRange(timeline, date))
 
     AdjacentNavigationPositions(
-      current = navPos(currentTimelinePosition, currentDate),
-      prevDate = navPos(currentTimelinePosition, prevDate),
-      nextDate = navPos(currentTimelinePosition, nextDate),
+      current = navPos(currentTimelineNavPos, currentDate),
+      prevDate = navPos(currentTimelineNavPos, prevDate),
+      nextDate = navPos(currentTimelineNavPos, nextDate),
       prevTimeline = navPos(prevTimelinePos, currentDate),
       nextTimeline = navPos(nextTimelinePos, currentDate),
     )
   }
 
+  /**
+   * All [Timeline]s and corresponding [DateRange]s of the current [AdjacentNavigationPositions].
+   */
   val prefetchTimelineDateRanges: ImmutableList<Pair<Timeline, DateRange>> by derivedStateOf {
     val dateRangesByTimeline = mutableMapOf<Timeline, DateRange>()
-    for ((timelinePosition, _, dateRange) in adjacentNavigationPositions) {
-      timelinePosition.visibleTimelines.forEach { timeline ->
+    for ((timelineNavPos, _, dateRange) in adjacentNavigationPositions) {
+      timelineNavPos.visibleTimelines.forEach { timeline ->
         val currentRange = dateRangesByTimeline.getOrDefault(timeline, dateRange)
         dateRangesByTimeline[timeline] = currentRange union dateRange
       }
@@ -197,6 +219,10 @@ class NavigationState(
     dateRangesByTimeline.toImmutableList()
   }
 
+  /**
+   * The two [NavigationPosition]s that is currently transitioned between. If there is no transition
+   * currently happening, both positions will be the same.
+   */
   val activeNavigationPositions: Pair<NavigationPosition, NavigationPosition> by
     derivedStateOf(pairReferentialEqualityPolicy()) {
       with(adjacentNavigationPositions) {
@@ -218,12 +244,16 @@ class NavigationState(
       }
     }
 
+  /**
+   * The [Timeline]s and corresponding [TimeBlock]s that are visible currently or at some point in
+   * the current [NavigationPosition] transition.
+   */
   val activeTimelineBlocks:
     ImmutableList<Pair<Timeline, ImmutableList<TimeBlock>>> by derivedStateOf {
     val (prevPos, nextPos) = activeNavigationPositions
     val activeTimelines = buildList {
-      prevPos.timelinePosition.visibleTimelines.forEach { add(it) }
-      nextPos.timelinePosition.visibleTimelines.forEach { if (it !in this) add(it) }
+      prevPos.timelineNavPos.visibleTimelines.forEach { add(it) }
+      nextPos.timelineNavPos.visibleTimelines.forEach { if (it !in this) add(it) }
     }
     val activeDateRange = prevPos.dateRange union nextPos.dateRange
     activeTimelines.mapToImmutableList { timeline ->
@@ -233,43 +263,47 @@ class NavigationState(
     }
   }
 
+  /**
+   * The interpolated date range which should currently be displayed, in the form a [Double] range
+   * representing the fractional epoch days.
+   */
   val visibleDateTimeRange by derivedStateOf {
     val (prevPos, nextPos) = activeNavigationPositions
     val progress =
       if (!timelineDraggableState.isSettled) {
-        timelineDraggableState.progress(prevPos.timelinePosition, nextPos.timelinePosition)
+        timelineDraggableState.progress(prevPos.timelineNavPos, nextPos.timelineNavPos)
       } else {
-        dateDraggableState.progress(prevPos.datePosition, nextPos.datePosition)
+        dateDraggableState.progress(prevPos.date, nextPos.date)
       }
     prevPos.dateRange.toDoubleRange().interpolateTo(nextPos.dateRange.toDoubleRange(), progress)
   }
 }
 
-private fun getVisibleDateRange(timelinePosition: TimelineNavigationPosition, date: LocalDate) =
-  getVisibleDateRange(timelinePosition, timelinePosition.timeline.timeBlockFrom(date))
+private fun getVisibleDateRange(timelineNavPos: TimelineNavigationPosition, date: LocalDate) =
+  getVisibleDateRange(timelineNavPos, timelineNavPos.timeline.timeBlockFrom(date))
 
 private fun getVisibleDateRange(
-  timelinePosition: TimelineNavigationPosition,
+  timelineNavPos: TimelineNavigationPosition,
   timeBlock: TimeBlock,
 ): DateRange {
-  return getVisibleStart(timelinePosition, timeBlock)..getVisibleEnd(timelinePosition, timeBlock)
+  return getVisibleStart(timelineNavPos, timeBlock)..getVisibleEnd(timelineNavPos, timeBlock)
 }
 
 private fun getVisibleStart(
-  timelinePosition: TimelineNavigationPosition,
+  timelineNavPos: TimelineNavigationPosition,
   timeBlock: TimeBlock,
 ): LocalDate {
-  return timelinePosition.visibleChild?.let {
+  return timelineNavPos.visibleChild?.let {
     val childBlock = it.timeBlockFrom(timeBlock.start)
     childBlock.start
   } ?: timeBlock.start
 }
 
 private fun getVisibleEnd(
-  timelinePosition: TimelineNavigationPosition,
+  timelineNavPos: TimelineNavigationPosition,
   timeBlock: TimeBlock,
 ): LocalDate {
-  return timelinePosition.visibleChild?.let {
+  return timelineNavPos.visibleChild?.let {
     val childBlock = it.timeBlockFrom(timeBlock.endInclusive)
     childBlock.endInclusive
   } ?: timeBlock.endInclusive

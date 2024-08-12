@@ -29,7 +29,7 @@ fun rememberTimeBlockFormatter(): TimeBlockFormatter {
 }
 
 /**
- * A formatter turning [TimeBlocks][TimeBlock] into human-readable strings.
+ * A formatter turning [TimeBlock]s into human-readable strings.
  *
  * @param resources The resources of the current language to use for string formatting.
  */

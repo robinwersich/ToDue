@@ -22,9 +22,9 @@ data class TimelineNavigationPosition(
   }
 
   /**
-   * Creates a new [TimelineNavigationPosition] based on a list of [Timelines][Timeline].
+   * Creates a new [TimelineNavigationPosition] based on a list of [Timeline]s.
    *
-   * @param sortedTimelines A list of [Timelines][Timeline], sorted by their time unit size.
+   * @param sortedTimelines A list of [Timeline]s, sorted by their time unit size.
    * @param index The index of the main timeline of this position in the [sortedTimelines] list.
    * @param showChild Whether the child timeline should be visible.
    */
@@ -40,10 +40,10 @@ data class TimelineNavigationPosition(
   )
 
   /**
-   * Creates a new [TimelineNavigationPosition] based on a list of [Timelines][Timeline] and a
-   * focussed timeline.
+   * Creates a new [TimelineNavigationPosition] based on a list of [Timeline]s and a focussed
+   * timeline.
    *
-   * @param sortedTimelines A list of [Timelines][Timeline], sorted by their time unit size.
+   * @param sortedTimelines A list of [Timeline]s, sorted by their time unit size.
    * @param focussedTimeline The main timeline of this position. If it is not in the list, the first
    *   timeline will be used.
    * @param showChild Whether the child timeline should be visible.
@@ -75,11 +75,11 @@ data class TimelineNavigationPosition(
 /** Describes the current navigation position in the organizer. */
 data class NavigationPosition(
   /** Which timeline(s) should be visible. */
-  val timelinePosition: TimelineNavigationPosition,
+  val timelineNavPos: TimelineNavigationPosition,
   /** The date (and resulting time block) that should be visible. */
-  val datePosition: LocalDate,
+  val date: LocalDate,
   /** The date range that will be visible in this navigation position. */
   val dateRange: DateRange,
 ) {
-  override fun toString() = "NavigationPosition(timeline=$timelinePosition, date=$datePosition)"
+  override fun toString() = "NavigationPosition(timeline=$timelineNavPos, date=$date)"
 }

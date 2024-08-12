@@ -137,8 +137,8 @@ data class Month(val yearMonth: YearMonth = YearMonth.now()) : TimeUnitInstance 
 }
 
 /**
- * A sequence of [TimeUnitInstances][TimeUnitInstance] that are all of the same [TimeUnit]. While
- * representing a sequence of TimeBlocks, this class is also a [TimeBlock] itself.
+ * A sequence of [TimeUnitInstance]s that are all of the same [TimeUnit]. While representing a
+ * sequence of TimeBlocks, this class is also a [TimeBlock] itself.
  */
 class TimeUnitInstanceSequence
 private constructor(private val range: ClosedRange<TimeUnitInstance>, val unit: TimeUnit) :
@@ -171,8 +171,8 @@ private constructor(private val range: ClosedRange<TimeUnitInstance>, val unit: 
     get() = range.endInclusive
 
   /**
-   * Returns this as a [ClosedRange] of [TimeUnitInstances][TimeUnitInstance]. Because this class is
-   * also a [TimeBlock] itself and thus a [DateRange], it cannot implement this interface directly.
+   * Returns this as a [ClosedRange] of [TimeUnitInstance]s. Because this class is also a
+   * [TimeBlock] itself and thus a [DateRange], it cannot implement this interface directly.
    */
   fun asTimeBlockRange() = range
 
