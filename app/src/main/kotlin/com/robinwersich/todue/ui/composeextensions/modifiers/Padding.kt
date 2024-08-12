@@ -1,4 +1,4 @@
-package com.robinwersich.todue.ui.composeextensions
+package com.robinwersich.todue.ui.composeextensions.modifiers
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
@@ -6,8 +6,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.offset
 
+/**
+ * Same functionality as [Modifier.padding][androidx.compose.foundation.layout.padding], but allows
+ * negative padding values, making the content appear smaller than it is.
+ */
 fun Modifier.signedPadding(start: Dp = 0.dp, top: Dp = 0.dp, end: Dp = 0.dp, bottom: Dp = 0.dp) =
-  this.layout { measurable, constraints ->
+  layout { measurable, constraints ->
     val horizontalPadding = (start + end).roundToPx()
     val verticalPadding = (top + bottom).roundToPx()
     val newConstraints = constraints.offset(-horizontalPadding, -verticalPadding)
@@ -18,7 +22,9 @@ fun Modifier.signedPadding(start: Dp = 0.dp, top: Dp = 0.dp, end: Dp = 0.dp, bot
     }
   }
 
+/** @see signedPadding */
 fun Modifier.signedPadding(vertical: Dp = 0.dp, horizontal: Dp = 0.dp) =
-  this.signedPadding(start = horizontal, top = vertical, end = horizontal, bottom = vertical)
+  signedPadding(start = horizontal, top = vertical, end = horizontal, bottom = vertical)
 
-fun Modifier.signedPadding(all: Dp) = this.signedPadding(all, all, all, all)
+/** @see signedPadding */
+fun Modifier.signedPadding(all: Dp) = signedPadding(all, all, all, all)

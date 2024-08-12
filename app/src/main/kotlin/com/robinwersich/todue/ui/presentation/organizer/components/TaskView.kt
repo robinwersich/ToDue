@@ -58,7 +58,7 @@ import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.ui.composeextensions.DebouncedUpdate
-import com.robinwersich.todue.ui.composeextensions.signedPadding
+import com.robinwersich.todue.ui.composeextensions.modifiers.signedPadding
 import com.robinwersich.todue.ui.presentation.organizer.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.ModifyTaskEvent
 import com.robinwersich.todue.ui.presentation.organizer.TaskViewState
