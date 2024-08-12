@@ -16,12 +16,12 @@ import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.rangeTo
 import com.robinwersich.todue.domain.model.toDoubleRange
 import com.robinwersich.todue.ui.composeextensions.MyDraggableAnchors
+import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
 import com.robinwersich.todue.ui.composeextensions.getAdjacentToCurrentAnchors
 import com.robinwersich.todue.ui.composeextensions.isSettled
 import com.robinwersich.todue.ui.composeextensions.offsetToCurrent
 import com.robinwersich.todue.ui.composeextensions.pairReferentialEqualityPolicy
 import com.robinwersich.todue.ui.composeextensions.toSwipeableTransition
-import com.robinwersich.todue.ui.transition.SwipeableTransition
 import com.robinwersich.todue.utility.center
 import com.robinwersich.todue.utility.interpolateTo
 import com.robinwersich.todue.utility.mapToImmutableList

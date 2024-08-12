@@ -8,9 +8,8 @@ import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import com.robinwersich.todue.ui.transition.SwipeableTransition
-import com.robinwersich.todue.ui.transition.SwipeableTransitionState
 import kotlin.math.abs
 import kotlin.math.nextDown
 import kotlin.math.nextUp
@@ -26,12 +25,15 @@ fun <T> AnchoredDraggableState<T>.rememberSwipeableTransition() =
  * transition is used across recompositions.
  */
 @OptIn(ExperimentalFoundationApi::class)
-fun <T> AnchoredDraggableState<T>.toSwipeableTransition() = SwipeableTransition {
-  derivedStateOf {
-      val (prev, next) = getAdjacentToOffsetAnchors()
-      SwipeableTransitionState(prev, next, progress(prev, next))
-    }
-    .value
+fun <T> AnchoredDraggableState<T>.toSwipeableTransition(): SwipeableTransition<T> {
+  val transitionStates by derivedStateOf { getAdjacentToOffsetAnchors() }
+  return SwipeableTransition(
+    transitionStates = { transitionStates },
+    progress = {
+      val (prevAnchor, nextAnchor) = transitionStates
+      progress(prevAnchor, nextAnchor)
+    },
+  )
 }
 
 /**

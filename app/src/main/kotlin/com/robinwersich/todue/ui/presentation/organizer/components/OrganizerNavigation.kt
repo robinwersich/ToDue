@@ -20,6 +20,7 @@ import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.duration
 import com.robinwersich.todue.domain.model.toDoubleRange
 import com.robinwersich.todue.ui.composeextensions.instantStop
+import com.robinwersich.todue.ui.composeextensions.interpolateFloat
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.presentation.organizer.state.TimelinePresentation
 import com.robinwersich.todue.utility.size
