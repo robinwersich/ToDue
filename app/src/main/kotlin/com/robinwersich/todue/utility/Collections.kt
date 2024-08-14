@@ -20,4 +20,11 @@ fun <T, R> Iterable<T>.mapIndexedToImmutableList(transform: (Int, T) -> R): Immu
 operator fun <T> Pair<T, T>.contains(element: T): Boolean = first == element || second == element
 
 /** Transforms the content of a pair. */
-fun <T, R> Pair<T, T>.map(transform: (T) -> R): Pair<R, R> = transform(first) to transform(second)
+inline fun <T, R> Pair<T, T>.map(transform: (T) -> R): Pair<R, R> =
+  transform(first) to transform(second)
+
+/** Performs the given [action] on each element of the pair. */
+inline fun <T> Pair<T, T>.forEach(action: (T) -> Unit) {
+  action(first)
+  action(second)
+}

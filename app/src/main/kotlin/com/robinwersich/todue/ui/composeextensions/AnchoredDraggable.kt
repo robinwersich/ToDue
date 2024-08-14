@@ -26,7 +26,8 @@ fun <T> AnchoredDraggableState<T>.rememberSwipeableTransition() =
  */
 @OptIn(ExperimentalFoundationApi::class)
 fun <T> AnchoredDraggableState<T>.toSwipeableTransition(): SwipeableTransition<T> {
-  val transitionStates by derivedStateOf { getAdjacentToOffsetAnchors() }
+  val transitionStates by
+    derivedStateOf(pairReferentialEqualityPolicy()) { getAdjacentToOffsetAnchors() }
   return SwipeableTransition(
     transitionStates = { transitionStates },
     progress = {

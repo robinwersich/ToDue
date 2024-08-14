@@ -2,6 +2,7 @@ package com.robinwersich.todue.ui.composeextensions
 
 import androidx.annotation.FloatRange
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -30,13 +31,33 @@ class SwipeableTransition<T>(
   /** Convenience constructor for previews. */
   constructor(state: T) : this({ state to state }, { 0f })
 
+  private val settledState: T?
+    get() {
+      val (prevState, nextState) = transitionStates()
+      return if (prevState == nextState) prevState else null
+    }
+
+  /** Specifies if the transition is currently animating or not. */
+  val isSettled: Boolean
+    get() = settledState != null
+
+  /** Returns if the transition is currently settled on the given [state]. */
+  fun isSettledOn(state: T): Boolean = settledState == state
+
+  /** Returns true if both current [transitionStates] are in the list of given [states]. */
+  fun isBetween(vararg states: T): Boolean {
+    val (prevState, nextState) = transitionStates()
+    return prevState in states && nextState in states
+  }
+
   /**
    * Creates a derived [SwipeableTransition] that transforms the state using the provided function.
    *
    * @param stateTransform A function mapping the original states to the derived states.
    */
   fun <S> derived(stateTransform: (T) -> S): SwipeableTransition<S> {
-    val derivedStateTransition by derivedStateOf { transitionStates().map(stateTransform) }
+    val derivedStateTransition by
+      derivedStateOf(pairReferentialEqualityPolicy()) { transitionStates().map(stateTransform) }
     val derivedProgress by derivedStateOf {
       if (derivedStateTransition.first == derivedStateTransition.second) 0f else progress()
     }
