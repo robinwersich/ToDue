@@ -19,9 +19,16 @@ fun <T, R> Iterable<T>.mapIndexedToImmutableList(transform: (Int, T) -> R): Immu
 /** Returns if the pair contains the [element]. */
 operator fun <T> Pair<T, T>.contains(element: T): Boolean = first == element || second == element
 
+/** Returns if any of the given [elements] is contained in the pair. */
+fun <T> Pair<T, T>.containsAny(vararg elements: T): Boolean = elements.any { it in this }
+
 /** Transforms the content of a pair. */
 inline fun <T, R> Pair<T, T>.map(transform: (T) -> R): Pair<R, R> =
   transform(first) to transform(second)
+
+/** If the two elements of the pair are equal to each other. */
+val <T> Pair<T, T>.isSame
+  get() = first == second
 
 /** Performs the given [action] on each element of the pair. */
 inline fun <T> Pair<T, T>.forEach(action: (T) -> Unit) {

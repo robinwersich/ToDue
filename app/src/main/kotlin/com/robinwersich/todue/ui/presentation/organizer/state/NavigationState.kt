@@ -17,13 +17,14 @@ import com.robinwersich.todue.domain.model.rangeTo
 import com.robinwersich.todue.domain.model.toDoubleRange
 import com.robinwersich.todue.ui.composeextensions.MyDraggableAnchors
 import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
+import com.robinwersich.todue.ui.composeextensions.SwipeableValue
 import com.robinwersich.todue.ui.composeextensions.getAdjacentToCurrentAnchors
 import com.robinwersich.todue.ui.composeextensions.isSettled
 import com.robinwersich.todue.ui.composeextensions.offsetToCurrent
 import com.robinwersich.todue.ui.composeextensions.pairReferentialEqualityPolicy
 import com.robinwersich.todue.ui.composeextensions.toSwipeableTransition
 import com.robinwersich.todue.utility.center
-import com.robinwersich.todue.utility.interpolateTo
+import com.robinwersich.todue.utility.interpolateDoubleRange
 import com.robinwersich.todue.utility.mapToImmutableList
 import com.robinwersich.todue.utility.size
 import com.robinwersich.todue.utility.toImmutableList
@@ -35,7 +36,7 @@ import kotlinx.collections.immutable.toImmutableList
 /**
  * Holds information about the current navigation position of the organizer. This is mainly defined
  * by a [timelineDraggableState] and a [dateDraggableState]. Other derived properties, such as the
- * [visibleDateTimeRange] are exposed as observable state.
+ * [visibleDateRange] are exposed as observable state.
  *
  * @param timelines The timelines to navigate through. These do not need to be sorted initially, but
  *   they will be internally.
@@ -92,23 +93,24 @@ class NavigationState(
   private val currentTimeline: Timeline
     get() = currentTimelineNavPos.timeline
 
-  private val currentDate: LocalDate
+  /** The focussed date of the organizer from which the current [TimeBlock] is derived. */
+  val currentDate: LocalDate
     get() = dateDraggableState.currentValue
 
   /** The [SwipeableTransition] for the timeline navigation position. */
   private val timelineNavPosTransition: SwipeableTransition<TimelineNavigationPosition> =
     timelineDraggableState.toSwipeableTransition()
 
-  /** The [SwipeableTransition] for the [TimelinePresentation] of each [Timeline]. */
-  val timelinePresentationTransitions: Map<Timeline, SwipeableTransition<TimelinePresentation>> =
+  /** The [SwipeableTransition] for the [TimelineStyle] of each [Timeline]. */
+  val timelineStyleTransitions: Map<Timeline, SwipeableTransition<TimelineStyle>> =
     timelines.associateWith { timeline ->
-      timelineNavPosTransition.derived { navPos ->
+      timelineNavPosTransition.derive { navPos ->
         when {
-          timeline < (navPos.visibleChild ?: navPos.timeline) -> TimelinePresentation.HIDDEN_CHILD
-          timeline == navPos.visibleChild -> TimelinePresentation.CHILD
-          timeline == navPos.timeline && !navPos.showChild -> TimelinePresentation.FULLSCREEN
-          timeline == navPos.timeline && navPos.showChild -> TimelinePresentation.PARENT
-          timeline > navPos.timeline -> TimelinePresentation.HIDDEN_PARENT
+          timeline > navPos.timeline -> TimelineStyle.HIDDEN_PARENT
+          timeline == navPos.timeline && navPos.showChild -> TimelineStyle.PARENT
+          timeline == navPos.timeline && !navPos.showChild -> TimelineStyle.FULLSCREEN
+          timeline == navPos.visibleChild -> TimelineStyle.CHILD
+          timeline < (navPos.visibleChild ?: navPos.timeline) -> TimelineStyle.HIDDEN_CHILD
           else -> error("Unhandled TimelinePresentation case.")
         }
       }
@@ -220,29 +222,42 @@ class NavigationState(
   }
 
   /**
-   * The two [NavigationPosition]s that is currently transitioned between. If there is no transition
-   * currently happening, both positions will be the same.
+   * The transition of the current [NavigationPosition]. This combines two [AnchoredDraggableState]s
+   * into a single [SwipeableTransition].
    */
-  val activeNavigationPositions: Pair<NavigationPosition, NavigationPosition> by
+  private val navPosTransition: SwipeableTransition<NavigationPosition> =
     derivedStateOf(pairReferentialEqualityPolicy()) {
-      with(adjacentNavigationPositions) {
-        if (!timelineDraggableState.isSettled) {
-          val offsetToCurrent = timelineDraggableState.offsetToCurrent
-          when {
-            offsetToCurrent < 0 -> prevTimeline to current
-            offsetToCurrent > 0 -> current to nextTimeline
-            else -> current to current
-          }
-        } else {
-          val offsetToCurrent = dateDraggableState.offsetToCurrent
-          when {
-            offsetToCurrent < 0 -> prevDate to current
-            offsetToCurrent > 0 -> current to nextDate
-            else -> current to current
+        with(adjacentNavigationPositions) {
+          if (!timelineDraggableState.isSettled) {
+            val offsetToCurrent = timelineDraggableState.offsetToCurrent
+            when {
+              offsetToCurrent < 0 -> prevTimeline to current
+              offsetToCurrent > 0 -> current to nextTimeline
+              else -> current to current
+            }
+          } else {
+            val offsetToCurrent = dateDraggableState.offsetToCurrent
+            when {
+              offsetToCurrent < 0 -> prevDate to current
+              offsetToCurrent > 0 -> current to nextDate
+              else -> current to current
+            }
           }
         }
       }
-    }
+      .let { transitionStates ->
+        SwipeableTransition(
+          transitionStates = { transitionStates.value },
+          progress = {
+            val (prevPos, nextPos) = transitionStates.value
+            if (!timelineDraggableState.isSettled) {
+              timelineDraggableState.progress(prevPos.timelineNavPos, nextPos.timelineNavPos)
+            } else {
+              dateDraggableState.progress(prevPos.date, nextPos.date)
+            }
+          },
+        )
+      }
 
   /**
    * The [Timeline]s and corresponding [TimeBlock]s that are visible currently or at some point in
@@ -250,7 +265,7 @@ class NavigationState(
    */
   val activeTimelineBlocks:
     ImmutableList<Pair<Timeline, ImmutableList<TimeBlock>>> by derivedStateOf {
-    val (prevPos, nextPos) = activeNavigationPositions
+    val (prevPos, nextPos) = navPosTransition.transitionStates()
     val activeTimelines = buildList {
       prevPos.timelineNavPos.visibleTimelines.forEach { add(it) }
       nextPos.timelineNavPos.visibleTimelines.forEach { if (it !in this) add(it) }
@@ -267,16 +282,8 @@ class NavigationState(
    * The interpolated date range which should currently be displayed, in the form a [Double] range
    * representing the fractional epoch days.
    */
-  val visibleDateTimeRange by derivedStateOf {
-    val (prevPos, nextPos) = activeNavigationPositions
-    val progress =
-      if (!timelineDraggableState.isSettled) {
-        timelineDraggableState.progress(prevPos.timelineNavPos, nextPos.timelineNavPos)
-      } else {
-        dateDraggableState.progress(prevPos.date, nextPos.date)
-      }
-    prevPos.dateRange.toDoubleRange().interpolateTo(nextPos.dateRange.toDoubleRange(), progress)
-  }
+  val visibleDateRange =
+    SwipeableValue(navPosTransition, ::interpolateDoubleRange, { it.dateRange.toDoubleRange() })
 }
 
 private fun getVisibleDateRange(timelineNavPos: TimelineNavigationPosition, date: LocalDate) =
