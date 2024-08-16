@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.util.lerp
 import com.robinwersich.todue.utility.isSame
 import com.robinwersich.todue.utility.map
 
@@ -154,12 +155,7 @@ class SwipeableTransition<T>(
  * Stores the calculation of an interpolated value of a [SwipeableTransition] so it can be retrieved
  * later, deferring state reads.
  */
-class SwipeableValue<V>
-private constructor(
-  private val progress: () -> Float,
-  private val valueAtProgress: (() -> Float) -> V,
-  aggregate: Boolean = false,
-) : State<V> {
+class SwipeableValue<V>(private val getValue: () -> V) : State<V> {
   companion object {
     /**
      * Generic factory method for creating a [SwipeableValue].
@@ -174,54 +170,38 @@ private constructor(
       interpolateValue: (start: V, end: V, progress: Float) -> V,
       targetValueByState: (state: T) -> V,
       aggregate: Boolean = false,
-    ) =
-      SwipeableValue(
-        progress = transition.progress,
-        valueAtProgress = { progress ->
-          val (prev, next) = transition.transitionStates()
-          val prevValue = targetValueByState(prev)
-          val nextValue = targetValueByState(next)
-          if (prevValue == nextValue) prevValue
-          else interpolateValue(prevValue, nextValue, progress())
-        },
-        aggregate = aggregate,
-      )
+    ): SwipeableValue<V> {
+      var getValue = {
+        val (prev, next) = transition.transitionStates()
+        val prevValue = targetValueByState(prev)
+        val nextValue = targetValueByState(next)
+        if (prevValue == nextValue) prevValue
+        else interpolateValue(prevValue, nextValue, transition.progress())
+      }
+      if (aggregate) {
+        val state = derivedStateOf(getValue)
+        getValue = { state.value }
+      }
+      return SwipeableValue(getValue)
+    }
   }
-
-  private val getValue =
-    if (aggregate) derivedStateOf { valueAtProgress(progress) }.let { { it.value } }
-    else ({ valueAtProgress(progress) })
 
   override val value
     get() = getValue()
 
-  fun at(progress: Float) = valueAtProgress { progress }
-
   /** Creates a value derived from this one. */
-  fun <U> derive(transform: (V) -> U) =
-    SwipeableValue(progress = progress, valueAtProgress = { transform(valueAtProgress(it)) })
+  fun <U> derive(transform: (V) -> U) = SwipeableValue { transform(getValue()) }
 
   /** Returns a remembered value derived from this one. */
   @Composable fun <U> derived(transform: (V) -> U) = remember(this, transform) { derive(transform) }
 
-  override fun hashCode(): Int {
-    var result = progress.hashCode()
-    result = 31 * result + valueAtProgress.hashCode()
-    return result
-  }
+  override fun hashCode() = getValue.hashCode()
 
-  override fun equals(other: Any?): Boolean {
-    if (this === other) return true
-    if (other !is SwipeableValue<*>) return false
-    return progress == other.progress && valueAtProgress == other.valueAtProgress
-  }
+  override fun equals(other: Any?) = other is SwipeableValue<*> && getValue == other.getValue
 }
 
 fun <T> SwipeableTransition<T>.interpolateFloat(targetValueByState: (state: T) -> Float) =
-  interpolateValue(
-    interpolateValue = { start, end, progress -> start * (1 - progress) + end * progress },
-    targetValueByState = targetValueByState,
-  )
+  interpolateValue(interpolateValue = ::lerp, targetValueByState = targetValueByState)
 
 @Composable
 fun <T> SwipeableTransition<T>.interpolatedFloat(
@@ -229,7 +209,21 @@ fun <T> SwipeableTransition<T>.interpolatedFloat(
   targetValueByState: (state: T) -> Float,
 ) =
   interpolatedValue(
-    interpolateValue = { start, end, progress -> start * (1 - progress) + end * progress },
+    interpolateValue = ::lerp,
+    targetValueByState = targetValueByState,
+    aggregate = aggregate,
+  )
+
+fun <T> SwipeableTransition<T>.interpolateInt(targetValueByState: (state: T) -> Int) =
+  interpolateValue(interpolateValue = ::lerp, targetValueByState = targetValueByState)
+
+@Composable
+fun <T> SwipeableTransition<T>.interpolatedInt(
+  aggregate: Boolean = false,
+  targetValueByState: (state: T) -> Int,
+) =
+  interpolatedValue(
+    interpolateValue = ::lerp,
     targetValueByState = targetValueByState,
     aggregate = aggregate,
   )

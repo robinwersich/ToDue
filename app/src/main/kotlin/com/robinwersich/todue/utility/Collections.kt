@@ -22,6 +22,14 @@ operator fun <T> Pair<T, T>.contains(element: T): Boolean = first == element || 
 /** Returns if any of the given [elements] is contained in the pair. */
 fun <T> Pair<T, T>.containsAny(vararg elements: T): Boolean = elements.any { it in this }
 
+/** Returns an element of the pair that matches the given [predicate] or null. */
+inline fun <T> Pair<T, T>.find(predicate: (T) -> Boolean): T? =
+  when {
+    predicate(first) -> first
+    predicate(second) -> second
+    else -> null
+  }
+
 /** Transforms the content of a pair. */
 inline fun <T, R> Pair<T, T>.map(transform: (T) -> R): Pair<R, R> =
   transform(first) to transform(second)

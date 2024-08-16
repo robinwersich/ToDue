@@ -14,6 +14,7 @@ import com.robinwersich.todue.domain.model.DateRange
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.rangeTo
+import com.robinwersich.todue.domain.model.size
 import com.robinwersich.todue.domain.model.toDoubleRange
 import com.robinwersich.todue.ui.composeextensions.MyDraggableAnchors
 import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
@@ -24,6 +25,7 @@ import com.robinwersich.todue.ui.composeextensions.offsetToCurrent
 import com.robinwersich.todue.ui.composeextensions.pairReferentialEqualityPolicy
 import com.robinwersich.todue.ui.composeextensions.toSwipeableTransition
 import com.robinwersich.todue.utility.center
+import com.robinwersich.todue.utility.find
 import com.robinwersich.todue.utility.interpolateDoubleRange
 import com.robinwersich.todue.utility.mapToImmutableList
 import com.robinwersich.todue.utility.size
@@ -85,17 +87,28 @@ class NavigationState(
       velocityThreshold = velocityThreshold,
     )
 
+  /** The current size of the viewport, used to calculate the anchor positions. */
   private var viewportSize: IntSize? = null
 
+  /** The current [TimelineNavigationPosition] of the organizer. */
   private val currentTimelineNavPos: TimelineNavigationPosition
     get() = timelineDraggableState.currentValue
 
+  /** The focussed date of the organizer from which the current [TimeBlock] is derived. */
+  private val currentDate: LocalDate
+    get() = dateDraggableState.currentValue
+
+  /** The current [NavigationPosition] of the organizer. */
+  private val currentNavPos: NavigationPosition
+    get() = adjacentNavigationPositions.current
+
+  /** The currently focussed [Timeline]. */
   private val currentTimeline: Timeline
     get() = currentTimelineNavPos.timeline
 
-  /** The focussed date of the organizer from which the current [TimeBlock] is derived. */
-  val currentDate: LocalDate
-    get() = dateDraggableState.currentValue
+  /** The currently focussed [TimeBlock]. */
+  internal val currentTimeBlock: TimeBlock
+    get() = currentNavPos.timeBlock
 
   /** The [SwipeableTransition] for the timeline navigation position. */
   private val timelineNavPosTransition: SwipeableTransition<TimelineNavigationPosition> =
@@ -195,8 +208,15 @@ class NavigationState(
     val (prevDate, nextDate) = dateDraggableState.getAdjacentToCurrentAnchors()
     val (prevTimelinePos, nextTimelinePos) = timelineDraggableState.getAdjacentToCurrentAnchors()
 
-    fun navPos(timeline: TimelineNavigationPosition, date: LocalDate) =
-      NavigationPosition(timeline, date, getVisibleDateRange(timeline, date))
+    fun navPos(timelineNavPos: TimelineNavigationPosition, date: LocalDate): NavigationPosition {
+      val timeBlock = timelineNavPos.timeline.timeBlockFrom(date)
+      return NavigationPosition(
+        timelineNavPos = timelineNavPos,
+        date = date,
+        dateRange = getVisibleDateRange(timelineNavPos, timeBlock),
+        timeBlock = timeBlock,
+      )
+    }
 
     AdjacentNavigationPositions(
       current = navPos(currentTimelineNavPos, currentDate),
@@ -219,6 +239,17 @@ class NavigationState(
       }
     }
     dateRangesByTimeline.toImmutableList()
+  }
+
+  /**
+   * Returns the relative size of the given [TimeBlock] when it is focussed. If the [timeBlock] is
+   * not currently focussed or transitioning to/from being focussed this will return null.
+   */
+  fun focussedTimeBlockSize(timeBlock: TimeBlock): Float? {
+    val navigationPosition =
+      currentNavPos.takeIf { it.timeBlock == timeBlock }
+        ?: navPosTransition.transitionStates().find { it.timeBlock == timeBlock }
+    return navigationPosition?.let { it.timeBlock.size.toFloat() / it.dateRange.size.toFloat() }
   }
 
   /**

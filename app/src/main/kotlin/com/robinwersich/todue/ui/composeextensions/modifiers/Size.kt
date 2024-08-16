@@ -3,9 +3,40 @@ package com.robinwersich.todue.ui.composeextensions.modifiers
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.constrain
+
+/** Sets the size of the content to the given [IntSize]. */
+fun Modifier.size(size: () -> IntSize) = layout { measurable, constraints ->
+  val targetConstraints = size().let { Constraints.fixed(it.width, it.height) }
+  val placeable = measurable.measure(constraints.constrain(targetConstraints))
+  layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+}
+
+/** Composes the content with the given [size] and scales it to fit in the parent constraints. */
+fun Modifier.scaleFromSize(size: () -> IntSize) = layout { measurable, constraints ->
+  val (measureWidth, measureHeight) = size()
+  val placeable = measurable.measure(Constraints.fixed(measureWidth, measureHeight))
+  layout(constraints.maxWidth, constraints.maxHeight) {
+    placeable.placeWithLayer(0, 0) {
+      transformOrigin = TransformOrigin(0f, 0f)
+      if (placeable.width > constraints.maxWidth) {
+        scaleX = constraints.maxWidth.toFloat() / placeable.width.toFloat()
+      } else if (placeable.width < constraints.maxWidth) {
+        scaleX = constraints.maxWidth.toFloat() / placeable.width.toFloat()
+      }
+      if (placeable.height > constraints.maxHeight) {
+        scaleY = constraints.maxHeight.toFloat() / placeable.height.toFloat()
+      } else if (placeable.height < constraints.maxHeight) {
+        scaleY = constraints.maxHeight.toFloat() / placeable.height.toFloat()
+      }
+    }
+  }
+}
 
 /** Restricts the maximum width of the content to the minimum width. */
 fun Modifier.fillMinWidth() = layout { measurable, constraints ->

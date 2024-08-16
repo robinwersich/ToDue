@@ -1,6 +1,7 @@
 package com.robinwersich.todue.ui.presentation.organizer
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import com.robinwersich.todue.domain.model.TimeUnit
@@ -24,6 +25,7 @@ fun OrganizerScreen(state: OrganizerState, onEvent: (OrganizerEvent) -> Unit = {
   val formatter = rememberTimeBlockFormatter()
   OrganizerNavigation(
     timelines = timelines,
+    timeBlockColor = MaterialTheme.colorScheme.surfaceContainer,
     previewTimeBlockContent = { _, timeBlock ->
       PreviewTimeBlockContent(timeBlock = timeBlock, formatter = formatter)
     },
