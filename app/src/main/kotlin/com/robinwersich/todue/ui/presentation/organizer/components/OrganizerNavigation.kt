@@ -2,19 +2,19 @@ package com.robinwersich.todue.ui.presentation.organizer.components
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,8 +40,10 @@ import com.robinwersich.todue.ui.composeextensions.Geq
 import com.robinwersich.todue.ui.composeextensions.Leq
 import com.robinwersich.todue.ui.composeextensions.Lt
 import com.robinwersich.todue.ui.composeextensions.Near
+import com.robinwersich.todue.ui.composeextensions.PaddedRoundedCornerShape
 import com.robinwersich.todue.ui.composeextensions.instantStop
 import com.robinwersich.todue.ui.composeextensions.interpolatedInt
+import com.robinwersich.todue.ui.composeextensions.modifiers.padding
 import com.robinwersich.todue.ui.composeextensions.modifiers.scaleFromSize
 import com.robinwersich.todue.ui.composeextensions.modifiers.size
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
@@ -125,6 +127,7 @@ private fun OrganizerNavigationLayout(
   previewTimeBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
   expandedTimeBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
 ) {
+  // TODO: maybe use viewport size from navigationState instead of constraints
   BoxWithConstraints(modifier.fillMaxSize()) {
     for ((timeline, timeBlocks) in navigationState.activeTimelineBlocks) {
       val timelineStyle = navigationState.timelineStyleTransitions.getValue(timeline)
@@ -169,15 +172,21 @@ private fun OrganizerNavigationLayout(
         val composeExpanded = isFullscreen || isFocussed
         val showExpanded = isFullscreen || isFocussed && isParent
         val expandedAlpha by
-          animateFloatAsState(targetValue = if (showExpanded) 1f else 0f, label = "expandedAlpha")
+          animateFloatAsState(if (showExpanded) 1f else 0f, label = "expandedAlpha")
+        val showBlockBounds = !(isFullscreen && navigationState.isSettled)
+        val padding by animateDpAsState(if (showBlockBounds) 4.dp else 0.dp, label = "padding")
+        val cornerRadius by
+          animateDpAsState(if (showBlockBounds) 24.dp else 0.dp, label = "cornerRadius")
 
         // Preview
         Box(
           Modifier.offset { IntOffset(timelineOffset, blockOffset) }
             .wrapContentSize(Alignment.TopStart, unbounded = true)
             .size { IntSize(timelineWidth, blockHeight) }
-            .padding(4.dp)
-            .drawBehind { drawRoundRect(timeBlockColor, cornerRadius = CornerRadius(24.dp.toPx())) }
+            .padding { PaddingValues(padding) }
+            .drawBehind {
+              drawRoundRect(timeBlockColor, cornerRadius = CornerRadius(cornerRadius.toPx()))
+            }
             .graphicsLayer { alpha = 1f - expandedAlpha }
         ) {
           previewTimeBlockContent(timeline, timeBlock)
@@ -189,9 +198,8 @@ private fun OrganizerNavigationLayout(
             Modifier.offset { IntOffset(timelineOffset, blockOffset) }
               .wrapContentSize(Alignment.TopStart, unbounded = true)
               .size { IntSize(timelineWidth, blockHeight) }
-              .padding(4.dp)
               .graphicsLayer {
-                shape = RoundedCornerShape(24.dp)
+                shape = PaddedRoundedCornerShape(cornerRadius, padding)
                 clip = true
                 alpha = expandedAlpha
               }
@@ -208,10 +216,12 @@ private fun OrganizerNavigationLayout(
                           .focussedTimeBlockSize(timeBlock)
                           ?.times(constraints.maxHeight)
                           ?.toInt() ?: constraints.maxHeight
+
                       else -> constraints.maxHeight
                     },
                 )
               }
+              .padding(4.dp)
           ) {
             expandedTimeBlockContent(timeline, timeBlock)
           }

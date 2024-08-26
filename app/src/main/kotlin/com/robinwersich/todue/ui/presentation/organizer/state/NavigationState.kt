@@ -87,6 +87,10 @@ class NavigationState(
       velocityThreshold = velocityThreshold,
     )
 
+  /** If the navigation position is currently settled. */
+  val isSettled: Boolean
+    get() = navPosTransition.isSettled
+
   /** The current size of the viewport, used to calculate the anchor positions. */
   private var viewportSize: IntSize? = null
 
