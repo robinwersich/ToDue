@@ -13,11 +13,11 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,19 +101,21 @@ fun OrganizerNavigation(
     navigationState = navigationState,
     timeBlockColor = timeBlockColor,
     modifier =
-      modifier
-        .clipToBounds()
-        .anchoredDraggable(
-          timelineDraggableState,
-          orientation = Orientation.Horizontal,
-          reverseDirection = true,
-        )
-        .anchoredDraggable(
-          dateDraggableState,
-          orientation = Orientation.Vertical,
-          reverseDirection = true,
-        )
-        .onSizeChanged { navigationState.updateViewportSize(it) },
+      remember(navigationState) {
+        modifier
+          .clipToBounds()
+          .anchoredDraggable(
+            timelineDraggableState,
+            orientation = Orientation.Horizontal,
+            reverseDirection = true,
+          )
+          .anchoredDraggable(
+            dateDraggableState,
+            orientation = Orientation.Vertical,
+            reverseDirection = true,
+          )
+          .onSizeChanged { navigationState.updateViewportSize(it) }
+      },
     previewTimeBlockContent = previewTimeBlockContent,
     expandedTimeBlockContent = expandedTimeBlockContent,
   )
@@ -130,100 +132,103 @@ private fun OrganizerNavigationLayout(
   // TODO: maybe use viewport size from navigationState instead of constraints
   BoxWithConstraints(modifier.fillMaxSize()) {
     for ((timeline, timeBlocks) in navigationState.activeTimelineBlocks) {
-      val timelineStyle = navigationState.timelineStyleTransitions.getValue(timeline)
-      val timelineWidth by
-        timelineStyle.interpolatedInt(aggregate = true) {
-          val relativeWidth =
-            when (it) {
-              TimelineStyle.HIDDEN_CHILD,
-              TimelineStyle.CHILD -> navigationState.childTimelineSizeRatio
-              TimelineStyle.FULLSCREEN -> 1f
-              TimelineStyle.PARENT,
-              TimelineStyle.HIDDEN_PARENT -> 1f - navigationState.childTimelineSizeRatio
-            }
-          (relativeWidth * constraints.maxWidth).toInt()
-        }
-      val timelineOffset by
-        timelineStyle.interpolatedInt(aggregate = true) {
-          val relativeOffset =
-            when (it) {
-              TimelineStyle.HIDDEN_CHILD -> -navigationState.childTimelineSizeRatio
-              TimelineStyle.CHILD,
-              TimelineStyle.FULLSCREEN -> 0f
-              TimelineStyle.PARENT -> navigationState.childTimelineSizeRatio
-              TimelineStyle.HIDDEN_PARENT -> 1f
-            }
-          (relativeOffset * constraints.maxWidth).toInt()
-        }
-
-      val isFullscreen = timelineStyle.isState(Eq(TimelineStyle.FULLSCREEN))
-      val isParent = timelineStyle.isState(Geq(TimelineStyle.PARENT))
-
-      for (timeBlock in timeBlocks) {
-        val blockHeight by
-          navigationState.visibleDateRange.derived {
-            (timeBlock.size / it.size * constraints.maxHeight).toInt()
-          }
-        val blockOffset by
-          navigationState.visibleDateRange.derived {
-            ((timeBlock.toDoubleRange().start - it.start) / it.size * constraints.maxHeight).toInt()
-          }
-        val isFocussed = navigationState.currentTimeBlock == timeBlock
-        val composeExpanded = isFullscreen || isFocussed
-        val showExpanded = isFullscreen || isFocussed && isParent
-        val expandedAlpha by
-          animateFloatAsState(if (showExpanded) 1f else 0f, label = "expandedAlpha")
-        val showBlockBounds = !(isFullscreen && navigationState.isSettled)
-        val padding by animateDpAsState(if (showBlockBounds) 4.dp else 0.dp, label = "padding")
-        val cornerRadius by
-          animateDpAsState(if (showBlockBounds) 24.dp else 0.dp, label = "cornerRadius")
-
-        // Preview
-        Box(
-          Modifier.offset { IntOffset(timelineOffset, blockOffset) }
-            .wrapContentSize(Alignment.TopStart, unbounded = true)
-            .size { IntSize(timelineWidth, blockHeight) }
-            .padding { PaddingValues(padding) }
-            .drawBehind {
-              drawRoundRect(timeBlockColor, cornerRadius = CornerRadius(cornerRadius.toPx()))
-            }
-            .graphicsLayer { alpha = 1f - expandedAlpha }
-        ) {
-          previewTimeBlockContent(timeline, timeBlock)
-        }
-
-        // Expanded View
-        if (composeExpanded) {
-          Box(
-            Modifier.offset { IntOffset(timelineOffset, blockOffset) }
-              .wrapContentSize(Alignment.TopStart, unbounded = true)
-              .size { IntSize(timelineWidth, blockHeight) }
-              .graphicsLayer {
-                shape = PaddedRoundedCornerShape(cornerRadius, padding)
-                clip = true
-                alpha = expandedAlpha
+      key(timeline) {
+        val timelineStyle = navigationState.timelineStyleTransitions.getValue(timeline)
+        val timelineWidth by
+          timelineStyle.interpolatedInt(aggregate = true) {
+            val relativeWidth =
+              when (it) {
+                TimelineStyle.HIDDEN_CHILD,
+                TimelineStyle.CHILD -> navigationState.childTimelineSizeRatio
+                TimelineStyle.FULLSCREEN -> 1f
+                TimelineStyle.PARENT,
+                TimelineStyle.HIDDEN_PARENT -> 1f - navigationState.childTimelineSizeRatio
               }
-              .scaleFromSize {
-                IntSize(
-                  width =
-                    if (timelineStyle.isState(Near(TimelineStyle.PARENT))) timelineWidth
-                    else constraints.maxWidth,
-                  height =
-                    when {
-                      timelineStyle.isState(Lt(TimelineStyle.FULLSCREEN)) -> blockHeight
-                      timelineStyle.isState(Leq(TimelineStyle.PARENT)) ->
-                        navigationState
-                          .focussedTimeBlockSize(timeBlock)
-                          ?.times(constraints.maxHeight)
-                          ?.toInt() ?: constraints.maxHeight
-
-                      else -> constraints.maxHeight
-                    },
-                )
+            (relativeWidth * constraints.maxWidth).toInt()
+          }
+        val timelineOffset by
+          timelineStyle.interpolatedInt(aggregate = true) {
+            val relativeOffset =
+              when (it) {
+                TimelineStyle.HIDDEN_CHILD -> -navigationState.childTimelineSizeRatio
+                TimelineStyle.CHILD,
+                TimelineStyle.FULLSCREEN -> 0f
+                TimelineStyle.PARENT -> navigationState.childTimelineSizeRatio
+                TimelineStyle.HIDDEN_PARENT -> 1f
               }
-              .padding(4.dp)
-          ) {
-            expandedTimeBlockContent(timeline, timeBlock)
+            (relativeOffset * constraints.maxWidth).toInt()
+          }
+
+        val isFullscreen = timelineStyle.isState(Eq(TimelineStyle.FULLSCREEN))
+        val isParent = timelineStyle.isState(Geq(TimelineStyle.PARENT))
+
+        for (timeBlock in timeBlocks) {
+          key(timeBlock) {
+            val blockHeight by
+              navigationState.visibleDateRange.derived {
+                (timeBlock.size / it.size * constraints.maxHeight).toInt()
+              }
+            val blockOffset by
+              navigationState.visibleDateRange.derived {
+                ((timeBlock.toDoubleRange().start - it.start) / it.size * constraints.maxHeight)
+                  .toInt()
+              }
+            val isFocussed = navigationState.currentTimeBlock == timeBlock
+            val composeExpanded = isFullscreen || isFocussed
+            val showExpanded = isFullscreen || isFocussed && isParent
+            val expandedAlpha by
+              animateFloatAsState(if (showExpanded) 1f else 0f, label = "expandedAlpha")
+            val showBlockBounds = !(isFullscreen && navigationState.isSettled)
+            val padding by animateDpAsState(if (showBlockBounds) 4.dp else 0.dp, label = "padding")
+            val cornerRadius by
+              animateDpAsState(if (showBlockBounds) 24.dp else 0.dp, label = "cornerRadius")
+
+            // Preview
+            Box(
+              Modifier.offset { IntOffset(timelineOffset, blockOffset) }
+                .wrapContentSize(Alignment.TopStart, unbounded = true)
+                .size { IntSize(timelineWidth, blockHeight) }
+                .padding { PaddingValues(padding) }
+                .drawBehind {
+                  drawRoundRect(timeBlockColor, cornerRadius = CornerRadius(cornerRadius.toPx()))
+                }
+                .graphicsLayer { alpha = 1f - expandedAlpha }
+            ) {
+              previewTimeBlockContent(timeline, timeBlock)
+            }
+
+            // Expanded View
+            if (composeExpanded) {
+              Box(
+                Modifier.offset { IntOffset(timelineOffset, blockOffset) }
+                  .wrapContentSize(Alignment.TopStart, unbounded = true)
+                  .size { IntSize(timelineWidth, blockHeight) }
+                  .graphicsLayer {
+                    shape = PaddedRoundedCornerShape(cornerRadius, padding)
+                    clip = true
+                    alpha = expandedAlpha
+                  }
+                  .scaleFromSize(padding = PaddingValues(4.dp)) {
+                    IntSize(
+                      width =
+                        if (timelineStyle.isState(Near(TimelineStyle.PARENT))) timelineWidth
+                        else constraints.maxWidth,
+                      height =
+                        when {
+                          timelineStyle.isState(Lt(TimelineStyle.FULLSCREEN)) -> blockHeight
+                          timelineStyle.isState(Leq(TimelineStyle.PARENT)) ->
+                            navigationState
+                              .focussedTimeBlockSize(timeBlock)
+                              ?.times(constraints.maxHeight)
+                              ?.toInt() ?: constraints.maxHeight
+                          else -> constraints.maxHeight
+                        },
+                    )
+                  }
+              ) {
+                expandedTimeBlockContent(timeline, timeBlock)
+              }
+            }
           }
         }
       }

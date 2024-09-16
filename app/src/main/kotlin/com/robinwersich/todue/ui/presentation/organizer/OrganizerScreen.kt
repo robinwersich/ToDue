@@ -1,8 +1,8 @@
 package com.robinwersich.todue.ui.presentation.organizer
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
 import com.robinwersich.todue.domain.model.TimeUnit
 import com.robinwersich.todue.domain.model.Timeline
@@ -13,15 +13,15 @@ import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeB
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import kotlinx.collections.immutable.persistentListOf
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OrganizerScreen(state: OrganizerState, onEvent: (OrganizerEvent) -> Unit = {}) {
-  val timelines =
+  val timelines = remember {
     persistentListOf(
       Timeline(0, TimeUnit.DAY),
       Timeline(1, TimeUnit.WEEK),
       Timeline(2, TimeUnit.MONTH),
     )
+  }
   val formatter = rememberTimeBlockFormatter()
   OrganizerNavigation(
     timelines = timelines,

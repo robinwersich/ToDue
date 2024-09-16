@@ -1,24 +1,28 @@
 package com.robinwersich.todue.ui.composeextensions.modifiers
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.constrain
 
 /** Sets the size of the content to the given [IntSize]. */
-fun Modifier.size(size: () -> IntSize) = layout { measurable, constraints ->
+fun Modifier.size(size: Density.() -> IntSize) = layout { measurable, constraints ->
   val targetConstraints = size().let { Constraints.fixed(it.width, it.height) }
   val placeable = measurable.measure(constraints.constrain(targetConstraints))
   layout(placeable.width, placeable.height) { placeable.place(0, 0) }
 }
 
 /** Composes the content with the given [size] and scales it to fit in the parent constraints. */
-fun Modifier.scaleFromSize(size: () -> IntSize) = layout { measurable, constraints ->
+fun Modifier.scaleFromSize(size: Density.() -> IntSize) = layout { measurable, constraints ->
   val (measureWidth, measureHeight) = size()
   val placeable = measurable.measure(Constraints.fixed(measureWidth, measureHeight))
   layout(constraints.maxWidth, constraints.maxHeight) {
@@ -37,6 +41,24 @@ fun Modifier.scaleFromSize(size: () -> IntSize) = layout { measurable, constrain
     }
   }
 }
+
+/**
+ * Composes the content with the given padded [size] and scales it to fit in the padded parent
+ * constraints. This way, the padding isn't scaled.
+ */
+fun Modifier.scaleFromSize(padding: PaddingValues, size: Density.() -> IntSize) =
+  padding(padding).scaleFromSize {
+    val (width, height) = size()
+    val verticalPadding = padding.calculateTopPadding() + padding.calculateBottomPadding()
+    // layout direction doesn't matter since we add up left and right padding
+    val horizontalPadding =
+      padding.calculateLeftPadding(LayoutDirection.Ltr) +
+        padding.calculateRightPadding(LayoutDirection.Ltr)
+    IntSize(
+      (width - horizontalPadding.roundToPx()).coerceAtLeast(0),
+      (height - verticalPadding.roundToPx()).coerceAtLeast(0)
+    )
+  }
 
 /** Restricts the maximum width of the content to the minimum width. */
 fun Modifier.fillMinWidth() = layout { measurable, constraints ->
