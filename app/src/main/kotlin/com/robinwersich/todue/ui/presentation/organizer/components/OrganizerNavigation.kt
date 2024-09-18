@@ -129,6 +129,9 @@ private fun OrganizerNavigationLayout(
   previewTimeBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
   expandedTimeBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
 ) {
+  // Workaround for missing compositions based on activeTimelineBlocks
+  // TODO: investigate why this is necessary
+  navigationState.navPosTransition.transitionStates()
   // TODO: maybe use viewport size from navigationState instead of constraints
   BoxWithConstraints(modifier.fillMaxSize()) {
     for ((timeline, timeBlocks) in navigationState.activeTimelineBlocks) {

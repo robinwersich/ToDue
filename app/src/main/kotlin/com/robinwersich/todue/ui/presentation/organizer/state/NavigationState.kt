@@ -260,7 +260,7 @@ class NavigationState(
    * The transition of the current [NavigationPosition]. This combines two [AnchoredDraggableState]s
    * into a single [SwipeableTransition].
    */
-  private val navPosTransition: SwipeableTransition<NavigationPosition> =
+  val navPosTransition: SwipeableTransition<NavigationPosition> =
     derivedStateOf(pairReferentialEqualityPolicy()) {
         with(adjacentNavigationPositions) {
           if (!timelineDraggableState.isSettled) {
