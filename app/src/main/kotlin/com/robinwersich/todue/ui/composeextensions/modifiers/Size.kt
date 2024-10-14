@@ -28,14 +28,10 @@ fun Modifier.scaleFromSize(size: Density.() -> IntSize) = layout { measurable, c
   layout(constraints.maxWidth, constraints.maxHeight) {
     placeable.placeWithLayer(0, 0) {
       transformOrigin = TransformOrigin(0f, 0f)
-      if (placeable.width > constraints.maxWidth) {
-        scaleX = constraints.maxWidth.toFloat() / placeable.width.toFloat()
-      } else if (placeable.width < constraints.maxWidth) {
+      if (placeable.width != constraints.maxWidth) {
         scaleX = constraints.maxWidth.toFloat() / placeable.width.toFloat()
       }
-      if (placeable.height > constraints.maxHeight) {
-        scaleY = constraints.maxHeight.toFloat() / placeable.height.toFloat()
-      } else if (placeable.height < constraints.maxHeight) {
+      if (placeable.height != constraints.maxHeight) {
         scaleY = constraints.maxHeight.toFloat() / placeable.height.toFloat()
       }
     }
@@ -56,7 +52,7 @@ fun Modifier.scaleFromSize(padding: PaddingValues, size: Density.() -> IntSize) 
         padding.calculateRightPadding(LayoutDirection.Ltr)
     IntSize(
       (width - horizontalPadding.roundToPx()).coerceAtLeast(0),
-      (height - verticalPadding.roundToPx()).coerceAtLeast(0)
+      (height - verticalPadding.roundToPx()).coerceAtLeast(0),
     )
   }
 
