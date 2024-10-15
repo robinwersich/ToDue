@@ -35,7 +35,7 @@ inline fun <T, R> Pair<T, T>.map(transform: (T) -> R): Pair<R, R> =
   transform(first) to transform(second)
 
 /** If the two elements of the pair are equal to each other. */
-val <T> Pair<T, T>.isSame
+val <T> Pair<T, T>.areSame
   get() = first == second
 
 /** Performs the given [action] on each element of the pair. */

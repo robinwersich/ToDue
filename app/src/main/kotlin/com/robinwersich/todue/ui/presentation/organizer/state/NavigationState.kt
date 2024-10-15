@@ -18,27 +18,24 @@ import com.robinwersich.todue.domain.model.size
 import com.robinwersich.todue.domain.model.toDoubleRange
 import com.robinwersich.todue.ui.composeextensions.MyDraggableAnchors
 import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
-import com.robinwersich.todue.ui.composeextensions.SwipeableValue
 import com.robinwersich.todue.ui.composeextensions.getAdjacentToCurrentAnchors
 import com.robinwersich.todue.ui.composeextensions.isSettled
 import com.robinwersich.todue.ui.composeextensions.offsetToCurrent
 import com.robinwersich.todue.ui.composeextensions.pairReferentialEqualityPolicy
-import com.robinwersich.todue.ui.composeextensions.toSwipeableTransition
 import com.robinwersich.todue.utility.center
 import com.robinwersich.todue.utility.find
-import com.robinwersich.todue.utility.interpolateDoubleRange
 import com.robinwersich.todue.utility.mapToImmutableList
 import com.robinwersich.todue.utility.size
 import com.robinwersich.todue.utility.toImmutableList
 import com.robinwersich.todue.utility.union
+import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
-import java.time.LocalDate
 
 /**
  * Holds information about the current navigation position of the organizer. This is mainly defined
- * by a [timelineDraggableState] and a [dateDraggableState]. Other derived properties, such as the
- * [visibleDateRange] are exposed as observable state.
+ * by a [timelineDraggableState] and a [dateDraggableState]. Other derived properties are exposed as
+ * observable state.
  *
  * @param timelines The timelines to navigate through. These do not need to be sorted initially, but
  *   they will be internally.
@@ -87,10 +84,6 @@ class NavigationState(
       velocityThreshold = velocityThreshold,
     )
 
-  /** If the navigation position is currently settled. */
-  val isSettled: Boolean
-    get() = navPosTransition.isSettled
-
   /** The current size of the viewport, used to calculate the anchor positions. */
   private var viewportSize: IntSize? = null
 
@@ -113,16 +106,6 @@ class NavigationState(
   /** The currently focussed [TimeBlock]. */
   internal val currentTimeBlock: TimeBlock
     get() = currentNavPos.timeBlock
-
-  /** The [SwipeableTransition] for the timeline navigation position. */
-  private val timelineNavPosTransition: SwipeableTransition<TimelineNavigationPosition> =
-    timelineDraggableState.toSwipeableTransition()
-
-  /** The [SwipeableTransition] for the [TimelineStyle] of each [Timeline]. */
-  val timelineStyleTransitions: Map<Timeline, SwipeableTransition<TimelineStyle>> =
-    timelines.associateWith { timeline ->
-      timelineNavPosTransition.derive { timelineStyle(timeline, it) }
-    }
 
   /** Attempts to find the [TimelineNavigationPosition] that shows the given [timeline]. */
   private fun timelineNavPosFor(timeline: Timeline): TimelineNavigationPosition? =
@@ -303,13 +286,6 @@ class NavigationState(
       timeline to (firstBlock..lastBlock).toImmutableList()
     }
   }
-
-  /**
-   * The interpolated date range which should currently be displayed, in the form a [Double] range
-   * representing the fractional epoch days.
-   */
-  val visibleDateRange =
-    SwipeableValue(navPosTransition, ::interpolateDoubleRange, { it.dateRange.toDoubleRange() })
 }
 
 private fun getVisibleDateRange(timelineNavPos: TimelineNavigationPosition, date: LocalDate) =

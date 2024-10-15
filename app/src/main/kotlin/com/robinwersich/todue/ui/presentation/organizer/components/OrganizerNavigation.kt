@@ -2,53 +2,48 @@ package com.robinwersich.todue.ui.presentation.organizer.components
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.lerp
+import androidx.compose.ui.util.lerp
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
+import com.robinwersich.todue.domain.model.daysUntil
 import com.robinwersich.todue.domain.model.size
-import com.robinwersich.todue.domain.model.toDoubleRange
-import com.robinwersich.todue.ui.composeextensions.Eq
-import com.robinwersich.todue.ui.composeextensions.Geq
-import com.robinwersich.todue.ui.composeextensions.Leq
-import com.robinwersich.todue.ui.composeextensions.Lt
-import com.robinwersich.todue.ui.composeextensions.Near
-import com.robinwersich.todue.ui.composeextensions.PaddedRoundedCornerShape
+import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
 import com.robinwersich.todue.ui.composeextensions.instantStop
-import com.robinwersich.todue.ui.composeextensions.interpolatedInt
-import com.robinwersich.todue.ui.composeextensions.modifiers.padding
-import com.robinwersich.todue.ui.composeextensions.modifiers.scaleFromSize
-import com.robinwersich.todue.ui.composeextensions.modifiers.size
+import com.robinwersich.todue.ui.composeextensions.modifiers.placeRelative
+import com.robinwersich.todue.ui.composeextensions.modifiers.placeRelativeScaling
+import com.robinwersich.todue.ui.presentation.organizer.state.NavigationPosition
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.presentation.organizer.state.TimelineStyle
-import com.robinwersich.todue.utility.size
+import com.robinwersich.todue.ui.presentation.organizer.state.timelineStyle
 import kotlinx.collections.immutable.ImmutableList
 
 /**
@@ -58,22 +53,20 @@ import kotlinx.collections.immutable.ImmutableList
  * children from the next smaller granularity level.
  *
  * @param timelines The timelines (i.e. granularity levels) to display.
- * @param timeBlockColor The color to use as background for the time blocks.
  * @param modifier The modifier to apply to this layout.
  * @param childTimelineSizeFraction The fraction of the screen width that the child timeline should
  *   take up in a split view with two timelines.
- * @param previewTimeBlockContent The content to display for a [TimeBlock] in preview mode.
- * @param expandedTimeBlockContent The content to display for a [TimeBlock] in expanded mode.
+ * @param taskBlockLabel The label content to display for a [TimeBlock] in preview mode.
+ * @param taskBlockContent The content to display for a [TimeBlock] in expanded mode.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OrganizerNavigation(
   timelines: ImmutableList<Timeline>,
-  timeBlockColor: Color,
   modifier: Modifier = Modifier,
   childTimelineSizeFraction: Float = 0.3f,
-  previewTimeBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
-  expandedTimeBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
+  taskBlockLabel: @Composable (Timeline, TimeBlock) -> Unit,
+  taskBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
 ) {
   val positionalThreshold = 0.3f
   val velocityThreshold = with(LocalDensity.current) { 500.dp.toPx() }
@@ -97,12 +90,11 @@ fun OrganizerNavigation(
   val dateDraggableState = navigationState.dateDraggableState
   LaunchedEffect(navigationState) { navigationState.updateDateAnchorsOnSwipe() }
 
-  OrganizerNavigationLayout(
-    navigationState = navigationState,
-    timeBlockColor = timeBlockColor,
+  Box(
     modifier =
       remember(navigationState) {
         modifier
+          .fillMaxSize()
           .clipToBounds()
           .anchoredDraggable(
             timelineDraggableState,
@@ -115,126 +107,197 @@ fun OrganizerNavigation(
             reverseDirection = true,
           )
           .onSizeChanged { navigationState.updateViewportSize(it) }
-      },
-    previewTimeBlockContent = previewTimeBlockContent,
-    expandedTimeBlockContent = expandedTimeBlockContent,
+      }
+  ) {
+    for ((timeline, timeBlocks) in navigationState.activeTimelineBlocks) {
+      for (timeBlock in timeBlocks) {
+        TaskBlock(
+          navigationState = navigationState,
+          timeBlock = timeBlock,
+          timeline = timeline,
+          label = { taskBlockLabel(timeline, timeBlock) },
+          content = { taskBlockContent(timeline, timeBlock) },
+        )
+      }
+    }
+  }
+}
+
+private data class TaskBlockDisplayState(
+  val timelineStyle: TimelineStyle,
+  val isFocussed: Boolean,
+  val size: Size,
+  val offset: Offset,
+)
+
+private fun taskBlockDisplayState(
+  timeBlock: TimeBlock,
+  timeline: Timeline,
+  navPos: NavigationPosition,
+  childTimelineSizeRatio: Float,
+): TaskBlockDisplayState {
+  val timelineStyle = timelineStyle(timeline, navPos.timelineNavPos)
+  return TaskBlockDisplayState(
+    timelineStyle = timelineStyle,
+    isFocussed = timeBlock == navPos.timeBlock,
+    size =
+      Size(
+        width =
+          when (timelineStyle) {
+            TimelineStyle.HIDDEN_CHILD,
+            TimelineStyle.CHILD -> childTimelineSizeRatio
+            TimelineStyle.FULLSCREEN -> 1f
+            TimelineStyle.PARENT,
+            TimelineStyle.HIDDEN_PARENT -> 1f - childTimelineSizeRatio
+          },
+        height = (timeBlock.size / navPos.dateRange.size).toFloat(),
+      ),
+    offset =
+      Offset(
+        x =
+          when (timelineStyle) {
+            TimelineStyle.HIDDEN_CHILD -> -childTimelineSizeRatio
+            TimelineStyle.CHILD,
+            TimelineStyle.FULLSCREEN -> 0f
+            TimelineStyle.PARENT -> childTimelineSizeRatio
+            TimelineStyle.HIDDEN_PARENT -> 1f
+          },
+        y = (navPos.dateRange.start.daysUntil(timeBlock.start) / navPos.dateRange.size.toFloat()),
+      ),
   )
 }
 
+private val taskBlockPadding = 4.dp
+private val taskBlockCornerRadius = 24.dp
+
 @Composable
-private fun OrganizerNavigationLayout(
+private fun TaskBlock(
   navigationState: NavigationState,
-  timeBlockColor: Color,
-  modifier: Modifier = Modifier,
-  previewTimeBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
-  expandedTimeBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
+  timeBlock: TimeBlock,
+  timeline: Timeline,
+  label: @Composable () -> Unit,
+  content: @Composable () -> Unit,
 ) {
-  // Workaround for missing compositions based on activeTimelineBlocks
-  // TODO: investigate why this is necessary
-  navigationState.navPosTransition.transitionStates()
-  // TODO: maybe use viewport size from navigationState instead of constraints
-  BoxWithConstraints(modifier.fillMaxSize()) {
-    for ((timeline, timeBlocks) in navigationState.activeTimelineBlocks) {
-      key(timeline) {
-        val timelineStyle = navigationState.timelineStyleTransitions.getValue(timeline)
-        val timelineWidth by
-          timelineStyle.interpolatedInt(aggregate = true) {
-            val relativeWidth =
-              when (it) {
-                TimelineStyle.HIDDEN_CHILD,
-                TimelineStyle.CHILD -> navigationState.childTimelineSizeRatio
-                TimelineStyle.FULLSCREEN -> 1f
-                TimelineStyle.PARENT,
-                TimelineStyle.HIDDEN_PARENT -> 1f - navigationState.childTimelineSizeRatio
-              }
-            (relativeWidth * constraints.maxWidth).toInt()
-          }
-        val timelineOffset by
-          timelineStyle.interpolatedInt(aggregate = true) {
-            val relativeOffset =
-              when (it) {
-                TimelineStyle.HIDDEN_CHILD -> -navigationState.childTimelineSizeRatio
-                TimelineStyle.CHILD,
-                TimelineStyle.FULLSCREEN -> 0f
-                TimelineStyle.PARENT -> navigationState.childTimelineSizeRatio
-                TimelineStyle.HIDDEN_PARENT -> 1f
-              }
-            (relativeOffset * constraints.maxWidth).toInt()
-          }
+  val displayStateTransition =
+    navigationState.navPosTransition.derived(cacheStates = true) {
+      taskBlockDisplayState(timeBlock, timeline, it, navigationState.childTimelineSizeRatio)
+    }
 
-        val isFullscreen = timelineStyle.isState(Eq(TimelineStyle.FULLSCREEN))
-        val isParent = timelineStyle.isState(Geq(TimelineStyle.PARENT))
-
-        for (timeBlock in timeBlocks) {
-          key(timeBlock) {
-            val blockHeight by
-              navigationState.visibleDateRange.derived {
-                (timeBlock.size / it.size * constraints.maxHeight).toInt()
-              }
-            val blockOffset by
-              navigationState.visibleDateRange.derived {
-                ((timeBlock.toDoubleRange().start - it.start) / it.size * constraints.maxHeight)
-                  .toInt()
-              }
-            val isFocussed = navigationState.currentTimeBlock == timeBlock
-            val composeExpanded = isFullscreen || isFocussed
-            val showExpanded = isFullscreen || isFocussed && isParent
-            val expandedAlpha by
-              animateFloatAsState(if (showExpanded) 1f else 0f, label = "expandedAlpha")
-            val showBlockBounds = !(isFullscreen && navigationState.isSettled)
-            val padding by animateDpAsState(if (showBlockBounds) 4.dp else 0.dp, label = "padding")
-            val cornerRadius by
-              animateDpAsState(if (showBlockBounds) 24.dp else 0.dp, label = "cornerRadius")
-
-            // Preview
-            Box(
-              Modifier.offset { IntOffset(timelineOffset, blockOffset) }
-                .wrapContentSize(Alignment.TopStart, unbounded = true)
-                .size { IntSize(timelineWidth, blockHeight) }
-                .padding { PaddingValues(padding) }
-                .drawBehind {
-                  drawRoundRect(timeBlockColor, cornerRadius = CornerRadius(cornerRadius.toPx()))
-                }
-                .graphicsLayer { alpha = 1f - expandedAlpha }
-            ) {
-              previewTimeBlockContent(timeline, timeBlock)
-            }
-
-            // Expanded View
-            if (composeExpanded) {
-              Box(
-                Modifier.offset { IntOffset(timelineOffset, blockOffset) }
-                  .wrapContentSize(Alignment.TopStart, unbounded = true)
-                  .size { IntSize(timelineWidth, blockHeight) }
-                  .graphicsLayer {
-                    shape = PaddedRoundedCornerShape(cornerRadius, padding)
-                    clip = true
-                    alpha = expandedAlpha
-                  }
-                  .scaleFromSize(padding = PaddingValues(4.dp)) {
-                    IntSize(
-                      width =
-                        if (timelineStyle.isState(Near(TimelineStyle.PARENT))) timelineWidth
-                        else constraints.maxWidth,
-                      height =
-                        when {
-                          timelineStyle.isState(Lt(TimelineStyle.FULLSCREEN)) -> blockHeight
-                          timelineStyle.isState(Leq(TimelineStyle.PARENT)) ->
-                            navigationState
-                              .focussedTimeBlockSize(timeBlock)
-                              ?.times(constraints.maxHeight)
-                              ?.toInt() ?: constraints.maxHeight
-                          else -> constraints.maxHeight
-                        },
-                    )
-                  }
-              ) {
-                expandedTimeBlockContent(timeline, timeBlock)
-              }
-            }
-          }
+  val offset by displayStateTransition.interpolatedValue(::lerp) { it.offset }
+  val size by displayStateTransition.interpolatedValue(::lerp) { it.size }
+  // When entering/exiting the screen, the size at which the blocks are measured shouldn't change
+  // to avoid unnecessary recompositions and visual artifacts. They will be scaled instead.
+  val measureSize by
+    displayStateTransition.interpolatedValue(
+      ::lerp,
+      padding = { state, otherState ->
+        when {
+          state.timelineStyle == TimelineStyle.FULLSCREEN &&
+            otherState.timelineStyle == TimelineStyle.CHILD -> 1f
+          state.timelineStyle == TimelineStyle.PARENT &&
+            otherState.timelineStyle != TimelineStyle.FULLSCREEN -> 1f
+          else -> 0f
         }
+      },
+      transform = { it.size },
+    )
+
+  val expandedAlphaState =
+    displayStateTransition.interpolatedValue(
+      ::lerp,
+      padding = { state, otherState ->
+        when {
+          state.timelineStyle == TimelineStyle.CHILD &&
+            otherState.timelineStyle == TimelineStyle.FULLSCREEN -> 0.8f
+          state.timelineStyle == TimelineStyle.HIDDEN_PARENT &&
+            otherState.timelineStyle == TimelineStyle.PARENT -> 0.8f
+          state.timelineStyle == TimelineStyle.PARENT &&
+            state.isFocussed &&
+            otherState.timelineStyle == TimelineStyle.PARENT &&
+            !otherState.isFocussed -> 0.8f
+          else -> 0f
+        }
+      },
+      transform = {
+        when {
+          it.timelineStyle == TimelineStyle.FULLSCREEN -> 1f
+          it.timelineStyle == TimelineStyle.PARENT && it.isFocussed -> 1f
+          else -> 0f
+        }
+      },
+    )
+
+  TaskBlockContainer(
+    displayStateTransition = displayStateTransition,
+    expandedAlphaState = expandedAlphaState,
+    modifier = Modifier.placeRelative({ offset }, { size }),
+    label = label,
+  )
+
+  Box(
+    Modifier.placeRelativeScaling(
+        { offset },
+        { size },
+        { measureSize },
+        PaddingValues(taskBlockPadding),
+      )
+      .graphicsLayer {
+        shape = RoundedCornerShape(taskBlockCornerRadius)
+        clip = true
+        alpha = expandedAlphaState.value
+      },
+    propagateMinConstraints = true,
+  ) {
+    val showDetails by
+      remember(expandedAlphaState) { derivedStateOf { expandedAlphaState.value > 0f } }
+    if (showDetails) {
+      content()
+    }
+  }
+}
+
+@Composable
+private fun TaskBlockContainer(
+  displayStateTransition: SwipeableTransition<TaskBlockDisplayState>,
+  expandedAlphaState: State<Float>,
+  modifier: Modifier = Modifier,
+  label: @Composable () -> Unit,
+) {
+  val showBlockBounds =
+    displayStateTransition.derived(
+      padding = { _, otherState ->
+        when {
+          otherState.timelineStyle == TimelineStyle.FULLSCREEN && otherState.isFocussed -> 0.9f
+          else -> 0f
+        }
+      },
+      manyToOne = true,
+    ) {
+      it.timelineStyle != TimelineStyle.FULLSCREEN || !it.isFocussed
+    }
+  val padding by showBlockBounds.interpolatedValue(::lerp) { if (it) taskBlockPadding else 0.dp }
+  val cornerRadius by
+    showBlockBounds.interpolatedValue(::lerp) { if (it) taskBlockCornerRadius else 0.dp }
+  val showLabel by remember(expandedAlphaState) { derivedStateOf { expandedAlphaState.value < 1f } }
+  val color = MaterialTheme.colorScheme.surface
+
+  Box(
+    modifier
+      .drawBehind {
+        val paddingPx = padding.toPx()
+        drawRoundRect(
+          color,
+          topLeft = Offset(x = paddingPx, y = paddingPx),
+          size = Size(width = size.width - 2 * paddingPx, height = size.width - 2 * paddingPx),
+          cornerRadius = CornerRadius(cornerRadius.toPx()),
+        )
       }
+      .padding(taskBlockPadding)
+      .graphicsLayer { alpha = 1f - expandedAlphaState.value },
+    contentAlignment = Alignment.Center,
+  ) {
+    if (showLabel) {
+      label()
     }
   }
 }

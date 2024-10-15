@@ -1,6 +1,5 @@
 package com.robinwersich.todue.ui.presentation.organizer.state
 
-import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
 
 /** Describes the semantic position of a timeline in the organizer. */
@@ -17,6 +16,12 @@ enum class TimelineStyle {
   HIDDEN_CHILD,
 }
 
+/**
+ * Returns the correct [TimelineStyle] of a [Timeline] based on a [TimelineNavigationPosition].
+ *
+ * @param timeline The [Timeline] for which the style should be determined.
+ * @param navPos The [TimelineNavigationPosition] based on which the style should be determined.
+ */
 fun timelineStyle(timeline: Timeline, navPos: TimelineNavigationPosition) =
   when {
     timeline > navPos.timeline -> TimelineStyle.HIDDEN_PARENT
@@ -25,23 +30,4 @@ fun timelineStyle(timeline: Timeline, navPos: TimelineNavigationPosition) =
     timeline == navPos.visibleChild -> TimelineStyle.CHILD
     timeline < (navPos.visibleChild ?: navPos.timeline) -> TimelineStyle.HIDDEN_CHILD
     else -> error("Unhandled TimelinePresentation case.")
-  }
-
-/** Describes how a time block should be displayed in the organizer. */
-enum class TimeBlockStyle {
-  /** Reduced content is shown, block is displayed as a tray for sorting tasks to child blocks. */
-  TRAY,
-  /** The content of the block is shown in full detail. */
-  FULLSCREEN,
-  /** Only the name of the block is shown. */
-  PREVIEW,
-}
-
-fun timeBlockStyle(timeBlock: TimeBlock, timeline: Timeline, navPos: NavigationPosition) =
-  when {
-    timeline == navPos.timelineNavPos.timeline && !navPos.timelineNavPos.showChild ->
-      TimeBlockStyle.FULLSCREEN
-    timeline == navPos.timelineNavPos.timeline && timeBlock == navPos.timeBlock ->
-      TimeBlockStyle.TRAY
-    else -> TimeBlockStyle.PREVIEW
   }

@@ -1,14 +1,13 @@
 package com.robinwersich.todue.ui.presentation.organizer
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.tooling.preview.Preview
 import com.robinwersich.todue.domain.model.TimeUnit
 import com.robinwersich.todue.domain.model.Timeline
-import com.robinwersich.todue.ui.presentation.organizer.components.ExpandedTimeBlockContent
 import com.robinwersich.todue.ui.presentation.organizer.components.OrganizerNavigation
-import com.robinwersich.todue.ui.presentation.organizer.components.PreviewTimeBlockContent
+import com.robinwersich.todue.ui.presentation.organizer.components.TaskBlockContent
+import com.robinwersich.todue.ui.presentation.organizer.components.TaskBlockLabel
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import kotlinx.collections.immutable.persistentListOf
@@ -25,12 +24,11 @@ fun OrganizerScreen(state: OrganizerState, onEvent: (OrganizerEvent) -> Unit = {
   val formatter = rememberTimeBlockFormatter()
   OrganizerNavigation(
     timelines = timelines,
-    timeBlockColor = MaterialTheme.colorScheme.surfaceContainer,
-    previewTimeBlockContent = { _, timeBlock ->
-      PreviewTimeBlockContent(timeBlock = timeBlock, formatter = formatter)
+    taskBlockLabel = { _, timeBlock ->
+      TaskBlockLabel(timeBlock = timeBlock, formatter = formatter)
     },
-    expandedTimeBlockContent = { _, timeBlock ->
-      ExpandedTimeBlockContent(timeBlock = timeBlock, formatter = formatter)
+    taskBlockContent = { _, timeBlock ->
+      TaskBlockContent(timeBlock = timeBlock, formatter = formatter)
     },
   )
 }
