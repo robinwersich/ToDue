@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.structuralEqualityPolicy
 import com.robinwersich.todue.utility.areSame
 import com.robinwersich.todue.utility.map
+import com.robinwersich.todue.utility.modifyIf
 import com.robinwersich.todue.utility.relativeProgress
 
 /**
@@ -131,10 +132,10 @@ class SwipeableTransition<T>(
     cacheStates: Boolean = manyToOne,
     transform: (T) -> S,
   ): SwipeableTransition<S> {
-    var getStates = { transitionStates().map(transform) }
-    if (cacheStates) {
-      getStates = getStates.withDerivedState(structuralEqualityPolicy())
-    }
+    val getStates =
+      { transitionStates().map(transform) }.modifyIf(cacheStates) {
+        it.withDerivedState(structuralEqualityPolicy())
+      }
 
     val getProgress =
       if (manyToOne) {
@@ -178,23 +179,22 @@ class SwipeableTransition<T>(
     cacheStates: Boolean = manyToOne,
     transform: (T) -> S,
   ): SwipeableTransition<S> {
-    var getStates = { transitionStates().map(transform) }
-    if (cacheStates) {
-      getStates = getStates.withDerivedState(structuralEqualityPolicy())
-    }
+    val getStates =
+      { transitionStates().map(transform) }.modifyIf(cacheStates) {
+        it.withDerivedState(structuralEqualityPolicy())
+      }
 
-    var getProgress = {
-      val (prev, next) = transitionStates()
-      relativeProgress(
-        start = padding(prev, next),
-        end = 1 - padding(next, prev),
-        progress = progress(),
-      )
-    }
-    if (manyToOne) {
-      getProgress = { if (getStates().areSame) 0f else getProgress() }
-    }
-    getProgress = getProgress.withDerivedState()
+    val getProgress =
+      {
+          val (prev, next) = transitionStates()
+          relativeProgress(
+            start = padding(prev, next),
+            end = 1 - padding(next, prev),
+            progress = progress(),
+          )
+        }
+        .modifyIf(manyToOne) { { if (getStates().areSame) 0f else it() } }
+        .withDerivedState()
 
     return SwipeableTransition(transitionStates = getStates, progress = getProgress)
   }
@@ -232,10 +232,10 @@ class SwipeableValue<V>(private val getValue: () -> V) : State<V> {
       useState: Boolean = false,
       transform: (state: T) -> V,
     ): SwipeableValue<V> {
-      var getValue = { transition.interpolateValue(lerp, transform) }
-      if (useState) {
-        getValue = getValue.withDerivedState(structuralEqualityPolicy())
-      }
+      val getValue =
+        { transition.interpolateValue(lerp, transform) }.modifyIf(useState) {
+          it.withDerivedState(structuralEqualityPolicy())
+        }
       return SwipeableValue(getValue)
     }
 
