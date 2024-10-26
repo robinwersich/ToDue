@@ -7,4 +7,43 @@
     <string name="ok">OK</string>
     <string name="cancel">Cancel</string>
     <string name="select_due_date">Select Due Date</string>
+
+    <!-- Date Notations -->
+    <string name="today">Today</string>
+    <string name="tomorrow">Tomorrow</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="this_week">This Week</string>
+    <string name="next_week">Next Week</string>
+    <string name="last_week">Last Week</string>
+    <string name="format_day">EEE, MMM d</string>
+    <string name="format_day_with_year">EEE, MMM d, yyyy</string>
+    <string name="format_date_range_start">MMM d\' – \'</string>
+    <string name="format_date_range_start_same_month">MMM d\' – \'</string>
+    <string name="format_date_range_start_with_year">MMM d, yyyy\' – \'</string>
+    <string name="format_date_range_end">MMM d</string>
+    <string name="format_date_range_end_same_month">d</string>
+    <string name="format_date_range_end_same_month_with_year">d, yyyy</string>
+    <string name="format_date_range_end_with_year">MMM d, yyyy</string>
+    <string name="format_month">MMMM</string>
+    <string name="format_month_with_year">MMMM yyyy</string>
+    <string name="format_year">yyyy</string>
+    <!-- Narrow Date Notations -->
+    <string name="today_narrow">Today</string>
+    <string name="tomorrow_narrow">Tomorrow</string>
+    <string name="yesterday_narrow">Yesterday</string>
+    <string name="this_week_narrow">This\nWeek</string>
+    <string name="next_week_narrow">Next\nWeek</string>
+    <string name="last_week_narrow">Last\nWeek</string>
+    <string name="format_day_narrow">EEE\nMMM d</string>
+    <string name="format_day_with_year_narrow">EEE\nMMM d\nyyyy</string>
+    <string name="format_date_range_start_narrow">MMM d\n–\n</string>
+    <string name="format_date_range_start_same_month_narrow">MMM\nd\' – \'</string>
+    <string name="format_date_range_start_with_year_narrow">MMM d\nyyyy\n–\n</string>
+    <string name="format_date_range_end_narrow">MMM d</string>
+    <string name="format_date_range_end_same_month_narrow">d</string>
+    <string name="format_date_range_end_same_month_with_year_narrow">d\nyyyy</string>
+    <string name="format_date_range_end_with_year_narrow">MMM d\nyyyy</string>
+    <string name="format_month_narrow">MMMM</string>
+    <string name="format_month_with_year_narrow">MMMM\nyyyy</string>
+    <string name="format_year_narrow">yyyy</string>
 </resources>

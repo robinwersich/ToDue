@@ -46,6 +46,13 @@ private val LightColorScheme =
     onSurface = md_theme_light_onSurface,
     surfaceVariant = md_theme_light_surfaceVariant,
     onSurfaceVariant = md_theme_light_onSurfaceVariant,
+    surfaceContainerHighest = md_theme_light_surfaceContainerHighest,
+    surfaceContainerHigh = md_theme_light_surfaceContainerHigh,
+    surfaceContainer = md_theme_light_surfaceContainer,
+    surfaceContainerLow = md_theme_light_surfaceContainerLow,
+    surfaceContainerLowest = md_theme_light_surfaceContainerLowest,
+    surfaceBright = md_theme_light_surfaceBright,
+    surfaceDim = md_theme_light_surfaceDim,
   )
 
 private val DarkColorScheme =
@@ -79,6 +86,13 @@ private val DarkColorScheme =
     onSurface = md_theme_dark_onSurface,
     surfaceVariant = md_theme_dark_surfaceVariant,
     onSurfaceVariant = md_theme_dark_onSurfaceVariant,
+    surfaceContainerHighest = md_theme_dark_surfaceContainerHighest,
+    surfaceContainerHigh = md_theme_dark_surfaceContainerHigh,
+    surfaceContainer = md_theme_dark_surfaceContainer,
+    surfaceContainerLow = md_theme_dark_surfaceContainerLow,
+    surfaceContainerLowest = md_theme_dark_surfaceContainerLowest,
+    surfaceBright = md_theme_dark_surfaceBright,
+    surfaceDim = md_theme_dark_surfaceDim,
   )
 
 @Composable

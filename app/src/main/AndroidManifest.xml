@@ -13,7 +13,7 @@
         android:theme="@style/Theme.ToDue"
         tools:targetApi="31">
         <activity
-            android:name="com.robinwersich.todue.MainActivity"
+            android:name="com.robinwersich.todue.ui.presentation.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.ToDue">
             <intent-filter>
