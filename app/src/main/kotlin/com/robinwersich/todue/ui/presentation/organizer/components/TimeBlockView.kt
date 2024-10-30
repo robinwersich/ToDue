@@ -63,11 +63,3 @@ fun ExpandedTimeBlockViewPreview() {
     )
   }
 }
-
-@Preview
-@Composable
-private fun PreviewTimeBlockViewPreview() {
-  ToDueTheme {
-    PreviewTimeBlockContent(Week(), rememberTimeBlockFormatter(), modifier = Modifier.size(150.dp))
-  }
-}
