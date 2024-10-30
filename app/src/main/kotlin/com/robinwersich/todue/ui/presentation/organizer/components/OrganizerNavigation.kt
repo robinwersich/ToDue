@@ -150,7 +150,7 @@ private fun taskBlockDisplayState(
             TimelineStyle.PARENT,
             TimelineStyle.HIDDEN_PARENT -> 1f - childTimelineSizeRatio
           },
-        height = (timeBlock.size / navPos.dateRange.size).toFloat(),
+        height = timeBlock.size.toFloat() / navPos.dateRange.size.toFloat(),
       ),
     offset =
       Offset(
@@ -288,7 +288,7 @@ private fun TaskBlockContainer(
         drawRoundRect(
           color,
           topLeft = Offset(x = paddingPx, y = paddingPx),
-          size = Size(width = size.width - 2 * paddingPx, height = size.width - 2 * paddingPx),
+          size = Size(width = size.width - 2 * paddingPx, height = size.height - 2 * paddingPx),
           cornerRadius = CornerRadius(cornerRadius.toPx()),
         )
       }
