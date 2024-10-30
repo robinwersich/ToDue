@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.layout.Box
@@ -11,8 +12,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
@@ -26,6 +29,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.lerp
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -68,6 +72,7 @@ fun OrganizerNavigation(
   taskBlockLabel: @Composable (Timeline, TimeBlock) -> Unit,
   taskBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
 ) {
+  val backgroundColor = MaterialTheme.colorScheme.surface
   val positionalThreshold = 0.3f
   val velocityThreshold = with(LocalDensity.current) { 500.dp.toPx() }
 
@@ -95,6 +100,7 @@ fun OrganizerNavigation(
       remember(navigationState) {
         modifier
           .fillMaxSize()
+          .background(backgroundColor)
           .clipToBounds()
           .anchoredDraggable(
             timelineDraggableState,
@@ -178,6 +184,9 @@ private fun TaskBlock(
   label: @Composable () -> Unit,
   content: @Composable () -> Unit,
 ) {
+  val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
+  val contentColor = MaterialTheme.colorScheme.onSurface
+
   val displayStateTransition =
     navigationState.navPosTransition.derived(cacheStates = true) {
       taskBlockDisplayState(timeBlock, timeline, it, navigationState.childTimelineSizeRatio)
@@ -226,32 +235,34 @@ private fun TaskBlock(
         }
       },
     )
+  CompositionLocalProvider(LocalContentColor provides contentColor) {
+    TaskBlockContainer(
+      displayStateTransition = displayStateTransition,
+      expandedAlphaState = expandedAlphaState,
+      color = backgroundColor,
+      modifier = Modifier.placeRelative({ offset }, { size }),
+      label = label,
+    )
 
-  TaskBlockContainer(
-    displayStateTransition = displayStateTransition,
-    expandedAlphaState = expandedAlphaState,
-    modifier = Modifier.placeRelative({ offset }, { size }),
-    label = label,
-  )
-
-  Box(
-    Modifier.placeRelativeScaling(
-        { offset },
-        { size },
-        { measureSize },
-        PaddingValues(taskBlockPadding),
-      )
-      .graphicsLayer {
-        shape = RoundedCornerShape(taskBlockCornerRadius)
-        clip = true
-        alpha = expandedAlphaState.value
-      },
-    propagateMinConstraints = true,
-  ) {
-    val showDetails by
-      remember(expandedAlphaState) { derivedStateOf { expandedAlphaState.value > 0f } }
-    if (showDetails) {
-      content()
+    Box(
+      Modifier.placeRelativeScaling(
+          { offset },
+          { size },
+          { measureSize },
+          PaddingValues(taskBlockPadding),
+        )
+        .graphicsLayer {
+          shape = RoundedCornerShape(taskBlockCornerRadius)
+          clip = true
+          alpha = expandedAlphaState.value
+        },
+      propagateMinConstraints = true,
+    ) {
+      val showDetails by
+        remember(expandedAlphaState) { derivedStateOf { expandedAlphaState.value > 0f } }
+      if (showDetails) {
+        content()
+      }
     }
   }
 }
@@ -260,6 +271,7 @@ private fun TaskBlock(
 private fun TaskBlockContainer(
   displayStateTransition: SwipeableTransition<TaskBlockDisplayState>,
   expandedAlphaState: State<Float>,
+  color: Color,
   modifier: Modifier = Modifier,
   label: @Composable () -> Unit,
 ) {
@@ -279,7 +291,6 @@ private fun TaskBlockContainer(
   val cornerRadius by
     showBlockBounds.interpolatedValue(::lerp) { if (it) taskBlockCornerRadius else 0.dp }
   val showLabel by remember(expandedAlphaState) { derivedStateOf { expandedAlphaState.value < 1f } }
-  val color = MaterialTheme.colorScheme.surface
 
   Box(
     modifier
