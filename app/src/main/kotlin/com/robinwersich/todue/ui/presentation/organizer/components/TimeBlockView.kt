@@ -1,11 +1,14 @@
 package com.robinwersich.todue.ui.presentation.organizer.components
 
+import android.util.Log
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -25,11 +28,9 @@ fun TaskBlockLabel(
   formatter: TimeBlockFormatter,
   modifier: Modifier = Modifier,
 ) {
-  Text(
-    formatter.format(timeBlock, useNarrowFormatting = true),
-    textAlign = TextAlign.Center,
-    modifier = modifier,
-  )
+  Box(modifier, contentAlignment = Alignment.Center) {
+    Text(formatter.format(timeBlock, useNarrowFormatting = true), textAlign = TextAlign.Center)
+  }
 }
 
 @Composable
@@ -38,6 +39,7 @@ fun TaskBlockContent(
   formatter: TimeBlockFormatter,
   modifier: Modifier = Modifier,
 ) {
+  Log.d("TaskBlockContent", "recompose")
   val tasks =
     listOf("Task 1", "Task 2", "Task 3").mapIndexedToImmutableList { id, text ->
       TaskViewState(id = id.toLong(), text = text, focusLevel = FocusLevel.NEUTRAL)
@@ -56,10 +58,6 @@ fun TaskBlockContent(
 @Composable
 fun ExpandedTimeBlockViewPreview() {
   ToDueTheme {
-    TaskBlockContent(
-      Week(),
-      rememberTimeBlockFormatter(),
-      modifier = Modifier.fillMaxSize(),
-    )
+    TaskBlockContent(Week(), rememberTimeBlockFormatter(), modifier = Modifier.fillMaxSize())
   }
 }

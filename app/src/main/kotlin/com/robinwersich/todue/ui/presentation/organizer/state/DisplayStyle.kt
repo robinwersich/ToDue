@@ -29,5 +29,5 @@ fun timelineStyle(timeline: Timeline, navPos: TimelineNavigationPosition) =
     timeline == navPos.timeline && !navPos.showChild -> TimelineStyle.FULLSCREEN
     timeline == navPos.visibleChild -> TimelineStyle.CHILD
     timeline < (navPos.visibleChild ?: navPos.timeline) -> TimelineStyle.HIDDEN_CHILD
-    else -> error("Unhandled TimelinePresentation case.")
+    else -> error("Unhandled TimelineStyle case.")
   }

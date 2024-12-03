@@ -203,7 +203,7 @@ fun Modifier.placeRelative(offset: () -> Offset, size: () -> Size) =
  * [offset] and [size], but measure it with the given [measureSize], scaling it to the final size.
  */
 @Stable
-fun Modifier.placeRelative(offset: () -> Offset, size: () -> Size, measureSize: () -> Size) =
+fun Modifier.placeRelativeScaling(offset: () -> Offset, size: () -> Size, measureSize: () -> Size) =
   layout { measurable, constraints ->
     val (measureWidth, measureHeight) = measureSize()
     val measureWidthPx = (measureWidth * constraints.maxWidth).roundToInt()
@@ -226,6 +226,7 @@ fun Modifier.placeRelative(offset: () -> Offset, size: () -> Size, measureSize: 
 /**
  * Occupy all available space and place the content inside this space with the given relative
  * [offset] and [size], but measure it with the given [measureSize], scaling it to the final size.
+ * Adjusts the content size and [measureSize] with the given [padding].
  */
 @Stable
 fun Modifier.placeRelativeScaling(
