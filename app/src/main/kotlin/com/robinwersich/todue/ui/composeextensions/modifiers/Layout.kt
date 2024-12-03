@@ -3,7 +3,6 @@ package com.robinwersich.todue.ui.composeextensions.modifiers
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Stable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -12,7 +11,6 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.constrain
@@ -113,71 +111,6 @@ fun Modifier.scaleFromSize(padding: PaddingValues, size: Density.() -> IntSize) 
     )
   }
 
-/** Restricts the maximum width of the content to the minimum width. */
-@Stable
-fun Modifier.fillMinWidth() = layout { measurable, constraints ->
-  val placeable = measurable.measure(constraints.copy(maxWidth = constraints.minWidth))
-  layout(placeable.width, placeable.height) { placeable.place(0, 0) }
-}
-
-/** Restricts the maximum height of the content to the minimum height. */
-@Stable
-fun Modifier.fillMinHeight() = layout { measurable, constraints ->
-  val placeable = measurable.measure(constraints.copy(maxHeight = constraints.minHeight))
-  layout(placeable.width, placeable.height) { placeable.place(0, 0) }
-}
-
-/** Restricts the maximum size of the content to the minimum size. */
-@Stable
-fun Modifier.fillMinSize() = layout { measurable, constraints ->
-  val placeable =
-    measurable.measure(
-      constraints.copy(maxWidth = constraints.minWidth, maxHeight = constraints.minHeight)
-    )
-  layout(placeable.width, placeable.height) { placeable.place(0, 0) }
-}
-
-/** Measure content with max width and wrap it to min width. */
-@Stable
-fun Modifier.wrapToMinWidth(alignment: Alignment.Horizontal = Alignment.CenterHorizontally) =
-  layout { measurable, constraints ->
-    val placeable = measurable.measure(constraints.copy(minWidth = constraints.maxWidth))
-    layout(width = constraints.minWidth, height = placeable.height) {
-      placeable.place(
-        IntOffset(alignment.align(placeable.width, constraints.minWidth, layoutDirection), 0)
-      )
-    }
-  }
-
-/** Measure content with max height and wrap it to min height. */
-@Stable
-fun Modifier.wrapToMinHeight(alignment: Alignment.Vertical = Alignment.CenterVertically) =
-  layout { measurable, constraints ->
-    val placeable = measurable.measure(constraints.copy(minHeight = constraints.maxHeight))
-    layout(width = placeable.width, height = constraints.minHeight) {
-      placeable.place(IntOffset(0, alignment.align(placeable.height, constraints.minHeight)))
-    }
-  }
-
-/** Measure content with max size and wrap it to min size. */
-@Stable
-fun Modifier.wrapToMinSize(alignment: Alignment = Alignment.Center) =
-  layout { measurable, constraints ->
-    val placeable =
-      measurable.measure(
-        constraints.copy(minWidth = constraints.maxWidth, minHeight = constraints.maxHeight)
-      )
-    layout(width = constraints.minWidth, height = constraints.minHeight) {
-      placeable.place(
-        alignment.align(
-          IntSize(placeable.width, placeable.height),
-          IntSize(constraints.minWidth, constraints.minHeight),
-          layoutDirection,
-        )
-      )
-    }
-  }
-
 /**
  * Occupy all available space and place the content inside this space with the given relative
  * [offset] and [size].
@@ -197,66 +130,3 @@ fun Modifier.placeRelative(offset: () -> Offset, size: () -> Size) =
       placeable.place(offsetXPx, offsetYPx)
     }
   }
-
-/**
- * Occupy all available space and place the content inside this space with the given relative
- * [offset] and [size], but measure it with the given [measureSize], scaling it to the final size.
- */
-@Stable
-fun Modifier.placeRelativeScaling(offset: () -> Offset, size: () -> Size, measureSize: () -> Size) =
-  layout { measurable, constraints ->
-    val (measureWidth, measureHeight) = measureSize()
-    val measureWidthPx = (measureWidth * constraints.maxWidth).roundToInt()
-    val measureHeightPx = (measureHeight * constraints.maxHeight).roundToInt()
-    val placeable = measurable.measure(Constraints.fixed(measureWidthPx, measureHeightPx))
-
-    layout(constraints.maxWidth, constraints.maxHeight) {
-      val (offsetX, offsetY) = offset()
-      val offsetXPx = (offsetX * constraints.maxWidth).roundToInt()
-      val offsetYPx = (offsetY * constraints.maxHeight).roundToInt()
-      placeable.placeWithLayer(offsetXPx, offsetYPx) {
-        transformOrigin = TransformOrigin(0f, 0f)
-        val (placeWidth, placeHeight) = size()
-        scaleX = placeWidth / measureWidth
-        scaleY = placeHeight / measureHeight
-      }
-    }
-  }
-
-/**
- * Occupy all available space and place the content inside this space with the given relative
- * [offset] and [size], but measure it with the given [measureSize], scaling it to the final size.
- * Adjusts the content size and [measureSize] with the given [padding].
- */
-@Stable
-fun Modifier.placeRelativeScaling(
-  offset: () -> Offset,
-  size: () -> Size,
-  measureSize: () -> Size,
-  padding: PaddingValues,
-) = layout { measurable, constraints ->
-  val leftPad = padding.calculateLeftPadding(layoutDirection).toPx()
-  val rightPad = padding.calculateRightPadding(layoutDirection).toPx()
-  val topPad = padding.calculateTopPadding().toPx()
-  val bottomPad = padding.calculateBottomPadding().toPx()
-
-  val (measureWidth, measureHeight) = measureSize()
-  val measureWidthPx = measureWidth * constraints.maxWidth - leftPad - rightPad
-  val measureHeightPx = measureHeight * constraints.maxHeight - topPad - bottomPad
-  val placeable =
-    measurable.measure(Constraints.fixed(measureWidthPx.roundToInt(), measureHeightPx.roundToInt()))
-
-  layout(constraints.maxWidth, constraints.maxHeight) {
-    val (offsetX, offsetY) = offset()
-    val offsetXPx = offsetX * constraints.maxWidth + leftPad
-    val offsetYPx = offsetY * constraints.maxHeight + topPad
-    placeable.placeWithLayer(offsetXPx.roundToInt(), offsetYPx.roundToInt()) {
-      transformOrigin = TransformOrigin(0f, 0f)
-      val (placeWidth, placeHeight) = size()
-      val placeWidthPx = placeWidth * constraints.maxWidth - leftPad - rightPad
-      val placeHeightPx = placeHeight * constraints.maxHeight - topPad - bottomPad
-      scaleX = placeWidthPx / measureWidthPx
-      scaleY = placeHeightPx / measureHeightPx
-    }
-  }
-}
