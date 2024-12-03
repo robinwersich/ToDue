@@ -87,17 +87,14 @@ class SwipeableTransition<T>(
     val (prevState, nextState) = transitionStates()
     val prevValue = transform(prevState)
     val nextValue = transform(nextState)
-    return if (prevValue == nextValue) prevValue
-    else
-      lerp(
-        prevValue,
-        nextValue,
-        relativeProgress(
-          padding(prevState, nextState),
-          1 - padding(nextState, prevState),
-          progress(),
-        ),
-      )
+    if (prevValue == nextValue) return prevValue
+
+    val prevPadding = padding(prevState, nextState)
+    val nextPadding = padding(nextState, prevState)
+    assert(prevPadding + nextPadding <= 1f) {
+      "State paddings of $prevState ($prevPadding) and $nextState ($nextPadding) overlap."
+    }
+    return lerp(prevValue, nextValue, relativeProgress(prevPadding, 1 - nextPadding, progress()))
   }
 
   /**
