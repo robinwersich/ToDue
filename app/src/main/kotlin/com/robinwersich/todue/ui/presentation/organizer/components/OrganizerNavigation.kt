@@ -4,26 +4,47 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.geometry.lerp
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.roundToIntSize
+import androidx.compose.ui.util.lerp
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
-import com.robinwersich.todue.domain.model.duration
-import com.robinwersich.todue.domain.model.toDoubleRange
+import com.robinwersich.todue.domain.model.daysUntil
+import com.robinwersich.todue.domain.model.size
+import com.robinwersich.todue.ui.composeextensions.PaddedRoundedCornerShape
+import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
 import com.robinwersich.todue.ui.composeextensions.instantStop
-import com.robinwersich.todue.ui.composeextensions.interpolateFloat
+import com.robinwersich.todue.ui.composeextensions.modifiers.placeRelative
+import com.robinwersich.todue.ui.composeextensions.modifiers.scaleFromSize
+import com.robinwersich.todue.ui.presentation.organizer.state.NavigationPosition
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
-import com.robinwersich.todue.ui.presentation.organizer.state.TimelinePresentation
-import com.robinwersich.todue.utility.size
+import com.robinwersich.todue.ui.presentation.organizer.state.TimelineStyle
+import com.robinwersich.todue.ui.presentation.organizer.state.timelineStyle
 import kotlinx.collections.immutable.ImmutableList
 
 /**
@@ -36,7 +57,8 @@ import kotlinx.collections.immutable.ImmutableList
  * @param modifier The modifier to apply to this layout.
  * @param childTimelineSizeFraction The fraction of the screen width that the child timeline should
  *   take up in a split view with two timelines.
- * @param timelineBlockContent The content to display for each [TimeBlock] in each [Timeline].
+ * @param taskBlockLabel The label content to display for a [TimeBlock] in preview mode.
+ * @param taskBlockContent The content to display for a [TimeBlock] in expanded mode.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -44,8 +66,10 @@ fun OrganizerNavigation(
   timelines: ImmutableList<Timeline>,
   modifier: Modifier = Modifier,
   childTimelineSizeFraction: Float = 0.3f,
-  timelineBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
+  taskBlockLabel: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
+  taskBlockContent: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
 ) {
+  val backgroundColor = MaterialTheme.colorScheme.surface
   val positionalThreshold = 0.3f
   val velocityThreshold = with(LocalDensity.current) { 500.dp.toPx() }
 
@@ -68,111 +92,217 @@ fun OrganizerNavigation(
   val dateDraggableState = navigationState.dateDraggableState
   LaunchedEffect(navigationState) { navigationState.updateDateAnchorsOnSwipe() }
 
-  OrganizerNavigationLayout(
-    navigationState = navigationState,
+  Box(
     modifier =
-      modifier
-        .clipToBounds()
-        .anchoredDraggable(
-          timelineDraggableState,
-          orientation = Orientation.Horizontal,
-          reverseDirection = true,
-        )
-        .anchoredDraggable(
-          dateDraggableState,
-          orientation = Orientation.Vertical,
-          reverseDirection = true,
-        )
-        .onSizeChanged { navigationState.updateViewportSize(it) },
-    timelineBlockContent = timelineBlockContent,
-  )
+      remember(navigationState) {
+        modifier
+          .fillMaxSize()
+          .background(backgroundColor)
+          .clipToBounds()
+          .anchoredDraggable(
+            timelineDraggableState,
+            orientation = Orientation.Horizontal,
+            reverseDirection = true,
+          )
+          .anchoredDraggable(
+            dateDraggableState,
+            orientation = Orientation.Vertical,
+            reverseDirection = true,
+          )
+          .onSizeChanged { navigationState.updateViewportSize(it) }
+      }
+  ) {
+    TaskBlocks(navigationState, taskBlockLabel, taskBlockContent)
+  }
 }
 
-/** Lays out visible [Timeline]s horizontally based on a [NavigationState]. */
 @Composable
-private fun OrganizerNavigationLayout(
+private fun TaskBlocks(
   navigationState: NavigationState,
-  modifier: Modifier = Modifier,
-  timelineBlockContent: @Composable (Timeline, TimeBlock) -> Unit,
+  taskBlockLabel: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
+  taskBlockContent: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
 ) {
-  Layout(
-    content = {
-      // reading the activeNavigationPositions here directly somehow fixes the issue of
-      // activeTimelineBlocks not updating
-      navigationState.activeNavigationPositions
-      for ((timeline, timeBlocks) in navigationState.activeTimelineBlocks) {
-        TimelineLayout(
-          timeBlocks = timeBlocks,
-          visibleDateRange = { navigationState.visibleDateTimeRange },
+  for ((timeline, timeBlocks) in navigationState.activeTimelineBlocks) {
+    for (timeBlock in timeBlocks) {
+      key(timeline, timeBlock) {
+        TaskBlock(
+          navigationState = navigationState,
+          timeBlock = timeBlock,
+          timeline = timeline,
+          label = { padding -> taskBlockLabel(timeline, timeBlock, padding) },
+          content = { padding -> taskBlockContent(timeline, timeBlock, padding) },
+        )
+      }
+    }
+  }
+}
+
+private val taskBlockPadding = PaddingValues(4.dp)
+private val taskBlockCornerRadius = 24.dp
+
+@Composable
+private fun TaskBlock(
+  navigationState: NavigationState,
+  timeBlock: TimeBlock,
+  timeline: Timeline,
+  label: @Composable (PaddingValues) -> Unit,
+  content: @Composable (PaddingValues) -> Unit,
+) {
+  val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
+  val contentColor = MaterialTheme.colorScheme.onSurface
+
+  val displayStateTransition =
+    navigationState.navPosTransition.derived(cacheStates = true) {
+      blockDisplayState(timeBlock, timeline, it, navigationState.childTimelineSizeRatio)
+    }
+
+  val relativeOffset by displayStateTransition.interpolatedValue(::lerp) { it.relativeOffset }
+  val relativeSize by displayStateTransition.interpolatedValue(::lerp) { it.relativeSize }
+  // When entering/exiting the screen, the size at which the blocks are measured shouldn't change
+  // to avoid unnecessary recompositions and visual artifacts.
+  val measureSize by blockMeasureSize(displayStateTransition) { navigationState.viewportSize }
+  val contentAlphaState = blockContentAlpha(displayStateTransition)
+  val contentAlpha by contentAlphaState
+  val labelAlphaState = blockLabelAlpha(displayStateTransition)
+  val labelAlpha by labelAlphaState
+  val showLabel by remember(labelAlphaState) { derivedStateOf { labelAlpha > 0f } }
+  val showContent by remember(contentAlphaState) { derivedStateOf { contentAlpha > 0f } }
+  val shape = PaddedRoundedCornerShape(taskBlockCornerRadius, taskBlockPadding)
+
+  Box(
+    Modifier.placeRelative({ relativeOffset }, { relativeSize })
+      .clip(shape)
+      .background(backgroundColor),
+    propagateMinConstraints = true,
+  ) {
+    CompositionLocalProvider(LocalContentColor provides contentColor) {
+      if (showLabel) {
+        Box(Modifier.graphicsLayer { alpha = labelAlpha }, propagateMinConstraints = true) {
+          label(taskBlockPadding)
+        }
+      }
+
+      if (showContent) {
+        Box(
+          Modifier.scaleFromSize { measureSize?.roundToIntSize() }
+            .graphicsLayer { alpha = contentAlpha },
+          propagateMinConstraints = true,
         ) {
-          timelineBlockContent(timeline, it)
+          content(taskBlockPadding)
         }
       }
-    },
-    modifier = modifier,
-    measurePolicy = { measurables, constraints ->
-      val placeables =
-        measurables.zip(navigationState.activeTimelineBlocks) { measurable, (timeline, _) ->
-          val relativeWidth =
-            navigationState.timelinePresentationTransitions[timeline]!!.interpolateFloat {
-              when (it) {
-                TimelinePresentation.CHILD,
-                TimelinePresentation.HIDDEN_CHILD -> navigationState.childTimelineSizeRatio
-                TimelinePresentation.FULLSCREEN -> 1f
-                TimelinePresentation.PARENT,
-                TimelinePresentation.HIDDEN_PARENT -> 1f - navigationState.childTimelineSizeRatio
-              }
-            }
-          val width = (relativeWidth * constraints.maxWidth).toInt()
-          measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
-        }
-      layout(width = constraints.maxWidth, height = constraints.maxHeight) {
-        placeables.zip(navigationState.activeTimelineBlocks) { placeable, (timeline, _) ->
-          val relativeOffset =
-            navigationState.timelinePresentationTransitions[timeline]!!.interpolateFloat {
-              when (it) {
-                TimelinePresentation.HIDDEN_CHILD -> -navigationState.childTimelineSizeRatio
-                TimelinePresentation.CHILD,
-                TimelinePresentation.FULLSCREEN -> 0f
-                TimelinePresentation.PARENT -> navigationState.childTimelineSizeRatio
-                TimelinePresentation.HIDDEN_PARENT -> 1f
-              }
-            }
-          val offset = (relativeOffset * constraints.maxWidth).toInt()
-          placeable.place(offset, 0)
-        }
-      }
-    },
+    }
+  }
+}
+
+private data class TaskBlockDisplayState(
+  val timelineStyle: TimelineStyle,
+  val isFocussed: Boolean,
+  val relativeSize: Size,
+  val relativeOffset: Offset,
+)
+
+private fun blockDisplayState(
+  timeBlock: TimeBlock,
+  timeline: Timeline,
+  navPos: NavigationPosition,
+  childTimelineSizeRatio: Float,
+): TaskBlockDisplayState {
+  val timelineStyle = timelineStyle(timeline, navPos.timelineNavPos)
+  return TaskBlockDisplayState(
+    timelineStyle = timelineStyle,
+    isFocussed = timeBlock == navPos.timeBlock,
+    relativeSize =
+      Size(
+        width =
+          when (timelineStyle) {
+            TimelineStyle.HIDDEN_CHILD,
+            TimelineStyle.CHILD -> childTimelineSizeRatio
+            TimelineStyle.FULLSCREEN -> 1f
+            TimelineStyle.PARENT,
+            TimelineStyle.HIDDEN_PARENT -> 1f - childTimelineSizeRatio
+          },
+        height = timeBlock.size.toFloat() / navPos.dateRange.size.toFloat(),
+      ),
+    relativeOffset =
+      Offset(
+        x =
+          when (timelineStyle) {
+            TimelineStyle.HIDDEN_CHILD -> -childTimelineSizeRatio
+            TimelineStyle.CHILD,
+            TimelineStyle.FULLSCREEN -> 0f
+            TimelineStyle.PARENT -> childTimelineSizeRatio
+            TimelineStyle.HIDDEN_PARENT -> 1f
+          },
+        y = (navPos.dateRange.start.daysUntil(timeBlock.start) / navPos.dateRange.size.toFloat()),
+      ),
   )
 }
 
-/** Lays out [TimeBlock]s vertically based on the currently visible date range. */
 @Composable
-private fun TimelineLayout(
-  timeBlocks: ImmutableList<TimeBlock>,
-  visibleDateRange: () -> ClosedRange<Double>,
-  modifier: Modifier = Modifier,
-  timeBlockContent: @Composable (timeBlock: TimeBlock) -> Unit,
+private fun blockMeasureSize(
+  displayStateTransition: SwipeableTransition<TaskBlockDisplayState>,
+  organizerSizeState: () -> IntSize?,
 ) =
-  Layout(
-    content = { for (timeBlock in timeBlocks) timeBlockContent(timeBlock) },
-    modifier = modifier,
-    measurePolicy = { measurables, constraints ->
-      val timelineRange = visibleDateRange()
-      val placeables =
-        measurables.zip(timeBlocks) { measurable, timeBlock ->
-          val relativeSize = timeBlock.duration / timelineRange.size
-          val itemSize = (relativeSize * constraints.maxHeight).toInt()
-          measurable.measure(constraints.copy(minHeight = itemSize, maxHeight = itemSize))
-        }
+  displayStateTransition.interpolatedValue(
+    { start, end, progress ->
+      if (start == null || end == null) null else lerp(start, end, progress)
+    },
+    padding = { state, otherState ->
+      when {
+        state.timelineStyle == TimelineStyle.FULLSCREEN &&
+          otherState.timelineStyle == TimelineStyle.CHILD -> 1f
+        state.timelineStyle == TimelineStyle.PARENT &&
+          state.isFocussed &&
+          otherState.timelineStyle != TimelineStyle.FULLSCREEN -> 1f
+        else -> 0f
+      }
+    },
+    transform = {
+      organizerSizeState()?.let { (organizerWidth, organizerHeight) ->
+        Size((it.relativeSize.width * organizerWidth), (it.relativeSize.height * organizerHeight))
+      }
+    },
+  )
 
-      layout(width = constraints.maxWidth, height = constraints.maxHeight) {
-        placeables.zip(timeBlocks) { placeable, timeBlock ->
-          val relativeOffset =
-            (timeBlock.toDoubleRange().start - timelineRange.start) / timelineRange.size
-          val itemOffset = (relativeOffset * constraints.maxHeight).toInt()
-          placeable.place(0, itemOffset)
-        }
+@Composable
+private fun blockContentAlpha(displayStateTransition: SwipeableTransition<TaskBlockDisplayState>) =
+  displayStateTransition.interpolatedValue(
+    ::lerp,
+    padding = { state, otherState ->
+      when {
+        state.timelineStyle == TimelineStyle.CHILD &&
+          otherState.timelineStyle == TimelineStyle.FULLSCREEN -> 0.8f
+        state.timelineStyle == TimelineStyle.FULLSCREEN &&
+          state.isFocussed &&
+          otherState.timelineStyle == TimelineStyle.FULLSCREEN -> 1f
+        state.timelineStyle == TimelineStyle.PARENT &&
+          state.isFocussed &&
+          otherState.timelineStyle == TimelineStyle.PARENT -> 0.8f
+        state.timelineStyle == TimelineStyle.HIDDEN_PARENT &&
+          otherState.timelineStyle == TimelineStyle.PARENT -> 0.8f
+        else -> 0f
+      }
+    },
+    transform = { if (it.isFocussed) 1f else 0f },
+  )
+
+@Composable
+private fun blockLabelAlpha(displayStateTransition: SwipeableTransition<TaskBlockDisplayState>) =
+  displayStateTransition.interpolatedValue(
+    ::lerp,
+    padding = { state, otherState ->
+      when {
+        state.timelineStyle == TimelineStyle.CHILD &&
+          otherState.timelineStyle == TimelineStyle.FULLSCREEN -> 0.6f
+        else -> 0f
+      }
+    },
+    transform = {
+      when (it.timelineStyle) {
+        TimelineStyle.CHILD,
+        TimelineStyle.HIDDEN_CHILD -> 1f
+        else -> 0f
       }
     },
   )

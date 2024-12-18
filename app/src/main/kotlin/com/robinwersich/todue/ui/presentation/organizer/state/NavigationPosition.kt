@@ -1,6 +1,7 @@
 package com.robinwersich.todue.ui.presentation.organizer.state
 
 import com.robinwersich.todue.domain.model.DateRange
+import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
 import java.time.LocalDate
 
@@ -80,6 +81,9 @@ data class NavigationPosition(
   val date: LocalDate,
   /** The date range that will be visible in this navigation position. */
   val dateRange: DateRange,
+  /** The time block that is focussed in this navigation position. */
+  val timeBlock: TimeBlock,
 ) {
+
   override fun toString() = "NavigationPosition(timeline=$timelineNavPos, date=$date)"
 }

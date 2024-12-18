@@ -9,13 +9,13 @@ class DateRangeTest {
   @Test
   fun `duration includes start and end day`() {
     val dateRange = LocalDate.of(2020, 1, 1)..LocalDate.of(2020, 1, 10)
-    assertThat(dateRange.duration).isEqualTo(10)
+    assertThat(dateRange.size).isEqualTo(10)
   }
 
   @Test
   fun `duration is 1 for single day range`() {
     val dateRange = LocalDate.of(2020, 1, 1)..LocalDate.of(2020, 1, 1)
-    assertThat(dateRange.duration).isEqualTo(1)
+    assertThat(dateRange.size).isEqualTo(1)
     assertThat(dateRange.isEmpty()).isFalse()
   }
 
@@ -23,7 +23,7 @@ class DateRangeTest {
   fun `DateRange and derived DateTimeRange have same duration`() {
     val dateRange = LocalDate.of(2020, 1, 1)..LocalDate.of(2020, 1, 10)
     val dateTimeRange = dateRange.toDoubleRange()
-    assertThat(dateTimeRange.size).isEqualTo(dateRange.duration.toDouble())
+    assertThat(dateTimeRange.size).isEqualTo(dateRange.size.toDouble())
   }
 
   @Test

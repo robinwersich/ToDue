@@ -17,6 +17,14 @@ class MathTest {
     }
 
     @Test
+    fun `relativeProgress returns correct value`() {
+      assertThat(relativeProgress(0.0f, 1.0f, 0.3f)).isEqualTo(0.3f)
+      assertThat(relativeProgress(0.0f, 0.5f, 0.2f)).isEqualTo(0.4f)
+      assertThat(relativeProgress(0.3f, 0.7f, 0.4f)).isEqualTo(0.25f)
+      assertThat(relativeProgress(0.5f, 0.8f, 0.3f)).isEqualTo(0f)
+    }
+
+    @Test
     fun `interpolateDoubleRange interpolates correctly`() {
       val startRange = 0.0..1.0
       val endRange = 1.0..5.0

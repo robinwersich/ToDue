@@ -2,15 +2,15 @@ package com.robinwersich.todue.ui.composeextensions
 
 import androidx.annotation.FloatRange
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SnapshotMutationPolicy
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.lerp
+import androidx.compose.runtime.structuralEqualityPolicy
+import com.robinwersich.todue.utility.areSame
 import com.robinwersich.todue.utility.map
+import com.robinwersich.todue.utility.modifyIf
+import com.robinwersich.todue.utility.relativeProgress
 
 /**
  * This fulfills a similar role as [Transition][androidx.compose.animation.core.Transition], but
@@ -19,10 +19,15 @@ import com.robinwersich.todue.utility.map
  * as [anchoredDraggable][androidx.compose.foundation.gestures.anchoredDraggable] or
  * [Pager][androidx.compose.foundation.pager.Pager].
  *
- * @param transitionStates A function that returns the two states between which is transitioned. If
- *   the transition is currently settled, the two states should be equal.
- * @param progress A function that returns the progress of the transition from the first to the
- *   second state.
+ * Note that this kind of transition has a "direction", meaning that states have an order and
+ * certain states come "before" others. Depending on the underlying swipeable this order is based on
+ * layout or swipe direction.
+ *
+ * @param transitionStates A function that returns the two states between which is transitioned. The
+ *   [first][Pair.first] state is considered to come "before" the [second][Pair.second] one. If the
+ *   transition is currently settled, the two states should be equal.
+ * @param progress A function that returns the progress of the transition from the
+ *   [first][Pair.first] to the [second][Pair.second] state.
  */
 class SwipeableTransition<T>(
   val transitionStates: () -> Pair<T, T>,
@@ -31,103 +36,237 @@ class SwipeableTransition<T>(
   /** Convenience constructor for previews. */
   constructor(state: T) : this({ state to state }, { 0f })
 
-  private val settledState: T?
-    get() {
-      val (prevState, nextState) = transitionStates()
-      return if (prevState == nextState) prevState else null
-    }
-
-  /** Specifies if the transition is currently animating or not. */
-  val isSettled: Boolean
-    get() = settledState != null
-
-  /** Returns if the transition is currently settled on the given [state]. */
-  fun isSettledOn(state: T): Boolean = settledState == state
-
-  /** Returns true if both current [transitionStates] are in the list of given [states]. */
-  fun isBetween(vararg states: T): Boolean {
+  /**
+   * Returns a smoothly interpolated value derived from the current [transitionStates] and
+   * [progress].
+   *
+   * @param lerp A function that interpolates between two values of the target type.
+   * @param transform A function that returns the target value for a given state.
+   */
+  fun <V> interpolateValue(
+    lerp: (start: V, end: V, progress: Float) -> V,
+    transform: (state: T) -> V,
+  ): V {
     val (prevState, nextState) = transitionStates()
-    return prevState in states && nextState in states
+    val prevValue = transform(prevState)
+    val nextValue = transform(nextState)
+    return if (prevValue == nextValue) prevValue else lerp(prevValue, nextValue, progress())
   }
 
   /**
-   * Creates a derived [SwipeableTransition] that transforms the state using the provided function.
+   * Returns a [SwipeableValue] with a smoothly interpolated value derived from the current
+   * [transitionStates] and [progress].
    *
-   * @param stateTransform A function mapping the original states to the derived states.
+   * @param lerp A function that interpolates between two values of the target type.
+   * @param useState Whether to use [derivedStateOf] to cache the result and reduce recompositions
+   *   if [transform] is a many-to-one mapping
+   * @param transform A function that returns the target value for a given state.
    */
-  fun <S> derived(stateTransform: (T) -> S): SwipeableTransition<S> {
-    val derivedStateTransition by
-      derivedStateOf(pairReferentialEqualityPolicy()) { transitionStates().map(stateTransform) }
-    val derivedProgress by derivedStateOf {
-      if (derivedStateTransition.first == derivedStateTransition.second) 0f else progress()
+  @Composable
+  fun <V> interpolatedValue(
+    lerp: (start: V, end: V, progress: Float) -> V,
+    useState: Boolean = false,
+    transform: (state: T) -> V,
+  ): SwipeableValue<V> =
+    remember(this, lerp, useState, transform) { SwipeableValue(this, lerp, useState, transform) }
+
+  /**
+   * Returns a smoothly interpolated value derived from the current [transitionStates] and
+   * [progress].
+   *
+   * @param lerp A function that interpolates between two values of the target type.
+   * @param padding A function providing padding for each state based on the adjacent state. This
+   *   extends the area in which the transition produces a settled value.
+   * @param transform A function that returns the target value for a given state.
+   */
+  fun <V> interpolateValue(
+    lerp: (start: V, end: V, progress: Float) -> V,
+    padding: (state: T, otherState: T) -> Float,
+    transform: (state: T) -> V,
+  ): V {
+    val (prevState, nextState) = transitionStates()
+    val prevValue = transform(prevState)
+    val nextValue = transform(nextState)
+    if (prevValue == nextValue) return prevValue
+
+    val prevPadding = padding(prevState, nextState)
+    val nextPadding = padding(nextState, prevState)
+    assert(prevPadding + nextPadding <= 1f) {
+      "State paddings of $prevState ($prevPadding) and $nextState ($nextPadding) overlap."
     }
-    return SwipeableTransition(
-      transitionStates = { derivedStateTransition },
-      progress = { derivedProgress },
-    )
+    return lerp(prevValue, nextValue, relativeProgress(prevPadding, 1 - nextPadding, progress()))
   }
 
-  /** @see derived() */
+  /**
+   * Returns a [SwipeableValue] with a smoothly interpolated value derived from the current
+   * [transitionStates] and [progress].
+   *
+   * @param lerp A function that interpolates between two values of the target type.
+   * @param padding A function providing padding for each state based on the adjacent state. This
+   *   extends the area in which the transition produces a settled value.
+   * @param transform A function that returns the target value for a given state.
+   */
   @Composable
-  fun <S> rememberDerived(stateTransform: (T) -> S) = remember(this) { derived(stateTransform) }
+  fun <V> interpolatedValue(
+    lerp: (start: V, end: V, progress: Float) -> V,
+    padding: (state: T, otherState: T) -> Float,
+    transform: (state: T) -> V,
+  ) = remember(this, lerp, padding, transform) { SwipeableValue(this, lerp, padding, transform) }
+
+  /**
+   * Creates a derived [SwipeableTransition] using the provided state [transform].
+   *
+   * @param manyToOne If [transform] is a many-to-one mapping. This will will use [derivedStateOf]
+   *   to reduce the number of recompositions caused by state and progress changes of the original
+   *   transition.
+   * @param cacheStates If the results of [transform] should be cached. This defaults to true if
+   *   [manyToOne] is set but may want to be used even if [manyToOne] is false in case of an
+   *   expensive [transform] function and multiple state reads.
+   * @param transform A function mapping states of this transition to new ones.
+   */
+  fun <S> derive(
+    manyToOne: Boolean = false,
+    cacheStates: Boolean = manyToOne,
+    transform: (T) -> S,
+  ): SwipeableTransition<S> {
+    val getStates =
+      { transitionStates().map(transform) }.modifyIf(cacheStates) {
+        it.withDerivedState(structuralEqualityPolicy())
+      }
+
+    val getProgress =
+      if (manyToOne) {
+        { if (getStates().areSame) 0f else progress() }.withDerivedState()
+      } else {
+        progress
+      }
+
+    return SwipeableTransition(transitionStates = getStates, progress = getProgress)
+  }
+
+  /**
+   * Returns a derived [SwipeableTransition] using the provided [transform]
+   *
+   * @see derive()
+   */
+  @Composable
+  fun <S> derived(
+    manyToOne: Boolean = false,
+    cacheStates: Boolean = manyToOne,
+    transform: (T) -> S,
+  ) =
+    remember(this, manyToOne, cacheStates, transform) { derive(manyToOne, cacheStates, transform) }
+
+  /**
+   * Creates a derived [SwipeableTransition] with different states and state [padding].
+   *
+   * @param manyToOne If [transform] is a many-to-one mapping. This will will use [derivedStateOf]
+   *   to reduce the number of recompositions caused by state and progress changes of the original
+   *   transition.
+   * @param cacheStates If the results of [transform] should be cached. This defaults to true if
+   *   [manyToOne] is set but may want to be used even if [manyToOne] is false in case of an
+   *   expensive [transform] function and multiple state reads.
+   * @param padding A function providing padding for each state based on the adjacent state. This
+   *   extends the area in which the transition produces a settled value.
+   * @param transform A function mapping states of this transition to new ones.
+   */
+  fun <S> derive(
+    padding: (state: T, otherState: T) -> Float,
+    manyToOne: Boolean = false,
+    cacheStates: Boolean = manyToOne,
+    transform: (T) -> S,
+  ): SwipeableTransition<S> {
+    val getStates =
+      { transitionStates().map(transform) }.modifyIf(cacheStates) {
+        it.withDerivedState(structuralEqualityPolicy())
+      }
+
+    val getProgress =
+      {
+          val (prev, next) = transitionStates()
+          relativeProgress(
+            start = padding(prev, next),
+            end = 1 - padding(next, prev),
+            progress = progress(),
+          )
+        }
+        .modifyIf(manyToOne) { { if (getStates().areSame) 0f else it() } }
+        .withDerivedState()
+
+    return SwipeableTransition(transitionStates = getStates, progress = getProgress)
+  }
+
+  @Composable
+  fun <S> derived(
+    padding: (state: T, otherState: T) -> Float,
+    manyToOne: Boolean = false,
+    cacheStates: Boolean = manyToOne,
+    transform: (T) -> S,
+  ) =
+    remember(this, padding, manyToOne, cacheStates, transform) {
+      derive(padding, manyToOne, cacheStates, transform)
+    }
 }
 
 /**
- * Returns a smoothly interpolated value derived from the current
- * [SwipeableTransition.transitionStates] and [SwipeableTransition.progress].
- *
- * @param interpolateValue A function that interpolates between two values of the target type.
- * @param targetValueByState A function that returns the target value for a given state.
+ * Stores the calculation of an interpolated value of a [SwipeableTransition] so it can be retrieved
+ * later, deferring state reads.
  */
-fun <T, V> SwipeableTransition<T>.interpolateValue(
-  interpolateValue: (start: V, end: V, progress: Float) -> V,
-  targetValueByState: (state: T) -> V,
-): V {
-  val (prevState, nextState) = transitionStates()
-  val prevValue = targetValueByState(prevState)
-  val nextValue = targetValueByState(nextState)
-  // don't read progress if previous and next value are equal to avoid unnecessary recompositions
-  if (prevValue == nextValue) return prevValue
-  return interpolateValue(prevValue, nextValue, progress())
+class SwipeableValue<V>(private val getValue: () -> V) : State<V> {
+  companion object {
+    /**
+     * Generic factory method for creating a [SwipeableValue].
+     *
+     * @param transition The [SwipeableTransition] to derive the value from.
+     * @param lerp A function that interpolates between two values of the target type.
+     * @param useState Whether to use [derivedStateOf] to cache the result and reduce recompositions
+     *   if [transform] is a many-to-one mapping
+     * @param transform A function that returns the target value for a given state.
+     */
+    operator fun <T, V> invoke(
+      transition: SwipeableTransition<T>,
+      lerp: (start: V, end: V, progress: Float) -> V,
+      useState: Boolean = false,
+      transform: (state: T) -> V,
+    ): SwipeableValue<V> {
+      val getValue =
+        { transition.interpolateValue(lerp, transform) }.modifyIf(useState) {
+          it.withDerivedState(structuralEqualityPolicy())
+        }
+      return SwipeableValue(getValue)
+    }
+
+    /**
+     * Generic factory method for creating a [SwipeableValue] with state paddings.
+     *
+     * @param transition The [SwipeableTransition] to derive the value from.
+     * @param interpolateValue A function that interpolates between two values of the target type.
+     * @param padding A function providing padding for each state based on the adjacent state. This
+     *   extends the area in which the transition produces a settled value.
+     * @param transform A function that returns the target value for a given state.
+     */
+    operator fun <T, V> invoke(
+      transition: SwipeableTransition<T>,
+      interpolateValue: (start: V, end: V, progress: Float) -> V,
+      padding: (state: T, otherState: T) -> Float,
+      transform: (state: T) -> V,
+    ): SwipeableValue<V> {
+      val getValue = { transition.interpolateValue(interpolateValue, padding, transform) }
+      return SwipeableValue(getValue.withDerivedState(structuralEqualityPolicy()))
+    }
+  }
+
+  override val value
+    get() = getValue()
+
+  override fun hashCode() = getValue.hashCode()
+
+  override fun equals(other: Any?) = other is SwipeableValue<*> && getValue == other.getValue
 }
 
-/**
- * Returns a smoothly interpolated value derived from the current
- * [SwipeableTransition.transitionStates] and [SwipeableTransition.progress].
- *
- * @param interpolateValue A function that interpolates between two values of the target type.
- * @param targetValueByState A function that returns the target value for a given state.
- */
-@Composable
-fun <T, V> SwipeableTransition<T>.animateValue(
-  interpolateValue: (start: V, end: V, progress: Float) -> V,
-  targetValueByState: @Composable (state: T) -> V,
-): V {
-  val (prevState, nextState) = transitionStates()
-  val prevValue = targetValueByState(prevState)
-  val nextValue = targetValueByState(nextState)
-  // don't read progress if previous and next value are equal to avoid unnecessary recompositions
-  if (prevValue == nextValue) return prevValue
-  return interpolateValue(prevValue, nextValue, progress())
-}
+/** Caches and minimizes the update frequency of a value getter using [derivedStateOf]. */
+private fun <T> (() -> T).withDerivedState(policy: SnapshotMutationPolicy<T>) =
+  derivedStateOf(policy, this).let { { it.value } }
 
-fun <T> SwipeableTransition<T>.interpolateFloat(targetValueByState: (state: T) -> Float) =
-  interpolateValue(
-    interpolateValue = { start, end, progress -> start * (1 - progress) + end * progress },
-    targetValueByState = targetValueByState,
-  )
-
-@Composable
-fun <T> SwipeableTransition<T>.animateFloat(targetValueByState: @Composable (state: T) -> Float) =
-  animateValue(
-    interpolateValue = { start, end, progress -> start * (1 - progress) + end * progress },
-    targetValueByState = targetValueByState,
-  )
-
-@Composable
-fun <T> SwipeableTransition<T>.animateColor(targetValueByState: @Composable (state: T) -> Color) =
-  animateValue(interpolateValue = ::lerp, targetValueByState = targetValueByState)
-
-@Composable
-fun <T> SwipeableTransition<T>.animateDp(targetValueByState: @Composable (state: T) -> Dp) =
-  animateValue(interpolateValue = ::lerp, targetValueByState = targetValueByState)
+/** Caches and minimizes the update frequency of a value getter using [derivedStateOf]. */
+private fun <T> (() -> T).withDerivedState() = derivedStateOf(this).let { { it.value } }

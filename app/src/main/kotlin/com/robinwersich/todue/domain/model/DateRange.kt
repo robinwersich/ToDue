@@ -10,7 +10,7 @@ typealias DateRange = ClosedRange<LocalDate>
  * of the first day to the end of the last day, so a range from 2021-01-01 to 2021-01-01 has a size
  * of 1.
  */
-val DateRange.duration: Long
+val DateRange.size: Long
   get() = endInclusive.toEpochDay() + 1 - start.toEpochDay()
 
 /**

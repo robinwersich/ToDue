@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.util.lerp
 import com.robinwersich.todue.utility.forEach
 
 @Composable
@@ -19,7 +20,9 @@ fun <T> SwipeableTransition<T>.Crossfade(
     } else {
       states.forEach { state ->
         Box(
-          Modifier.graphicsLayer { alpha = interpolateFloat { if (it == state) 1f else 0f } },
+          Modifier.graphicsLayer {
+            alpha = interpolateValue(::lerp) { it: T -> if (it == state) 1f else 0f }
+          },
           propagateMinConstraints = true,
         ) {
           content(state)

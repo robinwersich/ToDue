@@ -3,11 +3,14 @@ package com.robinwersich.todue.utility
 import kotlin.math.max
 import kotlin.math.min
 
+/**
+ * Returns the relative progress of [progress] between [start] and [end], clamped between 0 and 1.
+ */
+fun relativeProgress(start: Float, end: Float, progress: Float) =
+  ((progress - start) / (end - start)).coerceIn(0f, 1f)
+
 fun interpolateDouble(start: Double, end: Double, progress: Float) =
   start * (1 - progress) + end * progress
-
-fun Double.interpolateTo(target: Double, progress: Float) =
-  interpolateDouble(this, target, progress)
 
 fun interpolateDoubleRange(
   startRange: ClosedRange<Double>,
@@ -18,11 +21,6 @@ fun interpolateDoubleRange(
   val end = interpolateDouble(startRange.endInclusive, endRange.endInclusive, progress)
   return start..end
 }
-
-fun ClosedRange<Double>.interpolateTo(
-  target: ClosedRange<Double>,
-  progress: Float,
-): ClosedRange<Double> = interpolateDoubleRange(this, target, progress)
 
 val ClosedRange<Double>.size: Double
   get() = endInclusive - start
