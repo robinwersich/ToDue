@@ -1,6 +1,5 @@
 package com.robinwersich.todue.ui.presentation.organizer.components
 
-import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,7 +38,6 @@ fun TaskBlockContent(
   formatter: TimeBlockFormatter,
   modifier: Modifier = Modifier,
 ) {
-  Log.d("TaskBlockContent", "recompose")
   val tasks =
     listOf("Task 1", "Task 2", "Task 3").mapIndexedToImmutableList { id, text ->
       TaskViewState(id = id.toLong(), text = text, focusLevel = FocusLevel.NEUTRAL)

@@ -21,7 +21,7 @@ fun OrganizerScreen(
   onEvent: (OrganizerEvent) -> Unit = {},
   modifier: Modifier = Modifier,
 ) {
-  Scaffold(modifier = modifier) { padding ->
+  Scaffold(modifier = modifier) { scaffoldPadding ->
     val timelines = remember {
       persistentListOf(
         Timeline(0, TimeUnit.DAY),
@@ -46,7 +46,7 @@ fun OrganizerScreen(
           modifier = Modifier.padding(padding),
         )
       },
-      modifier = modifier.padding(padding),
+      modifier = modifier.padding(scaffoldPadding),
     )
   }
 }
