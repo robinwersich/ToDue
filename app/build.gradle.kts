@@ -8,12 +8,12 @@ plugins {
 
 android {
   namespace = "com.robinwersich.todue"
-  compileSdk = 34
+  compileSdk = 35
 
   defaultConfig {
     applicationId = "com.robinwersich.todue"
     minSdk = 24
-    targetSdk = 34
+    targetSdk = 35
     versionCode = 2
     versionName = "0.2.0"
 
@@ -52,19 +52,23 @@ ksp { arg("room.generateKotlin", "true") }
 
 dependencies {
   // Core Android Libraries
-  implementation("androidx.core:core-ktx:1.13.1")
-  implementation("androidx.activity:activity-compose:1.9.0")
-  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.3")
-  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.3")
+  implementation("androidx.core:core-ktx:1.15.0")
+  implementation("androidx.activity:activity-compose:1.9.3")
+  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
+  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
 
   // Compose
-  val composeVersion = "1.7.0-beta07"
-  implementation("androidx.compose.ui:ui:$composeVersion")
-  implementation("androidx.compose.ui:ui-tooling-preview:$composeVersion")
-  debugImplementation("androidx.compose.ui:ui-tooling:$composeVersion")
-  debugImplementation("androidx.compose.ui:ui-test-manifest:$composeVersion")
-  implementation("androidx.compose.foundation:foundation:$composeVersion")
-  implementation("androidx.compose.material3:material3:1.2.1")
+  val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
+  implementation(composeBom)
+  testImplementation(composeBom)
+  androidTestImplementation(composeBom)
+
+  implementation("androidx.compose.ui:ui")
+  implementation("androidx.compose.ui:ui-tooling-preview")
+  debugImplementation("androidx.compose.ui:ui-tooling")
+  debugImplementation("androidx.compose.ui:ui-test-manifest")
+  implementation("androidx.compose.foundation:foundation")
+  implementation("androidx.compose.material3:material3")
 
   // Room
   val roomVersion = "2.6.1"
@@ -73,7 +77,7 @@ dependencies {
   implementation("androidx.room:room-ktx:$roomVersion")
 
   // Paging
-  val pagingVersion = "3.3.0"
+  val pagingVersion = "3.3.5"
   implementation("androidx.paging:paging-runtime:$pagingVersion")
   implementation("androidx.paging:paging-compose:$pagingVersion")
 
@@ -88,8 +92,8 @@ dependencies {
   androidTestImplementation("androidx.test.ext:junit:1.2.1")
   androidTestImplementation("com.google.truth:truth:1.4.4")
   androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-  androidTestImplementation("androidx.compose.ui:ui-test-junit4:$composeVersion")
+  androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
   // Desugaring
-  coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+  coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.3")
 }
