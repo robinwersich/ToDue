@@ -1,6 +1,7 @@
 package com.robinwersich.todue.ui.presentation.organizer
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -15,32 +16,39 @@ import com.robinwersich.todue.ui.theme.ToDueTheme
 import kotlinx.collections.immutable.persistentListOf
 
 @Composable
-fun OrganizerScreen(state: OrganizerState, onEvent: (OrganizerEvent) -> Unit = {}) {
-  val timelines = remember {
-    persistentListOf(
-      Timeline(0, TimeUnit.DAY),
-      Timeline(1, TimeUnit.WEEK),
-      Timeline(2, TimeUnit.MONTH),
+fun OrganizerScreen(
+  state: OrganizerState,
+  onEvent: (OrganizerEvent) -> Unit = {},
+  modifier: Modifier = Modifier,
+) {
+  Scaffold(modifier = modifier) { padding ->
+    val timelines = remember {
+      persistentListOf(
+        Timeline(0, TimeUnit.DAY),
+        Timeline(1, TimeUnit.WEEK),
+        Timeline(2, TimeUnit.MONTH),
+      )
+    }
+    val formatter = rememberTimeBlockFormatter()
+    OrganizerNavigation(
+      timelines = timelines,
+      taskBlockLabel = { _, timeBlock, padding ->
+        TaskBlockLabel(
+          timeBlock = timeBlock,
+          formatter = formatter,
+          modifier = Modifier.padding(padding),
+        )
+      },
+      taskBlockContent = { _, timeBlock, padding ->
+        TaskBlockContent(
+          timeBlock = timeBlock,
+          formatter = formatter,
+          modifier = Modifier.padding(padding),
+        )
+      },
+      modifier = modifier.padding(padding),
     )
   }
-  val formatter = rememberTimeBlockFormatter()
-  OrganizerNavigation(
-    timelines = timelines,
-    taskBlockLabel = { _, timeBlock, padding ->
-      TaskBlockLabel(
-        timeBlock = timeBlock,
-        formatter = formatter,
-        modifier = Modifier.padding(padding),
-      )
-    },
-    taskBlockContent = { _, timeBlock, padding ->
-      TaskBlockContent(
-        timeBlock = timeBlock,
-        formatter = formatter,
-        modifier = Modifier.padding(padding),
-      )
-    },
-  )
 }
 
 @Preview(showSystemUi = true)

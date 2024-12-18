@@ -18,7 +18,7 @@ class MainActivity : ComponentActivity() {
       ToDueTheme {
         val viewModel: OrganizerViewModel = viewModel(factory = OrganizerViewModel.Factory)
         val state by viewModel.viewState.collectAsState()
-        OrganizerScreen(state, viewModel::handleEvent)
+        OrganizerScreen(state = state, onEvent = viewModel::handleEvent)
       }
     }
   }
