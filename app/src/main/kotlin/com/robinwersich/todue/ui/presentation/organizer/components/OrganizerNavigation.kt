@@ -8,7 +8,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.LocalContentColor
@@ -18,6 +17,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -112,8 +112,19 @@ fun OrganizerNavigation(
           .onSizeChanged { navigationState.updateViewportSize(it) }
       }
   ) {
-    for ((timeline, timeBlocks) in navigationState.activeTimelineBlocks) {
-      for (timeBlock in timeBlocks) {
+    TaskBlocks(navigationState, taskBlockLabel, taskBlockContent)
+  }
+}
+
+@Composable
+private fun TaskBlocks(
+  navigationState: NavigationState,
+  taskBlockLabel: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
+  taskBlockContent: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
+) {
+  for ((timeline, timeBlocks) in navigationState.activeTimelineBlocks) {
+    for (timeBlock in timeBlocks) {
+      key(timeline, timeBlock) {
         TaskBlock(
           navigationState = navigationState,
           timeBlock = timeBlock,
@@ -136,7 +147,7 @@ private fun TaskBlock(
   timeline: Timeline,
   label: @Composable (PaddingValues) -> Unit,
   content: @Composable (PaddingValues) -> Unit,
-) = BoxWithConstraints {
+) {
   val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
   val contentColor = MaterialTheme.colorScheme.onSurface
 
@@ -149,18 +160,18 @@ private fun TaskBlock(
   val relativeSize by displayStateTransition.interpolatedValue(::lerp) { it.relativeSize }
   // When entering/exiting the screen, the size at which the blocks are measured shouldn't change
   // to avoid unnecessary recompositions and visual artifacts.
-  val measureSize by
-    blockMeasureSize(displayStateTransition, IntSize(constraints.maxWidth, constraints.maxHeight))
+  val measureSize by blockMeasureSize(displayStateTransition) { navigationState.viewportSize }
   val contentAlphaState = blockContentAlpha(displayStateTransition)
   val contentAlpha by contentAlphaState
   val labelAlphaState = blockLabelAlpha(displayStateTransition)
   val labelAlpha by labelAlphaState
   val showLabel by remember(labelAlphaState) { derivedStateOf { labelAlpha > 0f } }
   val showContent by remember(contentAlphaState) { derivedStateOf { contentAlpha > 0f } }
+  val shape = PaddedRoundedCornerShape(taskBlockCornerRadius, taskBlockPadding)
 
   Box(
     Modifier.placeRelative({ relativeOffset }, { relativeSize })
-      .clip(PaddedRoundedCornerShape(taskBlockCornerRadius, taskBlockPadding))
+      .clip(shape)
       .background(backgroundColor),
     propagateMinConstraints = true,
   ) {
@@ -173,7 +184,7 @@ private fun TaskBlock(
 
       if (showContent) {
         Box(
-          Modifier.scaleFromSize { measureSize.roundToIntSize() }
+          Modifier.scaleFromSize { measureSize?.roundToIntSize() }
             .graphicsLayer { alpha = contentAlpha },
           propagateMinConstraints = true,
         ) {
@@ -231,10 +242,12 @@ private fun blockDisplayState(
 @Composable
 private fun blockMeasureSize(
   displayStateTransition: SwipeableTransition<TaskBlockDisplayState>,
-  organizerSize: IntSize,
+  organizerSizeState: () -> IntSize?,
 ) =
   displayStateTransition.interpolatedValue(
-    ::lerp,
+    { start, end, progress ->
+      if (start == null || end == null) null else lerp(start, end, progress)
+    },
     padding = { state, otherState ->
       when {
         state.timelineStyle == TimelineStyle.FULLSCREEN &&
@@ -246,10 +259,9 @@ private fun blockMeasureSize(
       }
     },
     transform = {
-      Size(
-        (it.relativeSize.width * organizerSize.width),
-        (it.relativeSize.height * organizerSize.height),
-      )
+      organizerSizeState()?.let { (organizerWidth, organizerHeight) ->
+        Size((it.relativeSize.width * organizerWidth), (it.relativeSize.height * organizerHeight))
+      }
     },
   )
 

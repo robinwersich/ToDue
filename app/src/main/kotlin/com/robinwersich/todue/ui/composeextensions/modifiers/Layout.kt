@@ -12,7 +12,6 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.constrain
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.constrainWidth
@@ -76,9 +75,13 @@ fun Modifier.size(size: Density.() -> IntSize) = layout { measurable, constraint
 
 /** Composes the content with the given [size] and scales it to fit in the parent constraints. */
 @Stable
-fun Modifier.scaleFromSize(size: Density.() -> IntSize) = layout { measurable, constraints ->
-  val (measureWidth, measureHeight) = size()
-  val placeable = measurable.measure(Constraints.fixed(measureWidth, measureHeight))
+fun Modifier.scaleFromSize(size: Density.() -> IntSize?) = layout { measurable, constraints ->
+  val placeable =
+    measurable.measure(
+      size()?.let { (measureWidth, measureHeight) ->
+        Constraints.fixed(measureWidth, measureHeight)
+      } ?: constraints
+    )
   layout(constraints.maxWidth, constraints.maxHeight) {
     placeable.placeWithLayer(0, 0) {
       transformOrigin = TransformOrigin(0f, 0f)
@@ -91,25 +94,6 @@ fun Modifier.scaleFromSize(size: Density.() -> IntSize) = layout { measurable, c
     }
   }
 }
-
-/**
- * Composes the content with the given padded [size] and scales it to fit in the padded parent
- * constraints. This way, the padding isn't scaled.
- */
-@Stable
-fun Modifier.scaleFromSize(padding: PaddingValues, size: Density.() -> IntSize) =
-  padding(padding).scaleFromSize {
-    val (width, height) = size()
-    val verticalPadding = padding.calculateTopPadding() + padding.calculateBottomPadding()
-    // layout direction doesn't matter since we add up left and right padding
-    val horizontalPadding =
-      padding.calculateLeftPadding(LayoutDirection.Ltr) +
-        padding.calculateRightPadding(LayoutDirection.Ltr)
-    IntSize(
-      (width - horizontalPadding.roundToPx()).coerceAtLeast(0),
-      (height - verticalPadding.roundToPx()).coerceAtLeast(0),
-    )
-  }
 
 /**
  * Occupy all available space and place the content inside this space with the given relative

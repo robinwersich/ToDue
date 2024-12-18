@@ -8,6 +8,8 @@ import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.IntSize
 import com.robinwersich.todue.domain.model.DateRange
@@ -85,7 +87,7 @@ class NavigationState(
     )
 
   /** The current size of the viewport, used to calculate the anchor positions. */
-  private var viewportSize: IntSize? = null
+  var viewportSize: IntSize? by mutableStateOf(null)
 
   /** The current [TimelineNavigationPosition] of the organizer. */
   private val currentTimelineNavPos: TimelineNavigationPosition
