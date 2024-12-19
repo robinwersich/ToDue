@@ -239,20 +239,14 @@ class NavigationState(
   val navPosTransition: SwipeableTransition<NavigationPosition> =
     derivedStateOf(pairReferentialEqualityPolicy()) {
         with(adjacentNavigationPositions) {
-          if (!timelineDraggableState.isSettled) {
-            val offsetToCurrent = timelineDraggableState.offsetToCurrent
-            when {
-              offsetToCurrent < 0 -> prevTimeline to current
-              offsetToCurrent > 0 -> current to nextTimeline
-              else -> current to current
-            }
-          } else {
-            val offsetToCurrent = dateDraggableState.offsetToCurrent
-            when {
-              offsetToCurrent < 0 -> prevDate to current
-              offsetToCurrent > 0 -> current to nextDate
-              else -> current to current
-            }
+          val timelineOffsetToCurrent = timelineDraggableState.offsetToCurrent
+          val dateOffsetToCurrent = dateDraggableState.offsetToCurrent
+          when {
+            timelineOffsetToCurrent < 0 -> prevTimeline to current
+            timelineOffsetToCurrent > 0 -> current to nextTimeline
+            dateOffsetToCurrent < 0 -> prevDate to current
+            dateOffsetToCurrent > 0 -> current to nextDate
+            else -> current to current
           }
         }
       }
