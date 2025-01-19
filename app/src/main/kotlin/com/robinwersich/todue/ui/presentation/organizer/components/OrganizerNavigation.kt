@@ -10,6 +10,7 @@ import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -57,6 +58,8 @@ import kotlinx.collections.immutable.ImmutableList
  * @param modifier The modifier to apply to this layout.
  * @param childTimelineSizeFraction The fraction of the screen width that the child timeline should
  *   take up in a split view with two timelines.
+ * @param contentPadding Padding that should be applied to the focussed area, while still drawing
+ *   content within the full bounds.
  * @param taskBlockLabel The label content to display for a [TimeBlock] in preview mode.
  * @param taskBlockContent The content to display for a [TimeBlock] in expanded mode.
  */
@@ -66,12 +69,14 @@ fun OrganizerNavigation(
   timelines: ImmutableList<Timeline>,
   modifier: Modifier = Modifier,
   childTimelineSizeFraction: Float = 0.3f,
+  contentPadding: PaddingValues = PaddingValues(0.dp),
   taskBlockLabel: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
   taskBlockContent: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
 ) {
   val backgroundColor = MaterialTheme.colorScheme.surface
   val positionalThreshold = 0.3f
   val velocityThreshold = with(LocalDensity.current) { 500.dp.toPx() }
+  val density = LocalDensity.current
 
   val navigationState =
     remember(timelines, childTimelineSizeFraction) {
@@ -99,6 +104,7 @@ fun OrganizerNavigation(
           .fillMaxSize()
           .background(backgroundColor)
           .clipToBounds()
+          .padding(contentPadding)
           .anchoredDraggable(
             timelineDraggableState,
             orientation = Orientation.Horizontal,
@@ -109,7 +115,13 @@ fun OrganizerNavigation(
             orientation = Orientation.Vertical,
             reverseDirection = true,
           )
-          .onSizeChanged { navigationState.updateViewportSize(it) }
+          .onSizeChanged {
+            with(density) {
+              val topPaddingFraction = contentPadding.calculateTopPadding().toPx() / it.height
+              val bottomPaddingFraction = contentPadding.calculateBottomPadding().toPx() / it.height
+              navigationState.updateViewportSize(it, topPaddingFraction, bottomPaddingFraction)
+            }
+          }
       }
   ) {
     TaskBlocks(navigationState, taskBlockLabel, taskBlockContent)

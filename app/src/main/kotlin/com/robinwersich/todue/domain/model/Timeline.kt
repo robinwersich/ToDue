@@ -9,6 +9,7 @@ import java.time.LocalDate
  * @param id The unique identifier of this timeline (used for DB access).
  * @param timeUnit The time unit of this timelines [TimeBlock]s.
  */
+// TODO: Having the id here is somewhat annoying, find a better way to handle DB integration
 data class Timeline(val id: Int, val timeUnit: TimeUnit) : Comparable<Timeline> {
   override operator fun compareTo(other: Timeline) =
     timeUnit.referenceSize.compareTo(other.timeUnit.referenceSize)

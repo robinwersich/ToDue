@@ -3,9 +3,11 @@ package com.robinwersich.todue.ui.presentation.organizer.state
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.snapTo
 import androidx.compose.ui.unit.IntSize
 import com.google.common.truth.Truth.assertThat
 import com.robinwersich.todue.domain.model.Day
+import com.robinwersich.todue.domain.model.Month
 import com.robinwersich.todue.domain.model.TimeUnit
 import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.Week
@@ -62,6 +64,21 @@ class NavigationStateTest {
     assertThat(state.activeTimelineBlocks)
       .containsExactly(
         Timeline(1, TimeUnit.WEEK) to persistentListOf(Week(initialDate), Week(initialDate) + 1)
+      )
+  }
+
+  @Test
+  fun activeTimelineBlocks_RespectAdditionalMargin() {
+    state.updateViewportSize(IntSize(100, 100), 0.1f, 0.2f)
+    runBlocking {
+      state.timelineDraggableState.snapTo(
+        TimelineNavigationPosition(timelines, Timeline(2, TimeUnit.MONTH), showChild = true)
+      )
+    }
+    assertThat(state.activeTimelineBlocks)
+      .containsExactly(
+        Timeline(1, TimeUnit.WEEK) to (Week(2019, 52)..Week(2020, 6)).toImmutableList(),
+        Timeline(2, TimeUnit.MONTH) to (Month(2019, 12)..Month(2020, 2)).toImmutableList(),
       )
   }
 }

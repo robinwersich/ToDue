@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -25,12 +26,12 @@ import com.robinwersich.todue.ui.composeextensions.isSettled
 import com.robinwersich.todue.ui.composeextensions.offsetToCurrent
 import com.robinwersich.todue.ui.composeextensions.pairReferentialEqualityPolicy
 import com.robinwersich.todue.utility.center
-import com.robinwersich.todue.utility.find
 import com.robinwersich.todue.utility.mapToImmutableList
 import com.robinwersich.todue.utility.size
 import com.robinwersich.todue.utility.toImmutableList
 import com.robinwersich.todue.utility.union
 import java.time.LocalDate
+import kotlin.math.ceil
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 
@@ -89,6 +90,18 @@ class NavigationState(
   /** The current size of the viewport, used to calculate the anchor positions. */
   var viewportSize: IntSize? by mutableStateOf(null)
 
+  /**
+   * The relative additionally visible space before the current
+   * [dateRange][NavigationPosition.dateRange].
+   */
+  private var relativeTopMargin: Float by mutableFloatStateOf(0f)
+
+  /**
+   * The relative additionally visible space after the current
+   * [dateRange][NavigationPosition.dateRange].
+   */
+  private var relativeBottomMargin: Float by mutableFloatStateOf(0f)
+
   /** The current [TimelineNavigationPosition] of the organizer. */
   private val currentTimelineNavPos: TimelineNavigationPosition
     get() = timelineDraggableState.currentValue
@@ -126,10 +139,16 @@ class NavigationState(
    * Should be called whenever the viewport size changes. To ensure the [DraggableAnchors] are of
    * this state are spaced correctly.
    */
-  fun updateViewportSize(size: IntSize) {
+  fun updateViewportSize(
+    size: IntSize,
+    relativeTopMargin: Float = this.relativeTopMargin,
+    relativeBottomMargin: Float = this.relativeBottomMargin,
+  ) {
     if (size.width != viewportSize?.width) updateTimelineAnchors(size.width)
     if (size.height != viewportSize?.height) updateDateAnchors(size.height)
-    viewportSize = size
+    this.viewportSize = size
+    this.relativeTopMargin = relativeTopMargin
+    this.relativeBottomMargin = relativeBottomMargin
   }
 
   private fun updateTimelineAnchors(viewportLength: Int) {
@@ -222,17 +241,6 @@ class NavigationState(
   }
 
   /**
-   * Returns the relative size of the given [TimeBlock] when it is focussed. If the [timeBlock] is
-   * not currently focussed or transitioning to/from being focussed this will return null.
-   */
-  fun focussedTimeBlockSize(timeBlock: TimeBlock): Float? {
-    val navigationPosition =
-      currentNavPos.takeIf { it.timeBlock == timeBlock }
-        ?: navPosTransition.transitionStates().find { it.timeBlock == timeBlock }
-    return navigationPosition?.let { it.timeBlock.size.toFloat() / it.dateRange.size.toFloat() }
-  }
-
-  /**
    * The transition of the current [NavigationPosition]. This combines two [AnchoredDraggableState]s
    * into a single [SwipeableTransition].
    */
@@ -275,7 +283,9 @@ class NavigationState(
       prevPos.timelineNavPos.visibleTimelines.forEach { add(it) }
       nextPos.timelineNavPos.visibleTimelines.forEach { if (it !in this) add(it) }
     }
-    val activeDateRange = prevPos.dateRange union nextPos.dateRange
+    val activeDateRange =
+      prevPos.dateRange.applyMargin(relativeTopMargin, relativeBottomMargin) union
+        nextPos.dateRange.applyMargin(relativeTopMargin, relativeBottomMargin)
     activeTimelines.mapToImmutableList { timeline ->
       val firstBlock = timeline.timeBlockFrom(activeDateRange.start)
       val lastBlock = timeline.timeBlockFrom(activeDateRange.endInclusive)
@@ -284,8 +294,12 @@ class NavigationState(
   }
 }
 
-private fun getVisibleDateRange(timelineNavPos: TimelineNavigationPosition, date: LocalDate) =
-  getVisibleDateRange(timelineNavPos, timelineNavPos.timeline.timeBlockFrom(date))
+private fun DateRange.applyMargin(startMargin: Float, endMargin: Float): DateRange {
+  val rangeSize = size
+  val newStart = start.minusDays(ceil(rangeSize * startMargin).toLong())
+  val newEnd = endInclusive.plusDays(ceil(rangeSize * endMargin).toLong())
+  return newStart..newEnd
+}
 
 private fun getVisibleDateRange(
   timelineNavPos: TimelineNavigationPosition,

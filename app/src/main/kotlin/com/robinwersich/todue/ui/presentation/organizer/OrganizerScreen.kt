@@ -32,6 +32,7 @@ fun OrganizerScreen(
     val formatter = rememberTimeBlockFormatter()
     OrganizerNavigation(
       timelines = timelines,
+      contentPadding = scaffoldPadding,
       taskBlockLabel = { _, timeBlock, padding ->
         TaskBlockLabel(
           timeBlock = timeBlock,
@@ -46,7 +47,6 @@ fun OrganizerScreen(
           modifier = Modifier.padding(padding),
         )
       },
-      modifier = modifier.padding(scaffoldPadding),
     )
   }
 }
