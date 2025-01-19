@@ -1,6 +1,13 @@
 package com.robinwersich.todue.ui.presentation.organizer
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsTopHeight
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -21,7 +28,13 @@ fun OrganizerScreen(
   onEvent: (OrganizerEvent) -> Unit = {},
   modifier: Modifier = Modifier,
 ) {
-  Scaffold(modifier = modifier) { scaffoldPadding ->
+  Scaffold(
+    modifier = modifier,
+    topBar = {
+      val color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+      Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(color))
+    },
+  ) { scaffoldPadding ->
     val timelines = remember {
       persistentListOf(
         Timeline(0, TimeUnit.DAY),
