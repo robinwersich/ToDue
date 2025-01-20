@@ -55,12 +55,12 @@ class NavigationState(
   initialTimeline: Timeline = timelines.first(),
   initialDate: LocalDate = LocalDate.now(),
 ) {
-  /** The ordered list of possible [TimelineNavigationPosition]s to navigate through. */
+  /** The ordered list of possible [TimelineNavPosition]s to navigate through. */
   private val timelineNavPositions =
     buildList(capacity = timelines.size * 2 - 1) {
       val sortedTimelines = timelines.sorted()
       for (i in sortedTimelines.indices) {
-        val navPos = TimelineNavigationPosition(sortedTimelines[i])
+        val navPos = TimelineNavPosition(sortedTimelines[i])
         sortedTimelines.getOrNull(i - 1)?.let { add(navPos.copy(child = it)) }
         add(navPos)
       }
@@ -100,8 +100,8 @@ class NavigationState(
    */
   private var relativeBottomMargin: Float by mutableFloatStateOf(0f)
 
-  /** The current [TimelineNavigationPosition] of the organizer. */
-  private val currentTimelineNavPos: TimelineNavigationPosition
+  /** The current [TimelineNavPosition] of the organizer. */
+  private val currentTimelineNavPos: TimelineNavPosition
     get() = timelineDraggableState.currentValue
 
   /** The focussed date of the organizer from which the current [TimeBlock] is derived. */
@@ -120,8 +120,8 @@ class NavigationState(
   internal val currentTimeBlock: TimeBlock
     get() = currentNavPos.timeBlock
 
-  /** Attempts to find the [TimelineNavigationPosition] that shows the given [timeline]. */
-  private fun timelineNavPosFor(timeline: Timeline): TimelineNavigationPosition? =
+  /** Attempts to find the [TimelineNavPosition] that shows the given [timeline]. */
+  private fun timelineNavPosFor(timeline: Timeline): TimelineNavPosition? =
     timelineNavPositions.find { it.timeline == timeline && !it.showChild }
 
   /**
@@ -205,7 +205,7 @@ class NavigationState(
     val (prevDate, nextDate) = dateDraggableState.getAdjacentToCurrentAnchors()
     val (prevTimelinePos, nextTimelinePos) = timelineDraggableState.getAdjacentToCurrentAnchors()
 
-    fun navPos(timelineNavPos: TimelineNavigationPosition, date: LocalDate): NavigationPosition {
+    fun navPos(timelineNavPos: TimelineNavPosition, date: LocalDate): NavigationPosition {
       val timeBlock = timelineNavPos.timeline.timeBlockFrom(date)
       return NavigationPosition(
         timelineNavPos = timelineNavPos,
@@ -300,26 +300,20 @@ private fun DateRange.applyMargin(startMargin: Float, endMargin: Float): DateRan
 }
 
 private fun getVisibleDateRange(
-  timelineNavPos: TimelineNavigationPosition,
+  timelineNavPos: TimelineNavPosition,
   timeBlock: TimeBlock,
 ): DateRange {
   return getVisibleStart(timelineNavPos, timeBlock)..getVisibleEnd(timelineNavPos, timeBlock)
 }
 
-private fun getVisibleStart(
-  timelineNavPos: TimelineNavigationPosition,
-  timeBlock: TimeBlock,
-): LocalDate {
+private fun getVisibleStart(timelineNavPos: TimelineNavPosition, timeBlock: TimeBlock): LocalDate {
   return timelineNavPos.child?.let {
     val childBlock = it.timeBlockFrom(timeBlock.start)
     childBlock.start
   } ?: timeBlock.start
 }
 
-private fun getVisibleEnd(
-  timelineNavPos: TimelineNavigationPosition,
-  timeBlock: TimeBlock,
-): LocalDate {
+private fun getVisibleEnd(timelineNavPos: TimelineNavPosition, timeBlock: TimeBlock): LocalDate {
   return timelineNavPos.child?.let {
     val childBlock = it.timeBlockFrom(timeBlock.endInclusive)
     childBlock.endInclusive

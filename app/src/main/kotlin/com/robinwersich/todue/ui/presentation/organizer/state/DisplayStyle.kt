@@ -17,12 +17,12 @@ enum class TimelineStyle {
 }
 
 /**
- * Returns the correct [TimelineStyle] of a [Timeline] based on a [TimelineNavigationPosition].
+ * Returns the correct [TimelineStyle] of a [Timeline] based on a [TimelineNavPosition].
  *
  * @param timeline The [Timeline] for which the style should be determined.
- * @param navPos The [TimelineNavigationPosition] based on which the style should be determined.
+ * @param navPos The [TimelineNavPosition] based on which the style should be determined.
  */
-fun timelineStyle(timeline: Timeline, navPos: TimelineNavigationPosition) =
+fun timelineStyle(timeline: Timeline, navPos: TimelineNavPosition) =
   when {
     timeline > navPos.timeline -> TimelineStyle.HIDDEN_PARENT
     timeline == navPos.timeline && navPos.showChild -> TimelineStyle.PARENT

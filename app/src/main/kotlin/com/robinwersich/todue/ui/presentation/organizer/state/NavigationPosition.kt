@@ -6,7 +6,7 @@ import com.robinwersich.todue.domain.model.Timeline
 import java.time.LocalDate
 
 /** Describes which timeline(s) should currently be visible. */
-data class TimelineNavigationPosition(
+data class TimelineNavPosition(
   /** The visible "main" timeline of this position. */
   val timeline: Timeline,
   /** The adjacent timeline with a smaller time unit, if it should be shown. */
@@ -28,7 +28,7 @@ data class TimelineNavigationPosition(
 /** Describes the current navigation position in the organizer. */
 data class NavigationPosition(
   /** Which timeline(s) should be visible. */
-  val timelineNavPos: TimelineNavigationPosition,
+  val timelineNavPos: TimelineNavPosition,
   /** The date (and resulting time block) that should be visible. */
   val date: LocalDate,
   /** The date range that will be visible in this navigation position. */
