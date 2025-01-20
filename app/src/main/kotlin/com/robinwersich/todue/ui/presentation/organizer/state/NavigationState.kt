@@ -60,10 +60,8 @@ class NavigationState(
     buildList(capacity = timelines.size * 2 - 1) {
       val sortedTimelines = timelines.sorted()
       for (i in sortedTimelines.indices) {
-        val navPos = TimelineNavigationPosition(sortedTimelines, i, showChild = false)
-        if (i != 0) {
-          add(navPos.copy(showChild = true))
-        }
+        val navPos = TimelineNavigationPosition(sortedTimelines[i])
+        sortedTimelines.getOrNull(i - 1)?.let { add(navPos.copy(child = it)) }
         add(navPos)
       }
     }
@@ -312,7 +310,7 @@ private fun getVisibleStart(
   timelineNavPos: TimelineNavigationPosition,
   timeBlock: TimeBlock,
 ): LocalDate {
-  return timelineNavPos.visibleChild?.let {
+  return timelineNavPos.child?.let {
     val childBlock = it.timeBlockFrom(timeBlock.start)
     childBlock.start
   } ?: timeBlock.start
@@ -322,7 +320,7 @@ private fun getVisibleEnd(
   timelineNavPos: TimelineNavigationPosition,
   timeBlock: TimeBlock,
 ): LocalDate {
-  return timelineNavPos.visibleChild?.let {
+  return timelineNavPos.child?.let {
     val childBlock = it.timeBlockFrom(timeBlock.endInclusive)
     childBlock.endInclusive
   } ?: timeBlock.endInclusive

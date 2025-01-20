@@ -72,7 +72,10 @@ class NavigationStateTest {
     state.updateViewportSize(IntSize(100, 100), 0.1f, 0.2f)
     runBlocking {
       state.timelineDraggableState.snapTo(
-        TimelineNavigationPosition(timelines, Timeline(2, TimeUnit.MONTH), showChild = true)
+        TimelineNavigationPosition(
+          timeline = Timeline(2, TimeUnit.MONTH),
+          child = Timeline(1, TimeUnit.MONTH),
+        )
       )
     }
     assertThat(state.activeTimelineBlocks)
