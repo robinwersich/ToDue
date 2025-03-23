@@ -47,6 +47,7 @@ import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.presentation.organizer.state.TimelineStyle
 import com.robinwersich.todue.ui.presentation.organizer.state.timelineStyle
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.launch
 
 /**
  * A 2-dimensional navigation component that allows the user to navigate through [TimeBlock]s on a
@@ -95,7 +96,10 @@ fun OrganizerNavigation(
     }
   val timelineDraggableState = navigationState.timelineDraggableState
   val dateDraggableState = navigationState.dateDraggableState
-  LaunchedEffect(navigationState) { navigationState.updateDateAnchorsOnSwipe() }
+  LaunchedEffect(navigationState) {
+    launch { navigationState.updateDateAnchorsOnSwipe() }
+    launch { navigationState.updateTimelineAnchorsOnSwipe() }
+  }
 
   Box(
     modifier =

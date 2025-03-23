@@ -55,16 +55,8 @@ class NavigationState(
   initialTimeline: Timeline = timelines.first(),
   initialDate: LocalDate = LocalDate.now(),
 ) {
-  /** The ordered list of possible [TimelineNavPosition]s to navigate through. */
-  private val timelineNavPositions =
-    buildList(capacity = timelines.size * 2 - 1) {
-      val sortedTimelines = timelines.sorted()
-      for (i in sortedTimelines.indices) {
-        val navPos = TimelineNavPosition(sortedTimelines[i])
-        sortedTimelines.getOrNull(i - 1)?.let { add(navPos.copy(child = it)) }
-        add(navPos)
-      }
-    }
+  /** The ordered list of possible [Timeline]s to navigate through. */
+  private val timelines = timelines.sorted()
 
   /** The [AnchoredDraggableState] controlling the time navigation. */
   val dateDraggableState =
@@ -78,7 +70,7 @@ class NavigationState(
   /** The [AnchoredDraggableState] controlling the granularity navigation. */
   val timelineDraggableState =
     AnchoredDraggableState(
-      initialValue = timelineNavPosFor(initialTimeline) ?: timelineNavPositions.first(),
+      initialValue = TimelineNavPosition(initialTimeline),
       snapAnimationSpec = snapAnimationSpec,
       decayAnimationSpec = decayAnimationSpec,
       positionalThreshold = positionalThreshold,
@@ -120,21 +112,28 @@ class NavigationState(
   internal val currentTimeBlock: TimeBlock
     get() = currentNavPos.timeBlock
 
-  /** Attempts to find the [TimelineNavPosition] that shows the given [timeline]. */
-  private fun timelineNavPosFor(timeline: Timeline): TimelineNavPosition? =
-    timelineNavPositions.find { it.timeline == timeline && !it.showChild }
-
   /**
    * This function needs to be launched in the [CoroutineScope][kotlinx.coroutines.CoroutineScope]
    * of the composable using this state to correctly update the internal [DraggableAnchors].
    */
   suspend fun updateDateAnchorsOnSwipe() {
-    snapshotFlow { currentTimelineNavPos to currentDate }
-      .collect { viewportSize?.let { updateDateAnchors(it.height) } }
+    snapshotFlow { timelineDraggableState.currentValue to dateDraggableState.currentValue }
+      .collect { (_, centerAnchor) ->
+        viewportSize?.run { updateDateAnchors(centerAnchor, height) }
+      }
   }
 
   /**
-   * Should be called whenever the viewport size changes. To ensure the [DraggableAnchors] are of
+   * This function needs to be launched in the [CoroutineScope][kotlinx.coroutines.CoroutineScope]
+   * of the composable using this state to correctly update the internal [DraggableAnchors].
+   */
+  suspend fun updateTimelineAnchorsOnSwipe() {
+    snapshotFlow { with(timelineDraggableState) { settledValue } }
+      .collect { centerAnchor -> viewportSize?.run { updateTimelineAnchors(centerAnchor, width) } }
+  }
+
+  /**
+   * Should be called whenever the viewport size changes to ensure the [DraggableAnchors] are of
    * this state are spaced correctly.
    */
   fun updateViewportSize(
@@ -142,26 +141,52 @@ class NavigationState(
     relativeTopMargin: Float = this.relativeTopMargin,
     relativeBottomMargin: Float = this.relativeBottomMargin,
   ) {
-    if (size.width != viewportSize?.width) updateTimelineAnchors(size.width)
-    if (size.height != viewportSize?.height) updateDateAnchors(size.height)
+    if (size.width != viewportSize?.width) updateTimelineAnchors(currentTimelineNavPos, size.width)
+    if (size.height != viewportSize?.height) updateDateAnchors(currentDate, size.height)
     this.viewportSize = size
     this.relativeTopMargin = relativeTopMargin
     this.relativeBottomMargin = relativeBottomMargin
   }
 
-  private fun updateTimelineAnchors(viewportLength: Int) {
-    val newAnchors = MyDraggableAnchors {
-      timelineNavPositions.forEachIndexed { index, navPos ->
-        val relativeOffset = (index / 2) + (index % 2) * (1 - childTimelineSizeRatio)
-        navPos at relativeOffset * viewportLength
-      }
-    }
-    timelineDraggableState.updateAnchors(newAnchors, newTarget = currentTimelineNavPos)
+  private fun getChild(timeline: Timeline): Timeline? {
+    val timelineIndex = timelines.indexOf(timeline)
+    if (timelineIndex == -1) return null
+    return timelines.getOrNull(timelineIndex - 1)
   }
 
-  private fun updateDateAnchors(viewportLength: Int) {
+  private fun getParent(timeline: Timeline): Timeline? {
+    val timelineIndex = timelines.indexOf(timeline)
+    if (timelineIndex == -1) return null
+    return timelines.getOrNull(timelineIndex + 1)
+  }
+
+  private fun updateTimelineAnchors(newCenter: TimelineNavPosition, viewportLength: Int) {
+    val newAnchors: DraggableAnchors<TimelineNavPosition> =
+      if (newCenter.child != null) {
+        MyDraggableAnchors {
+          TimelineNavPosition(newCenter.child) at (childTimelineSizeRatio - 1) * viewportLength
+          newCenter at 0f
+          TimelineNavPosition(newCenter.timeline) at childTimelineSizeRatio * viewportLength
+        }
+      } else {
+        MyDraggableAnchors {
+          getChild(newCenter.timeline)?.let {
+            TimelineNavPosition(child = it, timeline = newCenter.timeline) at
+              -childTimelineSizeRatio * viewportLength
+          }
+          newCenter at 0f
+          getParent(newCenter.timeline)?.let {
+            TimelineNavPosition(child = newCenter.timeline, timeline = it) at
+              (1 - childTimelineSizeRatio) * viewportLength
+          }
+        }
+      }
+    updateAnchors(timelineDraggableState, newAnchors, newTarget = newCenter)
+  }
+
+  private fun updateDateAnchors(newCenter: LocalDate, viewportLength: Int) {
     val newAnchors = MyDraggableAnchors {
-      val currentBlock = currentTimeline.timeBlockFrom(currentDate)
+      val currentBlock = currentTimeline.timeBlockFrom(newCenter)
       val prevBlock = currentBlock - 1
       val nextBlock = currentBlock + 1
 
@@ -176,14 +201,30 @@ class NavigationState(
       val nextPxPerDay = (viewportLength * 2) / (nextDateRange.size + currentDateRange.size)
 
       prevBlock.start at (prevDateDistance * prevPxPerDay).toFloat()
-      currentDate at 0f
+      newCenter at 0f
       nextBlock.start at (nextDateDistance * nextPxPerDay).toFloat()
     }
-    // By updating the anchors, the offset for the current anchor may jump.
-    // To keep the relation between offset and current anchor, we also need to update the offset.
-    val prevCurrentDatePos = dateDraggableState.anchors.positionOf(currentDate)
-    dateDraggableState.updateAnchors(newAnchors, newTarget = currentDate)
-    if (!prevCurrentDatePos.isNaN()) dateDraggableState.dispatchRawDelta(-prevCurrentDatePos)
+    updateAnchors(dateDraggableState, newAnchors, newTarget = currentDate)
+  }
+
+  /**
+   * Updates the anchors of [state] while avoiding jumps in the offset, i.e. the offset to
+   * [newTarget] will stay the same if both the old and the new anchors contain it.
+   */
+  private fun <T> updateAnchors(
+    state: AnchoredDraggableState<T>,
+    newAnchors: DraggableAnchors<T>,
+    newTarget: T,
+  ) {
+    val oldNewTargetPos = state.anchors.positionOf(newTarget)
+    state.updateAnchors(newAnchors, newTarget)
+    if (state.settledValue != newTarget) {
+      // snap during updateAnchors was not successful (drag / animation in progress)
+      // need to adjust offset manually
+      val newNewTargetPos = state.anchors.positionOf(newTarget)
+      val offsetShift = newNewTargetPos - oldNewTargetPos
+      if (!offsetShift.isNaN()) state.dispatchRawDelta(offsetShift)
+    }
   }
 
   /**
