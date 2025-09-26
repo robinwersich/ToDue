@@ -1,8 +1,8 @@
 plugins {
-  id("com.android.application") version "8.12.3" apply false
-  id("com.android.library") version "8.12.3" apply false
-  kotlin("android") version "2.2.20" apply false
-  kotlin("plugin.compose") version "2.2.20" apply false
-  id("com.google.devtools.ksp") version "2.2.20-2.0.3" apply false
-  id("androidx.room") version "2.8.1" apply false
+  alias(libs.plugins.android.application) apply false
+  alias(libs.plugins.android.library) apply false
+  alias(libs.plugins.jetbrains.kotlin.android) apply false
+  alias(libs.plugins.jetbrains.kotlin.compose) apply false
+  alias(libs.plugins.ksp) apply false
+  alias(libs.plugins.androidx.room) apply false
 }

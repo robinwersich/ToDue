@@ -1,11 +1,11 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-  id("com.android.application")
-  kotlin("android")
-  kotlin("plugin.compose")
-  id("com.google.devtools.ksp")
-  id("androidx.room")
+  alias(libs.plugins.android.application)
+  alias(libs.plugins.jetbrains.kotlin.android)
+  alias(libs.plugins.jetbrains.kotlin.compose)
+  alias(libs.plugins.ksp)
+  alias(libs.plugins.androidx.room)
 }
 
 android {
@@ -57,49 +57,41 @@ room { schemaDirectory(project.layout.projectDirectory.dir("schemas").toString()
 ksp { arg("room.generateKotlin", "true") }
 
 dependencies {
-  // Core Android Libraries
-  implementation("androidx.core:core-ktx:1.17.0")
-  implementation("androidx.activity:activity-compose:1.11.0")
-  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
-  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
+  // Android
+  coreLibraryDesugaring(libs.desugar.jdk)
+  implementation(libs.core.ktx)
+  implementation(libs.activity.compose)
+  implementation(libs.lifecycle.runtime.ktx)
+  implementation(libs.lifecycle.viewmodel.compose)
+  implementation(libs.paging.runtime)
+  implementation(libs.paging.compose)
+  implementation(libs.room.runtime)
+  ksp(libs.room.compiler)
+  implementation(libs.room.ktx)
 
   // Compose
-  val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
+  val composeBom = platform(libs.compose.bom)
   implementation(composeBom)
   testImplementation(composeBom)
   androidTestImplementation(composeBom)
 
-  implementation("androidx.compose.ui:ui")
-  implementation("androidx.compose.ui:ui-tooling-preview")
-  debugImplementation("androidx.compose.ui:ui-tooling")
-  debugImplementation("androidx.compose.ui:ui-test-manifest")
-  implementation("androidx.compose.foundation:foundation")
-  implementation("androidx.compose.material3:material3")
-
-  // Room
-  val roomVersion = "2.8.1"
-  implementation("androidx.room:room-runtime:$roomVersion")
-  ksp("androidx.room:room-compiler:$roomVersion")
-  implementation("androidx.room:room-ktx:$roomVersion")
-
-  // Paging
-  val pagingVersion = "3.3.6"
-  implementation("androidx.paging:paging-runtime:$pagingVersion")
-  implementation("androidx.paging:paging-compose:$pagingVersion")
+  implementation(libs.compose.ui)
+  implementation(libs.compose.ui.tooling.preview)
+  debugImplementation(libs.compose.ui.tooling)
+  debugImplementation(libs.compose.ui.test.manifest)
+  implementation(libs.compose.foundation)
+  implementation(libs.compose.material3)
 
   // Utilities
-  implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0")
-  implementation("org.threeten:threeten-extra:1.8.0")
+  implementation(libs.kotlinx.collections.immutable)
+  implementation(libs.threeTenExtra)
 
   // Tests
-  testImplementation("junit:junit:4.13.2")
-  testImplementation("com.google.truth:truth:1.4.5")
-  testImplementation("org.jetbrains.kotlin:kotlin-test:2.0.0")
-  androidTestImplementation("androidx.test.ext:junit:1.3.0")
-  androidTestImplementation("com.google.truth:truth:1.4.5")
-  androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
-  androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-
-  // Desugaring
-  coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
+  testImplementation(libs.junit)
+  testImplementation(libs.kotlin.test)
+  testImplementation(libs.truth)
+  androidTestImplementation(libs.compose.ui.test.junit4)
+  androidTestImplementation(libs.espresso.core)
+  androidTestImplementation(libs.junit.android.ext)
+  androidTestImplementation(libs.truth)
 }
