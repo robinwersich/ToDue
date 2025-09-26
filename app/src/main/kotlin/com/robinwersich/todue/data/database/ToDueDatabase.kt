@@ -23,7 +23,7 @@ abstract class ToDueDatabase : RoomDatabase() {
       Instance
         ?: synchronized(this) {
           Room.databaseBuilder(context, ToDueDatabase::class.java, "ToDue.db")
-            .fallbackToDestructiveMigration()
+            .fallbackToDestructiveMigration(false)
             .addCallback(CreateInitialTimelines)
             .build()
             .also { Instance = it }
