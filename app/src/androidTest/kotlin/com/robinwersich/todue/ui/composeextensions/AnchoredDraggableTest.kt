@@ -4,6 +4,7 @@ import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.AnchoredDraggableState
+import androidx.compose.foundation.gestures.DraggableAnchors
 import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.runBlocking
 import org.junit.Before
@@ -18,7 +19,7 @@ enum class TestAnchor(val value: Float) {
 @OptIn(ExperimentalFoundationApi::class)
 class AnchoredDraggableTest {
   private lateinit var state: AnchoredDraggableState<TestAnchor>
-  private val anchors = MyDraggableAnchors {
+  private val anchors = DraggableAnchors {
     TestAnchor.START at 0f
     TestAnchor.MIDDLE at 50f
     TestAnchor.END at 100f

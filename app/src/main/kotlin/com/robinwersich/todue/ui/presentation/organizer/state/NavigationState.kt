@@ -19,7 +19,6 @@ import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.rangeTo
 import com.robinwersich.todue.domain.model.size
 import com.robinwersich.todue.domain.model.toDoubleRange
-import com.robinwersich.todue.ui.composeextensions.MyDraggableAnchors
 import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
 import com.robinwersich.todue.ui.composeextensions.getAdjacentToCurrentAnchors
 import com.robinwersich.todue.ui.composeextensions.isSettled
@@ -163,13 +162,13 @@ class NavigationState(
   private fun updateTimelineAnchors(newCenter: TimelineNavPosition, viewportLength: Int) {
     val newAnchors: DraggableAnchors<TimelineNavPosition> =
       if (newCenter.child != null) {
-        MyDraggableAnchors {
+        DraggableAnchors {
           TimelineNavPosition(newCenter.child) at (childTimelineSizeRatio - 1) * viewportLength
           newCenter at 0f
           TimelineNavPosition(newCenter.timeline) at childTimelineSizeRatio * viewportLength
         }
       } else {
-        MyDraggableAnchors {
+        DraggableAnchors {
           getChild(newCenter.timeline)?.let {
             TimelineNavPosition(child = it, timeline = newCenter.timeline) at
               -childTimelineSizeRatio * viewportLength
@@ -185,7 +184,7 @@ class NavigationState(
   }
 
   private fun updateDateAnchors(newCenter: LocalDate, viewportLength: Int) {
-    val newAnchors = MyDraggableAnchors {
+    val newAnchors = DraggableAnchors {
       val currentBlock = currentTimeline.timeBlockFrom(newCenter)
       val prevBlock = currentBlock - 1
       val nextBlock = currentBlock + 1

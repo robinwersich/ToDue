@@ -1,8 +1,5 @@
 package com.robinwersich.todue.ui.composeextensions
 
-import androidx.collection.FloatList
-import androidx.collection.MutableFloatList
-import androidx.collection.mutableFloatListOf
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
@@ -10,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import kotlin.math.abs
 import kotlin.math.nextDown
 import kotlin.math.nextUp
 
@@ -119,94 +115,3 @@ val <T> AnchoredDraggableState<T>.offsetToCurrent: Float
 @OptIn(ExperimentalFoundationApi::class)
 val <T> AnchoredDraggableState<T>.isSettled: Boolean
   get() = offset.isNaN() || anchors.positionOf(settledValue) == offset
-
-// --- Fixed Version of DraggableAnchors ---
-
-class MyDraggableAnchorsConfig<T> {
-  internal val keys = mutableListOf<T>()
-  internal val values = mutableFloatListOf()
-
-  infix fun T.at(position: Float) {
-    keys.add(this)
-    values.add(position)
-  }
-}
-
-/** Create a new [MyDraggableAnchors] instance using a builder function. */
-@OptIn(ExperimentalFoundationApi::class)
-fun <T : Any> MyDraggableAnchors(
-  builder: MyDraggableAnchorsConfig<T>.() -> Unit
-): DraggableAnchors<T> {
-  val config = MyDraggableAnchorsConfig<T>().apply(builder)
-  val sortedIndices = config.values.indices.sortedBy { config.values[it] }
-  return MyDraggableAnchors(
-    keys = sortedIndices.map { config.keys[it] },
-    values =
-      MutableFloatList(initialCapacity = config.values.size).apply {
-        sortedIndices.forEach { add(config.values[it]) }
-      },
-  )
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-private class MyDraggableAnchors<T>(private val keys: List<T>, private val values: FloatList) :
-  DraggableAnchors<T> {
-  override fun positionOf(value: T): Float {
-    val index = keys.indexOf(value)
-    return if (index == -1) Float.NaN else values[index]
-  }
-
-  override fun hasAnchorFor(value: T) = keys.contains(value)
-
-  override fun closestAnchor(position: Float): T? {
-    var minAnchor: T? = null
-    var minDistance = Float.POSITIVE_INFINITY
-    keys.forEachIndexed { index, anchor ->
-      val anchorPosition = values[index]
-      val distance = abs(position - anchorPosition)
-      if (distance <= minDistance) {
-        minAnchor = anchor
-        minDistance = distance
-      }
-    }
-    return minAnchor
-  }
-
-  override fun closestAnchor(position: Float, searchUpwards: Boolean): T? {
-    var minAnchor: T? = null
-    var minDistance = Float.POSITIVE_INFINITY
-    keys.forEachIndexed { index, anchor ->
-      val anchorPosition = values[index]
-      val delta = if (searchUpwards) anchorPosition - position else position - anchorPosition
-      val distance = if (delta < 0) Float.POSITIVE_INFINITY else delta
-      if (distance <= minDistance) {
-        minAnchor = anchor
-        minDistance = distance
-      }
-    }
-    return minAnchor
-  }
-
-  override fun minAnchor() = if (values.isEmpty()) Float.NEGATIVE_INFINITY else values.first()
-
-  override fun maxAnchor() = if (values.isEmpty()) Float.POSITIVE_INFINITY else values.last()
-
-  override val size: Int
-    get() = keys.size
-
-  override fun equals(other: Any?): Boolean {
-    if (this === other) return true
-    if (other !is MyDraggableAnchors<*>) return false
-
-    return keys == other.keys && values == other.values
-  }
-
-  override fun hashCode() = 31 * keys.hashCode() + values.hashCode()
-
-  override fun toString() =
-    "MyDraggableAnchors(${keys.mapIndexed { index, key -> "$key at ${values[index]}" }})"
-
-  override fun forEach(block: (anchor: T, position: Float) -> Unit) {
-    keys.forEachIndexed { index, key -> block(key, values[index]) }
-  }
-}
