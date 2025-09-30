@@ -127,7 +127,7 @@ class NavigationState(
    * of the composable using this state to correctly update the internal [DraggableAnchors].
    */
   suspend fun updateTimelineAnchorsOnSwipe() {
-    snapshotFlow { with(timelineDraggableState) { settledValue } }
+    snapshotFlow { timelineDraggableState.settledValue }
       .collect { centerAnchor -> viewportSize?.run { updateTimelineAnchors(centerAnchor, width) } }
   }
 
@@ -180,7 +180,7 @@ class NavigationState(
           }
         }
       }
-    updateAnchors(timelineDraggableState, newAnchors, newTarget = newCenter)
+    updateAnchors(timelineDraggableState, newAnchors, alignAnchor = newCenter)
   }
 
   private fun updateDateAnchors(newCenter: LocalDate, viewportLength: Int) {
@@ -203,27 +203,32 @@ class NavigationState(
       newCenter at 0f
       nextBlock.start at (nextDateDistance * nextPxPerDay).toFloat()
     }
-    updateAnchors(dateDraggableState, newAnchors, newTarget = currentDate)
+    updateAnchors(dateDraggableState, newAnchors, alignAnchor = currentDate)
   }
 
   /**
-   * Updates the anchors of [state] while avoiding jumps in the offset, i.e. the offset to
-   * [newTarget] will stay the same if both the old and the new anchors contain it.
+   * Updates the anchors of [state] while keeping the current offset relative to [alignAnchor] the
+   * same. This anchor needs to be contained in both the current and the new anchors.
    */
   private fun <T> updateAnchors(
     state: AnchoredDraggableState<T>,
-    newAnchors: DraggableAnchors<T>,
-    newTarget: T,
+    anchors: DraggableAnchors<T>,
+    alignAnchor: T,
   ) {
-    val oldNewTargetPos = state.anchors.positionOf(newTarget)
-    state.updateAnchors(newAnchors, newTarget)
-    if (state.settledValue != newTarget) {
-      // snap during updateAnchors was not successful (drag / animation in progress)
-      // need to adjust offset manually
-      val newNewTargetPos = state.anchors.positionOf(newTarget)
-      val offsetShift = newNewTargetPos - oldNewTargetPos
-      if (!offsetShift.isNaN()) state.dispatchRawDelta(offsetShift)
+    assert(anchors.hasPositionFor(alignAnchor)) {
+      "The alignAnchor '$alignAnchor' is not contained in the new anchors '$anchors'"
     }
+    val oldOffset = state.offset
+    val oldAlignAnchorPos = state.anchors.positionOf(alignAnchor)
+    state.updateAnchors(anchors, alignAnchor)
+    val newOffset = state.offset
+    val newAlignAnchorPos = state.anchors.positionOf(alignAnchor)
+
+    val offsetShift = newOffset - oldOffset
+    val anchorShift = newAlignAnchorPos - oldAlignAnchorPos
+    // effective shift of the offset relative to the alignAnchor
+    val relativeOffsetShift = anchorShift - offsetShift
+    if (!relativeOffsetShift.isNaN()) state.dispatchRawDelta(relativeOffsetShift)
   }
 
   /**
