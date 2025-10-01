@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.IntSize
 import com.robinwersich.todue.domain.model.DateRange
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
+import com.robinwersich.todue.domain.model.center
 import com.robinwersich.todue.domain.model.rangeTo
 import com.robinwersich.todue.domain.model.size
 import com.robinwersich.todue.domain.model.toDoubleRange
@@ -199,9 +200,9 @@ class NavigationState(
       val prevPxPerDay = (viewportLength * 2) / (prevDateRange.size + currentDateRange.size)
       val nextPxPerDay = (viewportLength * 2) / (nextDateRange.size + currentDateRange.size)
 
-      prevBlock.start at (prevDateDistance * prevPxPerDay).toFloat()
+      prevBlock.center at (prevDateDistance * prevPxPerDay).toFloat()
       newCenter at 0f
-      nextBlock.start at (nextDateDistance * nextPxPerDay).toFloat()
+      nextBlock.center at (nextDateDistance * nextPxPerDay).toFloat()
     }
     updateAnchors(dateDraggableState, newAnchors, alignAnchor = currentDate)
   }

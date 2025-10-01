@@ -27,6 +27,18 @@ class DateRangeTest {
   }
 
   @Test
+  fun `center has same number of days before and after for odd-sized ranges`() {
+    val dateRange = LocalDate.of(2020, 1, 1)..LocalDate.of(2020, 1, 5)
+    assertThat(dateRange.center).isEqualTo(LocalDate.of(2020, 1, 3))
+  }
+
+  @Test
+  fun `center has one day less before than after for even-sized ranges`() {
+    val dateRange = LocalDate.of(2020, 1, 1)..LocalDate.of(2020, 1, 4)
+    assertThat(dateRange.center).isEqualTo(LocalDate.of(2020, 1, 2))
+  }
+
+  @Test
   fun `daysUntil returns correct number of days`() {
     assertThat(LocalDate.of(2020, 1, 1).daysUntil(LocalDate.of(2020, 1, 10))).isEqualTo(9)
   }

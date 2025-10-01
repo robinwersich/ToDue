@@ -13,6 +13,10 @@ typealias DateRange = ClosedRange<LocalDate>
 val DateRange.size: Long
   get() = endInclusive.toEpochDay() + 1 - start.toEpochDay()
 
+/** Returns the date at the middle of this range (or the one just before for even-sized ranges). */
+val DateRange.center: LocalDate
+  get() = start.plusDays((endInclusive.toEpochDay() - start.toEpochDay()) / 2)
+
 /**
  * Converts a [DateRange] to a [Double] range, representing epoch days. This is useful for
  * interpolating. Note that a [DateRange] of a single day, thus having a size of 0, is equivalent to
