@@ -5,6 +5,7 @@ import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.layout.Box
@@ -16,10 +17,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
@@ -29,6 +32,7 @@ import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.roundToIntSize
@@ -138,13 +142,20 @@ private fun TaskBlocks(
   taskBlockLabel: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
   taskBlockContent: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
 ) {
+  val coroutineScope = rememberCoroutineScope()
+
   for ((timeline, timeBlocks) in navigationState.activeTimelineBlocks) {
     for (timeBlock in timeBlocks) {
       key(timeline, timeBlock) {
+        val displayStateTransition =
+          navigationState.navPosTransition.derived(cacheStates = true) {
+            blockDisplayState(timeBlock, timeline, it, navigationState.childTimelineSizeRatio)
+          }
         TaskBlock(
-          navigationState = navigationState,
-          timeBlock = timeBlock,
-          timeline = timeline,
+          displayStateTransition = displayStateTransition,
+          contentMeasureSizeState =
+            blockContentMeasureSize(displayStateTransition) { navigationState.viewportSize },
+          onClick = { coroutineScope.launch { navigationState.tryAnimateToChild(timeBlock) } },
           label = { padding -> taskBlockLabel(timeline, timeBlock, padding) },
           content = { padding -> taskBlockContent(timeline, timeBlock, padding) },
         )
@@ -156,33 +167,42 @@ private fun TaskBlocks(
 private val taskBlockPadding = PaddingValues(4.dp)
 private val taskBlockCornerRadius = 24.dp
 
+/**
+ * Places a task block in the parent composable.
+ *
+ * @param displayStateTransition A transition containing layout and style information in the form of
+ *   a [TaskBlockDisplayState]
+ * @param contentMeasureSizeState The size at which the block content should be measured. This is
+ *   needed, because this size shouldn't change when the block is entering/exiting the screen to
+ *   avoid unnecessary recompositions and visual artifacts.
+ * @param onClick Action to invoke when the block is clicked on in child state.
+ * @param label The composable content to show in child state.
+ * @param content The composable content to show in expanded state.
+ */
 @Composable
 private fun TaskBlock(
-  navigationState: NavigationState,
-  timeBlock: TimeBlock,
-  timeline: Timeline,
+  displayStateTransition: SwipeableTransition<TaskBlockDisplayState>,
+  contentMeasureSizeState: State<Size?>,
+  onClick: () -> Unit,
   label: @Composable (PaddingValues) -> Unit,
   content: @Composable (PaddingValues) -> Unit,
 ) {
   val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
   val contentColor = MaterialTheme.colorScheme.onSurface
 
-  val displayStateTransition =
-    navigationState.navPosTransition.derived(cacheStates = true) {
-      blockDisplayState(timeBlock, timeline, it, navigationState.childTimelineSizeRatio)
-    }
-
   val relativeOffset by displayStateTransition.interpolatedValue(::lerp) { it.relativeOffset }
   val relativeSize by displayStateTransition.interpolatedValue(::lerp) { it.relativeSize }
-  // When entering/exiting the screen, the size at which the blocks are measured shouldn't change
-  // to avoid unnecessary recompositions and visual artifacts.
-  val measureSize by blockMeasureSize(displayStateTransition) { navigationState.viewportSize }
   val contentAlphaState = blockContentAlpha(displayStateTransition)
   val contentAlpha by contentAlphaState
   val labelAlphaState = blockLabelAlpha(displayStateTransition)
   val labelAlpha by labelAlphaState
   val showLabel by remember(labelAlphaState) { derivedStateOf { labelAlpha > 0f } }
   val showContent by remember(contentAlphaState) { derivedStateOf { contentAlpha > 0f } }
+  val enableChildNavigationClick =
+    displayStateTransition.deriveValue { prevState, nextState ->
+      prevState.timelineStyle == TimelineStyle.CHILD &&
+        nextState.timelineStyle == TimelineStyle.CHILD
+    }
   val shape = PaddedRoundedCornerShape(taskBlockCornerRadius, taskBlockPadding)
 
   Box(
@@ -193,14 +213,24 @@ private fun TaskBlock(
   ) {
     CompositionLocalProvider(LocalContentColor provides contentColor) {
       if (showLabel) {
-        Box(Modifier.graphicsLayer { alpha = labelAlpha }, propagateMinConstraints = true) {
+        Box(
+          Modifier.clickable(
+              interactionSource = null,
+              indication = null,
+              enabled = enableChildNavigationClick,
+              role = Role.Button,
+              onClick = onClick,
+            )
+            .graphicsLayer { alpha = labelAlpha },
+          propagateMinConstraints = true,
+        ) {
           label(taskBlockPadding)
         }
       }
 
       if (showContent) {
         Box(
-          Modifier.scaleFromSize { measureSize?.roundToIntSize() }
+          Modifier.scaleFromSize { contentMeasureSizeState.value?.roundToIntSize() }
             .graphicsLayer { alpha = contentAlpha },
           propagateMinConstraints = true,
         ) {
@@ -256,7 +286,7 @@ private fun blockDisplayState(
 }
 
 @Composable
-private fun blockMeasureSize(
+private fun blockContentMeasureSize(
   displayStateTransition: SwipeableTransition<TaskBlockDisplayState>,
   organizerSizeState: () -> IntSize?,
 ) =

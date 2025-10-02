@@ -133,6 +133,57 @@ class SwipeableTransition<T>(
     }
 
   /**
+   * Returns a value derived from the current [transitionStates].
+   *
+   * @param transform A function that returns the target value for a given state.
+   */
+  fun <V> deriveValue(transform: (prevState: T, nextState: T) -> V): V {
+    val (prevState, nextState) = transitionStates()
+    return transform(prevState, nextState)
+  }
+
+  /**
+   * Returns a [State] object with a value derived from the current transition state.
+   *
+   * @param useState Whether to use [derivedStateOf] to cache the result and reduce recompositions.
+   * @param transform A function that returns the target value for a given state.
+   */
+  @Composable
+  fun <V> derivedValue(useState: Boolean = false, transform: (prevState: T, nextState: T) -> V) =
+    remember(this, useState, transform) {
+      object : State<V> {
+        private val getValue =
+          { deriveValue(transform) }.letIf(useState) {
+            it.withDerivedState(structuralEqualityPolicy())
+          }
+        override val value
+          get() = getValue()
+      }
+    }
+
+  /**
+   * Returns a [State] object with a value derived from the current transition state (without
+   * interpolation).
+   *
+   * @param threshold Progress at which the value should switch.
+   * @param transform A function that returns the target value for a given state.
+   */
+  @Composable
+  fun <V> derivedValue(threshold: Float = 0.5f, transform: (state: T) -> V) =
+    remember(this, transform, threshold) {
+      object : State<V> {
+        private val currentState: State<T> =
+          derivedStateOf(structuralEqualityPolicy()) {
+            val (prevState, nextState) = transitionStates()
+            if (prevState == nextState) prevState
+            else if (progress() < threshold) prevState else nextState
+          }
+        override val value
+          get() = transform(currentState.value)
+      }
+    }
+
+  /**
    * Creates a derived [SwipeableTransition] using the provided state [transform].
    *
    * @param manyToOne If [transform] is a many-to-one mapping. This will will use [derivedStateOf]

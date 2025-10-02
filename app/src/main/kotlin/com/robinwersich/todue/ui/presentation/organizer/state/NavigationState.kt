@@ -5,6 +5,7 @@ import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
+import androidx.compose.foundation.gestures.animateTo
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -26,6 +27,7 @@ import com.robinwersich.todue.ui.composeextensions.isSettled
 import com.robinwersich.todue.ui.composeextensions.offsetToCurrent
 import com.robinwersich.todue.ui.composeextensions.pairReferentialEqualityPolicy
 import com.robinwersich.todue.utility.center
+import com.robinwersich.todue.utility.intersection
 import com.robinwersich.todue.utility.mapToImmutableList
 import com.robinwersich.todue.utility.size
 import com.robinwersich.todue.utility.toImmutableList
@@ -204,7 +206,7 @@ class NavigationState(
       newCenter at 0f
       nextBlock.center at (nextDateDistance * nextPxPerDay).toFloat()
     }
-    updateAnchors(dateDraggableState, newAnchors, alignAnchor = currentDate)
+    updateAnchors(dateDraggableState, newAnchors, alignAnchor = newCenter)
   }
 
   /**
@@ -230,6 +232,36 @@ class NavigationState(
     // effective shift of the offset relative to the alignAnchor
     val relativeOffsetShift = anchorShift - offsetShift
     if (!relativeOffsetShift.isNaN()) state.dispatchRawDelta(relativeOffsetShift)
+  }
+
+  /**
+   * Sets the representative date of the child [TimeBlock] to which should be navigated when
+   * navigating to the child timeline. This method may only be called when the current
+   * [NavigationPosition] shows children and the [childBlock] must overlap with the current
+   * [NavigationPosition.dateRange].
+   *
+   * @return If setting the navigation target was successful.
+   */
+  fun trySetChildNavTarget(childBlock: TimeBlock): Boolean {
+    if (!currentNavPos.timelineNavPos.showChild) return false
+    val parentChildIntersection = currentTimeBlock intersection childBlock
+    if (parentChildIntersection.isEmpty()) return false
+    viewportSize?.run { updateDateAnchors(parentChildIntersection.center, height) }
+    return true
+  }
+
+  /**
+   * Animate navigation to the given [childBlock].
+   *
+   * @return If the navigation was successful.
+   * @see trySetChildNavTarget
+   */
+  suspend fun tryAnimateToChild(childBlock: TimeBlock): Boolean {
+    if (trySetChildNavTarget(childBlock)) {
+      timelineDraggableState.animateTo(adjacentNavigationPositions.prevTimeline.timelineNavPos)
+      return true
+    }
+    return false
   }
 
   /**
