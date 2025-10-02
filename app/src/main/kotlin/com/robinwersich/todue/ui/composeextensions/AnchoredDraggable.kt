@@ -1,12 +1,16 @@
 package com.robinwersich.todue.ui.composeextensions
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.OverscrollEffect
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.unit.Velocity
 import kotlin.math.nextDown
 import kotlin.math.nextUp
 
@@ -115,3 +119,21 @@ val <T> AnchoredDraggableState<T>.offsetToCurrent: Float
 @OptIn(ExperimentalFoundationApi::class)
 val <T> AnchoredDraggableState<T>.isSettled: Boolean
   get() = offset.isNaN() || anchors.positionOf(settledValue) == offset
+
+/**
+ * Workaround for applying overscroll in the original direction if reverseDirection is true on the
+ * `anchoredDraggable` modifier.
+ */
+fun OverscrollEffect.reversed() =
+  object : OverscrollEffect by this {
+    override fun applyToScroll(
+      delta: Offset,
+      source: NestedScrollSource,
+      performScroll: (Offset) -> Offset,
+    ) = this@reversed.applyToScroll(-delta, source, { -performScroll(-it) })
+
+    override suspend fun applyToFling(
+      velocity: Velocity,
+      performFling: suspend (Velocity) -> Velocity,
+    ) = this@reversed.applyToFling(-velocity, { -performFling(-it) })
+  }

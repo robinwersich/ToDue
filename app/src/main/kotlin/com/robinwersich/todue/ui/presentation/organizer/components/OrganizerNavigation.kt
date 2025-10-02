@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.overscroll
+import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -46,6 +48,7 @@ import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
 import com.robinwersich.todue.ui.composeextensions.instantStop
 import com.robinwersich.todue.ui.composeextensions.modifiers.placeRelative
 import com.robinwersich.todue.ui.composeextensions.modifiers.scaleFromSize
+import com.robinwersich.todue.ui.composeextensions.reversed
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationPosition
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.presentation.organizer.state.TimelineStyle
@@ -105,18 +108,21 @@ fun OrganizerNavigation(
     launch { navigationState.updateTimelineAnchorsOnSwipe() }
   }
 
+  val overscrollEffect = rememberOverscrollEffect()?.reversed()
   Box(
     modifier =
       remember(navigationState) {
         modifier
           .fillMaxSize()
           .background(backgroundColor)
+          .overscroll(overscrollEffect)
           .clipToBounds()
           .padding(contentPadding)
           .anchoredDraggable(
             timelineDraggableState,
             orientation = Orientation.Horizontal,
             reverseDirection = true,
+            overscrollEffect = overscrollEffect,
           )
           .anchoredDraggable(
             dateDraggableState,
