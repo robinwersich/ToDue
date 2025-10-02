@@ -40,7 +40,7 @@ class TimeBlockFormatterTest {
   @Test fun format_Day() = assertFormats(Day(2020, 1, 1), "Wed, Jan 1, 2020")
 
   @Test
-  fun format_Day_DE() = assertFormats(Day(2020, 1, 1), "Mi., 1. Jan. 2020", locale = Locale.GERMANY)
+  fun format_Day_DE() = assertFormats(Day(2020, 1, 1), "Mi, 1. Jan 2020", locale = Locale.GERMANY)
 
   @Test fun format_Day_Today() = assertFormats(Day(today), "Today", today = today)
 
@@ -62,7 +62,7 @@ class TimeBlockFormatterTest {
 
   @Test
   fun format_Week_SameMonth_DE() =
-    assertFormats(Week(2020, 2), "6. – 12. Jan. 2020", locale = Locale.GERMANY)
+    assertFormats(Week(2020, 2), "6. – 12. Jan 2020", locale = Locale.GERMANY)
 
   @Test
   fun format_Week_SameMonth_ThisYear() = assertFormats(Week(2020, 2), "Jan 6 – 12", today = today)

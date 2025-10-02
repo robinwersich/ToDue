@@ -74,7 +74,7 @@ class NavigationStateTest {
       state.timelineDraggableState.snapTo(
         TimelineNavPosition(
           timeline = Timeline(2, TimeUnit.MONTH),
-          child = Timeline(1, TimeUnit.MONTH),
+          child = Timeline(1, TimeUnit.WEEK),
         )
       )
     }
