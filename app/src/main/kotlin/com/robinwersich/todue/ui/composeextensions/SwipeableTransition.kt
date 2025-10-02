@@ -8,8 +8,8 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.structuralEqualityPolicy
 import com.robinwersich.todue.utility.areSame
+import com.robinwersich.todue.utility.letIf
 import com.robinwersich.todue.utility.map
-import com.robinwersich.todue.utility.modifyIf
 import com.robinwersich.todue.utility.relativeProgress
 
 /**
@@ -54,7 +54,7 @@ class SwipeableTransition<T>(
   }
 
   /**
-   * Returns a [SwipeableValue] with a smoothly interpolated value derived from the current
+   * Returns a [State] object with a smoothly interpolated value derived from the current
    * [transitionStates] and [progress].
    *
    * @param lerp A function that interpolates between two values of the target type.
@@ -67,8 +67,17 @@ class SwipeableTransition<T>(
     lerp: (start: V, end: V, progress: Float) -> V,
     useState: Boolean = false,
     transform: (state: T) -> V,
-  ): SwipeableValue<V> =
-    remember(this, lerp, useState, transform) { SwipeableValue(this, lerp, useState, transform) }
+  ): State<V> =
+    remember(this, lerp, useState, transform) {
+      object : State<V> {
+        private val getValue =
+          { interpolateValue(lerp, transform) }.letIf(useState) {
+            it.withDerivedState(structuralEqualityPolicy())
+          }
+        override val value
+          get() = getValue()
+      }
+    }
 
   /**
    * Returns a smoothly interpolated value derived from the current [transitionStates] and
@@ -98,7 +107,7 @@ class SwipeableTransition<T>(
   }
 
   /**
-   * Returns a [SwipeableValue] with a smoothly interpolated value derived from the current
+   * Returns a [State] object with a smoothly interpolated value derived from the current
    * [transitionStates] and [progress].
    *
    * @param lerp A function that interpolates between two values of the target type.
@@ -111,7 +120,17 @@ class SwipeableTransition<T>(
     lerp: (start: V, end: V, progress: Float) -> V,
     padding: (state: T, otherState: T) -> Float,
     transform: (state: T) -> V,
-  ) = remember(this, lerp, padding, transform) { SwipeableValue(this, lerp, padding, transform) }
+  ) =
+    remember(this, lerp, padding, transform) {
+      object : State<V> {
+        private val getValue =
+          { interpolateValue(lerp, padding, transform) }.withDerivedState(
+            structuralEqualityPolicy()
+          )
+        override val value
+          get() = getValue()
+      }
+    }
 
   /**
    * Creates a derived [SwipeableTransition] using the provided state [transform].
@@ -130,7 +149,7 @@ class SwipeableTransition<T>(
     transform: (T) -> S,
   ): SwipeableTransition<S> {
     val getStates =
-      { transitionStates().map(transform) }.modifyIf(cacheStates) {
+      { transitionStates().map(transform) }.letIf(cacheStates) {
         it.withDerivedState(structuralEqualityPolicy())
       }
 
@@ -177,7 +196,7 @@ class SwipeableTransition<T>(
     transform: (T) -> S,
   ): SwipeableTransition<S> {
     val getStates =
-      { transitionStates().map(transform) }.modifyIf(cacheStates) {
+      { transitionStates().map(transform) }.letIf(cacheStates) {
         it.withDerivedState(structuralEqualityPolicy())
       }
 
@@ -190,7 +209,7 @@ class SwipeableTransition<T>(
             progress = progress(),
           )
         }
-        .modifyIf(manyToOne) { { if (getStates().areSame) 0f else it() } }
+        .letIf(manyToOne) { { if (getStates().areSame) 0f else it() } }
         .withDerivedState()
 
     return SwipeableTransition(transitionStates = getStates, progress = getProgress)
@@ -206,62 +225,6 @@ class SwipeableTransition<T>(
     remember(this, padding, manyToOne, cacheStates, transform) {
       derive(padding, manyToOne, cacheStates, transform)
     }
-}
-
-/**
- * Stores the calculation of an interpolated value of a [SwipeableTransition] so it can be retrieved
- * later, deferring state reads.
- */
-class SwipeableValue<V>(private val getValue: () -> V) : State<V> {
-  companion object {
-    /**
-     * Generic factory method for creating a [SwipeableValue].
-     *
-     * @param transition The [SwipeableTransition] to derive the value from.
-     * @param lerp A function that interpolates between two values of the target type.
-     * @param useState Whether to use [derivedStateOf] to cache the result and reduce recompositions
-     *   if [transform] is a many-to-one mapping
-     * @param transform A function that returns the target value for a given state.
-     */
-    operator fun <T, V> invoke(
-      transition: SwipeableTransition<T>,
-      lerp: (start: V, end: V, progress: Float) -> V,
-      useState: Boolean = false,
-      transform: (state: T) -> V,
-    ): SwipeableValue<V> {
-      val getValue =
-        { transition.interpolateValue(lerp, transform) }.modifyIf(useState) {
-          it.withDerivedState(structuralEqualityPolicy())
-        }
-      return SwipeableValue(getValue)
-    }
-
-    /**
-     * Generic factory method for creating a [SwipeableValue] with state paddings.
-     *
-     * @param transition The [SwipeableTransition] to derive the value from.
-     * @param interpolateValue A function that interpolates between two values of the target type.
-     * @param padding A function providing padding for each state based on the adjacent state. This
-     *   extends the area in which the transition produces a settled value.
-     * @param transform A function that returns the target value for a given state.
-     */
-    operator fun <T, V> invoke(
-      transition: SwipeableTransition<T>,
-      interpolateValue: (start: V, end: V, progress: Float) -> V,
-      padding: (state: T, otherState: T) -> Float,
-      transform: (state: T) -> V,
-    ): SwipeableValue<V> {
-      val getValue = { transition.interpolateValue(interpolateValue, padding, transform) }
-      return SwipeableValue(getValue.withDerivedState(structuralEqualityPolicy()))
-    }
-  }
-
-  override val value
-    get() = getValue()
-
-  override fun hashCode() = getValue.hashCode()
-
-  override fun equals(other: Any?) = other is SwipeableValue<*> && getValue == other.getValue
 }
 
 /** Caches and minimizes the update frequency of a value getter using [derivedStateOf]. */
