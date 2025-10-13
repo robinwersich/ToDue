@@ -16,8 +16,8 @@ android {
     applicationId = "com.robinwersich.todue"
     minSdk = 24
     targetSdk = 35
-    versionCode = 2
-    versionName = "0.2.0"
+    versionCode = 3
+    versionName = "0.2.1"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     vectorDrawables { useSupportLibrary = true }
@@ -41,11 +41,7 @@ android {
   packaging { resources { excludes.add("/META-INF/{AL2.0,LGPL2.1}") } }
 }
 
-kotlin {
-  compilerOptions {
-    jvmTarget = JvmTarget.JVM_1_8
-  }
-}
+kotlin { compilerOptions { jvmTarget = JvmTarget.JVM_1_8 } }
 
 composeCompiler {
   stabilityConfigurationFiles.add(project.layout.projectDirectory.file("compose-stability.conf"))
