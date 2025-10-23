@@ -2,6 +2,9 @@ package com.robinwersich.todue.ui.presentation.organizer.state
 
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.DecayAnimationSpec
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.animateTo
@@ -22,6 +25,7 @@ import com.robinwersich.todue.domain.model.size
 import com.robinwersich.todue.domain.model.toDoubleRange
 import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
 import com.robinwersich.todue.ui.composeextensions.getAdjacentToCurrentAnchors
+import com.robinwersich.todue.ui.composeextensions.instantStop
 import com.robinwersich.todue.ui.composeextensions.isSettled
 import com.robinwersich.todue.ui.composeextensions.offsetToCurrent
 import com.robinwersich.todue.ui.composeextensions.pairReferentialEqualityPolicy
@@ -44,14 +48,20 @@ import kotlinx.collections.immutable.toImmutableList
  * @param timelines The timelines to navigate through. These do not need to be sorted initially, but
  *   they will be internally.
  */
+// TODO switch to new AnchoredDraggableState constructor once
+//  https://issuetracker.google.com/issues/448407163 is fixed
 @Stable
 class NavigationState(
   timelines: List<Timeline>,
-  val childTimelineSizeRatio: Float,
-  positionalThreshold: (totalDistance: Float) -> Float,
-  velocityThreshold: () -> Float,
-  snapAnimationSpec: AnimationSpec<Float>,
-  decayAnimationSpec: DecayAnimationSpec<Float>,
+  val childTimelineSizeRatio: Float = 0.3f,
+  positionalThreshold: (totalDistance: Float) -> Float = { it * 0.3f },
+  velocityThreshold: () -> Float = { 500f },
+  snapAnimationSpec: AnimationSpec<Float> =
+    spring(
+      stiffness = Spring.StiffnessMediumLow,
+      visibilityThreshold = Int.VisibilityThreshold.toFloat(),
+    ),
+  decayAnimationSpec: DecayAnimationSpec<Float> = instantStop(),
   initialTimeline: Timeline = timelines.first(),
   initialDate: LocalDate = LocalDate.now(),
 ) {

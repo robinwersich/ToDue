@@ -1,8 +1,5 @@
 package com.robinwersich.todue.ui.presentation.organizer.components
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -43,7 +40,6 @@ import com.robinwersich.todue.domain.model.daysUntil
 import com.robinwersich.todue.domain.model.size
 import com.robinwersich.todue.ui.composeextensions.PaddedRoundedCornerShape
 import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
-import com.robinwersich.todue.ui.composeextensions.instantStop
 import com.robinwersich.todue.ui.composeextensions.modifiers.placeRelative
 import com.robinwersich.todue.ui.composeextensions.modifiers.scaleFromSize
 import com.robinwersich.todue.ui.composeextensions.reversed
@@ -51,7 +47,6 @@ import com.robinwersich.todue.ui.presentation.organizer.state.NavigationPosition
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.presentation.organizer.state.TimelineStyle
 import com.robinwersich.todue.ui.presentation.organizer.state.timelineStyle
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -61,10 +56,8 @@ import kotlinx.coroutines.launch
  * [TimeBlock]s, there is a navigation state which shows a parent [TimeBlock] together with all its
  * children from the next smaller granularity level.
  *
- * @param timelines The timelines (i.e. granularity levels) to display.
+ * @param navigationState The [NavigationState] containing info about layout and current position.
  * @param modifier The modifier to apply to this layout.
- * @param childTimelineSizeFraction The fraction of the screen width that the child timeline should
- *   take up in a split view with two timelines.
  * @param contentPadding Padding that should be applied to the focussed area, while still drawing
  *   content within the full bounds.
  * @param taskBlockLabel The label content to display for a [TimeBlock] in preview mode.
@@ -72,33 +65,15 @@ import kotlinx.coroutines.launch
  */
 @Composable
 fun OrganizerNavigation(
-  timelines: ImmutableList<Timeline>,
+  navigationState: NavigationState,
   modifier: Modifier = Modifier,
-  childTimelineSizeFraction: Float = 0.3f,
   contentPadding: PaddingValues = PaddingValues(0.dp),
   taskBlockLabel: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
   taskBlockContent: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
 ) {
   val backgroundColor = MaterialTheme.colorScheme.surface
-  val positionalThreshold = 0.3f
-  val velocityThreshold = with(LocalDensity.current) { 500.dp.toPx() }
   val density = LocalDensity.current
 
-  val navigationState =
-    remember(timelines, childTimelineSizeFraction) {
-      NavigationState(
-        timelines = timelines,
-        childTimelineSizeRatio = childTimelineSizeFraction,
-        positionalThreshold = { it * positionalThreshold },
-        velocityThreshold = { velocityThreshold },
-        snapAnimationSpec =
-          spring(
-            stiffness = Spring.StiffnessMediumLow,
-            visibilityThreshold = Int.VisibilityThreshold.toFloat(),
-          ),
-        decayAnimationSpec = instantStop(),
-      )
-    }
   val timelineDraggableState = navigationState.timelineDraggableState
   val dateDraggableState = navigationState.dateDraggableState
   LaunchedEffect(navigationState) {

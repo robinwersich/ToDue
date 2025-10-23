@@ -19,14 +19,15 @@ import com.robinwersich.todue.ui.presentation.organizer.components.OrganizerNavi
 import com.robinwersich.todue.ui.presentation.organizer.components.TaskBlockContent
 import com.robinwersich.todue.ui.presentation.organizer.components.TaskBlockLabel
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
+import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import kotlinx.collections.immutable.persistentListOf
 
 @Composable
 fun OrganizerScreen(
   state: OrganizerState,
-  onEvent: (OrganizerEvent) -> Unit = {},
   modifier: Modifier = Modifier,
+  onEvent: (OrganizerEvent) -> Unit = {},
 ) {
   Scaffold(
     modifier = modifier,
@@ -42,9 +43,10 @@ fun OrganizerScreen(
         Timeline(2, TimeUnit.MONTH),
       )
     }
+    val navigationState = remember { NavigationState(timelines) }
     val formatter = rememberTimeBlockFormatter()
     OrganizerNavigation(
-      timelines = timelines,
+      navigationState = navigationState,
       contentPadding = scaffoldPadding,
       taskBlockLabel = { _, timeBlock, padding ->
         TaskBlockLabel(
