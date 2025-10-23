@@ -1,6 +1,5 @@
 package com.robinwersich.todue.ui.composeextensions
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.OverscrollEffect
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
@@ -14,7 +13,6 @@ import androidx.compose.ui.unit.Velocity
 import kotlin.math.nextDown
 import kotlin.math.nextUp
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun <T> AnchoredDraggableState<T>.rememberSwipeableTransition() =
   remember(this) { toSwipeableTransition() }
@@ -24,7 +22,6 @@ fun <T> AnchoredDraggableState<T>.rememberSwipeableTransition() =
  * composable, [rememberSwipeableTransition] should be used instead to ensure that the same
  * transition is used across recompositions.
  */
-@OptIn(ExperimentalFoundationApi::class)
 fun <T> AnchoredDraggableState<T>.toSwipeableTransition(): SwipeableTransition<T> {
   val transitionStates by
     derivedStateOf(pairReferentialEqualityPolicy()) { getAdjacentToOffsetAnchors() }
@@ -41,7 +38,6 @@ fun <T> AnchoredDraggableState<T>.toSwipeableTransition(): SwipeableTransition<T
  * Returns the two anchors adjacent to the current [offset][AnchoredDraggableState.offset]. If the
  * draggable is settled or is not initialized, the same anchor is returned twice.
  */
-@OptIn(ExperimentalFoundationApi::class)
 fun <T> AnchoredDraggableState<T>.getAdjacentToOffsetAnchors(): Pair<T, T> {
   if (offset.isNaN() || anchors.size == 0 || anchors.positionOf(settledValue) == offset) {
     return Pair(settledValue, settledValue)
@@ -58,7 +54,6 @@ fun <T> AnchoredDraggableState<T>.getAdjacentToOffsetAnchors(): Pair<T, T> {
  *
  * @see getAdjacentAnchors
  */
-@OptIn(ExperimentalFoundationApi::class)
 fun <T> AnchoredDraggableState<T>.getAdjacentToCurrentAnchors() = getAdjacentAnchors(currentValue)
 
 /**
@@ -66,7 +61,6 @@ fun <T> AnchoredDraggableState<T>.getAdjacentToCurrentAnchors() = getAdjacentAnc
  *
  * @see getAdjacentAnchors
  */
-@OptIn(ExperimentalFoundationApi::class)
 fun <T> AnchoredDraggableState<T>.getAdjacentToSettledAnchors() = getAdjacentAnchors(settledValue)
 
 /**
@@ -75,7 +69,6 @@ fun <T> AnchoredDraggableState<T>.getAdjacentToSettledAnchors() = getAdjacentAnc
  * corresponding bound. Consequently, for uninitialized anchors, the given [anchor] will be returned
  * twice.
  */
-@OptIn(ExperimentalFoundationApi::class)
 fun <T> AnchoredDraggableState<T>.getAdjacentAnchors(anchor: T): Pair<T, T> {
   val prevAnchor = anchors.previousAnchor(anchor) ?: anchor
   val nextAnchor = anchors.nextAnchor(anchor) ?: anchor
@@ -83,7 +76,6 @@ fun <T> AnchoredDraggableState<T>.getAdjacentAnchors(anchor: T): Pair<T, T> {
 }
 
 /** Returns the anchor before (in terms of offset) the given [anchor] or null if there is none */
-@OptIn(ExperimentalFoundationApi::class)
 fun <T> DraggableAnchors<T>.previousAnchor(anchor: T): T? {
   val anchorOffset = positionOf(anchor)
   if (anchorOffset.isNaN()) return null
@@ -94,7 +86,6 @@ fun <T> DraggableAnchors<T>.previousAnchor(anchor: T): T? {
 }
 
 /** Returns the anchor after (in terms of offset) the given [anchor]. */
-@OptIn(ExperimentalFoundationApi::class)
 fun <T> DraggableAnchors<T>.nextAnchor(anchor: T): T? {
   val anchorOffset = positionOf(anchor)
   if (anchorOffset.isNaN()) return null
@@ -108,7 +99,6 @@ fun <T> DraggableAnchors<T>.nextAnchor(anchor: T): T? {
  * Distance between [current anchor][AnchoredDraggableState.currentValue] and current offset. If the
  * anchors are not initialized yet, this will always return 0.
  */
-@OptIn(ExperimentalFoundationApi::class)
 val <T> AnchoredDraggableState<T>.offsetToCurrent: Float
   get() = if (offset.isNaN()) 0f else offset - anchors.positionOf(currentValue)
 
@@ -116,7 +106,6 @@ val <T> AnchoredDraggableState<T>.offsetToCurrent: Float
  * Returns whether the [AnchoredDraggableState] is currently settled at an anchor. If the anchors
  * are not initialized yet, this will always return true.
  */
-@OptIn(ExperimentalFoundationApi::class)
 val <T> AnchoredDraggableState<T>.isSettled: Boolean
   get() = offset.isNaN() || anchors.positionOf(settledValue) == offset
 

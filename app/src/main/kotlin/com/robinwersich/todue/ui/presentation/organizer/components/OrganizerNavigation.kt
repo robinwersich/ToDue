@@ -3,7 +3,6 @@ package com.robinwersich.todue.ui.presentation.organizer.components
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -71,7 +70,6 @@ import kotlinx.coroutines.launch
  * @param taskBlockLabel The label content to display for a [TimeBlock] in preview mode.
  * @param taskBlockContent The content to display for a [TimeBlock] in expanded mode.
  */
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OrganizerNavigation(
   timelines: ImmutableList<Timeline>,

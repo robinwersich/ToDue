@@ -2,7 +2,6 @@ package com.robinwersich.todue.ui.presentation.organizer.state
 
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.DecayAnimationSpec
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.animateTo
@@ -46,7 +45,6 @@ import kotlinx.collections.immutable.toImmutableList
  *   they will be internally.
  */
 @Stable
-@OptIn(ExperimentalFoundationApi::class)
 class NavigationState(
   timelines: List<Timeline>,
   val childTimelineSizeRatio: Float,

@@ -2,7 +2,6 @@ package com.robinwersich.todue.ui.composeextensions
 
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import com.google.common.truth.Truth.assertThat
@@ -16,7 +15,6 @@ enum class TestAnchor(val value: Float) {
   END(2f),
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 class AnchoredDraggableTest {
   private lateinit var state: AnchoredDraggableState<TestAnchor>
   private val anchors = DraggableAnchors {
@@ -25,7 +23,6 @@ class AnchoredDraggableTest {
     TestAnchor.END at 100f
   }
 
-  @OptIn(ExperimentalFoundationApi::class)
   @Before
   fun setUp() {
     state =

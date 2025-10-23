@@ -2,7 +2,6 @@ package com.robinwersich.todue.ui.presentation.organizer.state
 
 import androidx.compose.animation.core.exponentialDecay
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.snapTo
 import androidx.compose.ui.unit.IntSize
 import com.google.common.truth.Truth.assertThat
@@ -18,7 +17,6 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Before
 import org.junit.Test
 
-@OptIn(ExperimentalFoundationApi::class)
 class NavigationStateTest {
   private val timelines =
     listOf(Timeline(0, TimeUnit.DAY), Timeline(1, TimeUnit.WEEK), Timeline(2, TimeUnit.MONTH))
