@@ -18,6 +18,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.IntSize
 import com.robinwersich.todue.domain.model.DateRange
 import com.robinwersich.todue.domain.model.TimeBlock
+import com.robinwersich.todue.domain.model.TimeUnit
 import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.center
 import com.robinwersich.todue.domain.model.rangeTo
@@ -52,7 +53,7 @@ import kotlinx.collections.immutable.toImmutableList
 //  https://issuetracker.google.com/issues/448407163 is fixed
 @Stable
 class NavigationState(
-  timelines: List<Timeline>,
+  timelines: Collection<Timeline> = listOf(Timeline(timeUnit = TimeUnit.DAY)),
   val childTimelineSizeRatio: Float = 0.3f,
   positionalThreshold: (totalDistance: Float) -> Float = { it * 0.3f },
   velocityThreshold: () -> Float = { 500f },
@@ -65,8 +66,12 @@ class NavigationState(
   initialTimeline: Timeline = timelines.first(),
   initialDate: LocalDate = LocalDate.now(),
 ) {
+  init {
+    assert(timelines.isNotEmpty()) { "Timelines cannot be empty." }
+  }
+
   /** The ordered list of possible [Timeline]s to navigate through. */
-  private val timelines = timelines.sorted()
+  private var timelines = timelines.sorted()
 
   /** The [AnchoredDraggableState] controlling the time navigation. */
   val dateDraggableState =
@@ -122,6 +127,20 @@ class NavigationState(
   internal val currentTimeBlock: TimeBlock
     get() = currentNavPos.timeBlock
 
+  fun setTimelines(timelines: Collection<Timeline>) {
+    assert(timelines.isNotEmpty()) { "Timelines cannot be empty." }
+    this.timelines = timelines.sorted()
+    updateTimelineAnchors(
+      newCenter =
+        if (this.timelines.containsAll(currentTimelineNavPos.visibleTimelines.toList())) {
+          currentTimelineNavPos
+        } else {
+          TimelineNavPosition(this.timelines.first())
+        }
+    )
+    updateDateAnchors()
+  }
+
   /**
    * This function needs to be launched in the [CoroutineScope][kotlinx.coroutines.CoroutineScope]
    * of the composable using this state to correctly update the internal [DraggableAnchors].
@@ -154,8 +173,8 @@ class NavigationState(
     this.viewportSize = size
     this.relativeTopMargin = relativeTopMargin
     this.relativeBottomMargin = relativeBottomMargin
-    if (widthChanged) updateTimelineAnchors(currentTimelineNavPos)
-    if (heightChanged) updateDateAnchors(currentDate)
+    if (widthChanged) updateTimelineAnchors()
+    if (heightChanged) updateDateAnchors()
   }
 
   private fun getChild(timeline: Timeline): Timeline? {
@@ -170,7 +189,7 @@ class NavigationState(
     return timelines.getOrNull(timelineIndex + 1)
   }
 
-  private fun updateTimelineAnchors(newCenter: TimelineNavPosition) {
+  private fun updateTimelineAnchors(newCenter: TimelineNavPosition = currentTimelineNavPos) {
     val viewportLength = viewportSize?.width
     val newAnchors: DraggableAnchors<TimelineNavPosition> =
       when {
@@ -199,7 +218,7 @@ class NavigationState(
     updateAnchors(timelineDraggableState, newAnchors, alignAnchor = newCenter)
   }
 
-  private fun updateDateAnchors(newCenter: LocalDate) {
+  private fun updateDateAnchors(newCenter: LocalDate = currentDate) {
     val viewportLength = viewportSize?.height
     val newAnchors =
       when {

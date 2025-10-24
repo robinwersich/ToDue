@@ -77,4 +77,28 @@ class NavigationStateTest {
         Timeline(TimeUnit.MONTH) to (Month(2019, 12)..Month(2020, 2)).toImmutableList(),
       )
   }
+
+  @Test
+  fun whenSettingNewTimelinesIncludingCurrentlyShown_activeTimelineBlocksDontChange() {
+    val state = navigationState()
+    runBlocking {
+      state.timelineDraggableState.snapTo(
+        TimelineNavPosition(timeline = Timeline(TimeUnit.MONTH), child = Timeline(TimeUnit.WEEK))
+      )
+    }
+    val activeTimelineBlocksBefore = state.activeTimelineBlocks
+    state.setTimelines(listOf(Timeline(TimeUnit.WEEK), Timeline(TimeUnit.MONTH)))
+    val activeTimelineBlocksAfter = state.activeTimelineBlocks
+    assertThat(activeTimelineBlocksAfter).isEqualTo(activeTimelineBlocksBefore)
+  }
+
+  @Test
+  fun whenSettingNewTimelinesNotIncludingCurrentlyShown_activeTimelineBlocksSnapToAdapt() {
+    val initialDate = LocalDate.of(2020, 1, 1)
+    val state =
+      navigationState(initialTimeline = Timeline(TimeUnit.WEEK), initialDate = initialDate)
+    state.setTimelines(listOf(Timeline(TimeUnit.DAY)))
+    assertThat(state.activeTimelineBlocks)
+      .containsExactly(Timeline(TimeUnit.DAY) to persistentListOf(Day(initialDate)))
+  }
 }
