@@ -1,7 +1,5 @@
 package com.robinwersich.todue.ui.presentation.organizer.state
 
-import androidx.compose.animation.core.exponentialDecay
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.snapTo
 import androidx.compose.ui.unit.IntSize
 import com.google.common.truth.Truth.assertThat
@@ -14,72 +12,69 @@ import java.time.LocalDate
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.runBlocking
-import org.junit.Before
 import org.junit.Test
 
 class NavigationStateTest {
-  private val timelines =
-    listOf(Timeline(0, TimeUnit.DAY), Timeline(1, TimeUnit.WEEK), Timeline(2, TimeUnit.MONTH))
-  private val initialTimeline = Timeline(1, TimeUnit.WEEK)
-  private val initialDate = LocalDate.of(2020, 1, 15)
-  private lateinit var state: NavigationState
-
-  @Before
-  fun setUp() {
-    state =
-      NavigationState(
+  private fun navigationState(
+    timelines: Collection<Timeline> =
+      listOf(TimeUnit.DAY, TimeUnit.WEEK, TimeUnit.MONTH).map { Timeline(it) },
+    initialTimeline: Timeline = timelines.first(),
+    initialDate: LocalDate = LocalDate.now(),
+  ) =
+    NavigationState(
         timelines = timelines,
-        childTimelineSizeRatio = 0.3f,
-        positionalThreshold = { 0f },
-        velocityThreshold = { 0f },
-        snapAnimationSpec = tween(),
-        decayAnimationSpec = exponentialDecay(),
         initialTimeline = initialTimeline,
         initialDate = initialDate,
       )
-    state.updateViewportSize(IntSize(100, 100))
-  }
+      .also { it.updateViewportSize(IntSize(100, 100)) }
 
   @Test
-  fun activeTimelineBlocks_AreCorrect_Initially() {
+  fun initially_activeTimelineBlocksAreCorrect() {
+    val initialWeek = Week()
+    val state =
+      navigationState(initialTimeline = Timeline(TimeUnit.WEEK), initialDate = initialWeek.start)
     assertThat(state.activeTimelineBlocks)
-      .containsExactly(initialTimeline to persistentListOf(Week(initialDate)))
+      .containsExactly(Timeline(TimeUnit.WEEK) to persistentListOf(initialWeek))
   }
 
   @Test
-  fun activeTimelineBlocks_AreCorrect_DuringTimelineScroll() {
+  fun whenScrollingTimelines_activeTimelineBlocksAreCorrect() {
+    val initialWeek = Week()
+    val state =
+      navigationState(initialTimeline = Timeline(TimeUnit.WEEK), initialDate = initialWeek.start)
     runBlocking { with(state.timelineDraggableState) { anchoredDrag { dragTo(offset - 10f) } } }
     assertThat(state.activeTimelineBlocks)
       .containsExactly(
-        Timeline(0, TimeUnit.DAY) to Week(initialDate).days.map(::Day).toImmutableList(),
-        Timeline(1, TimeUnit.WEEK) to persistentListOf(Week(initialDate)),
+        Timeline(TimeUnit.DAY) to initialWeek.days.map(::Day).toImmutableList(),
+        Timeline(TimeUnit.WEEK) to persistentListOf(initialWeek),
       )
   }
 
   @Test
-  fun activeTimelineBlocks_AreCorrect_DuringDateScroll() {
+  fun whenScrollingDates_activeTimelineBlocksAreCorrect() {
+    val initialWeek = Week()
+    val state =
+      navigationState(initialTimeline = Timeline(TimeUnit.WEEK), initialDate = initialWeek.start)
     runBlocking { with(state.dateDraggableState) { anchoredDrag { dragTo(offset + 10f) } } }
     assertThat(state.activeTimelineBlocks)
-      .containsExactly(
-        Timeline(1, TimeUnit.WEEK) to persistentListOf(Week(initialDate), Week(initialDate) + 1)
-      )
+      .containsExactly(Timeline(TimeUnit.WEEK) to persistentListOf(initialWeek, initialWeek + 1))
   }
 
   @Test
-  fun activeTimelineBlocks_RespectAdditionalMargin() {
-    state.updateViewportSize(IntSize(100, 100), 0.1f, 0.2f)
+  fun givenAdditionalMargin_additionalTimelineBlocksAreShown() {
+    val state =
+      navigationState(initialDate = LocalDate.of(2020, 1, 15)).also {
+        it.updateViewportSize(IntSize(100, 100), 0.1f, 0.2f)
+      }
     runBlocking {
       state.timelineDraggableState.snapTo(
-        TimelineNavPosition(
-          timeline = Timeline(2, TimeUnit.MONTH),
-          child = Timeline(1, TimeUnit.WEEK),
-        )
+        TimelineNavPosition(timeline = Timeline(TimeUnit.MONTH), child = Timeline(TimeUnit.WEEK))
       )
     }
     assertThat(state.activeTimelineBlocks)
       .containsExactly(
-        Timeline(1, TimeUnit.WEEK) to (Week(2019, 52)..Week(2020, 6)).toImmutableList(),
-        Timeline(2, TimeUnit.MONTH) to (Month(2019, 12)..Month(2020, 2)).toImmutableList(),
+        Timeline(TimeUnit.WEEK) to (Week(2019, 52)..Week(2020, 6)).toImmutableList(),
+        Timeline(TimeUnit.MONTH) to (Month(2019, 12)..Month(2020, 2)).toImmutableList(),
       )
   }
 }
