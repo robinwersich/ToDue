@@ -128,9 +128,7 @@ class NavigationState(
    */
   suspend fun updateDateAnchorsOnSwipe() {
     snapshotFlow { timelineDraggableState.currentValue to dateDraggableState.currentValue }
-      .collect { (_, centerAnchor) ->
-        viewportSize?.run { updateDateAnchors(centerAnchor, height) }
-      }
+      .collect { (_, centerAnchor) -> updateDateAnchors(centerAnchor) }
   }
 
   /**
@@ -139,7 +137,7 @@ class NavigationState(
    */
   suspend fun updateTimelineAnchorsOnSwipe() {
     snapshotFlow { timelineDraggableState.settledValue }
-      .collect { centerAnchor -> viewportSize?.run { updateTimelineAnchors(centerAnchor, width) } }
+      .collect { centerAnchor -> updateTimelineAnchors(centerAnchor) }
   }
 
   /**
@@ -151,11 +149,13 @@ class NavigationState(
     relativeTopMargin: Float = this.relativeTopMargin,
     relativeBottomMargin: Float = this.relativeBottomMargin,
   ) {
-    if (size.width != viewportSize?.width) updateTimelineAnchors(currentTimelineNavPos, size.width)
-    if (size.height != viewportSize?.height) updateDateAnchors(currentDate, size.height)
+    val widthChanged = size.width != viewportSize?.width
+    val heightChanged = size.height != viewportSize?.height
     this.viewportSize = size
     this.relativeTopMargin = relativeTopMargin
     this.relativeBottomMargin = relativeBottomMargin
+    if (widthChanged) updateTimelineAnchors(currentTimelineNavPos)
+    if (heightChanged) updateDateAnchors(currentDate)
   }
 
   private fun getChild(timeline: Timeline): Timeline? {
@@ -170,50 +170,63 @@ class NavigationState(
     return timelines.getOrNull(timelineIndex + 1)
   }
 
-  private fun updateTimelineAnchors(newCenter: TimelineNavPosition, viewportLength: Int) {
+  private fun updateTimelineAnchors(newCenter: TimelineNavPosition) {
+    val viewportLength = viewportSize?.width
     val newAnchors: DraggableAnchors<TimelineNavPosition> =
-      if (newCenter.child != null) {
-        DraggableAnchors {
-          TimelineNavPosition(newCenter.child) at (childTimelineSizeRatio - 1) * viewportLength
-          newCenter at 0f
-          TimelineNavPosition(newCenter.timeline) at childTimelineSizeRatio * viewportLength
-        }
-      } else {
-        DraggableAnchors {
-          getChild(newCenter.timeline)?.let {
-            TimelineNavPosition(child = it, timeline = newCenter.timeline) at
-              -childTimelineSizeRatio * viewportLength
+      when {
+        viewportLength == null -> DraggableAnchors { newCenter at 0f }
+        newCenter.child != null -> {
+          DraggableAnchors {
+            TimelineNavPosition(newCenter.child) at (childTimelineSizeRatio - 1) * viewportLength
+            newCenter at 0f
+            TimelineNavPosition(newCenter.timeline) at childTimelineSizeRatio * viewportLength
           }
-          newCenter at 0f
-          getParent(newCenter.timeline)?.let {
-            TimelineNavPosition(child = newCenter.timeline, timeline = it) at
-              (1 - childTimelineSizeRatio) * viewportLength
+        }
+        else -> {
+          DraggableAnchors {
+            getChild(newCenter.timeline)?.let {
+              TimelineNavPosition(child = it, timeline = newCenter.timeline) at
+                -childTimelineSizeRatio * viewportLength
+            }
+            newCenter at 0f
+            getParent(newCenter.timeline)?.let {
+              TimelineNavPosition(child = newCenter.timeline, timeline = it) at
+                (1 - childTimelineSizeRatio) * viewportLength
+            }
           }
         }
       }
     updateAnchors(timelineDraggableState, newAnchors, alignAnchor = newCenter)
   }
 
-  private fun updateDateAnchors(newCenter: LocalDate, viewportLength: Int) {
-    val newAnchors = DraggableAnchors {
-      val currentBlock = currentTimeline.timeBlockFrom(newCenter)
-      val prevBlock = currentBlock - 1
-      val nextBlock = currentBlock + 1
+  private fun updateDateAnchors(newCenter: LocalDate) {
+    val viewportLength = viewportSize?.height
+    val newAnchors =
+      when {
+        viewportLength == null -> DraggableAnchors { newCenter at 0f }
+        else ->
+          DraggableAnchors {
+            val currentBlock = currentTimeline.timeBlockFrom(newCenter)
+            val prevBlock = currentBlock - 1
+            val nextBlock = currentBlock + 1
 
-      val currentDateRange =
-        getVisibleDateRange(currentTimelineNavPos, currentBlock).toDoubleRange()
-      val prevDateRange = getVisibleDateRange(currentTimelineNavPos, prevBlock).toDoubleRange()
-      val nextDateRange = getVisibleDateRange(currentTimelineNavPos, nextBlock).toDoubleRange()
+            val currentDateRange =
+              getVisibleDateRange(currentTimelineNavPos, currentBlock).toDoubleRange()
+            val prevDateRange =
+              getVisibleDateRange(currentTimelineNavPos, prevBlock).toDoubleRange()
+            val nextDateRange =
+              getVisibleDateRange(currentTimelineNavPos, nextBlock).toDoubleRange()
 
-      val prevDateDistance = prevDateRange.center - currentDateRange.center
-      val nextDateDistance = nextDateRange.center - currentDateRange.center
-      val prevPxPerDay = (viewportLength * 2) / (prevDateRange.size + currentDateRange.size)
-      val nextPxPerDay = (viewportLength * 2) / (nextDateRange.size + currentDateRange.size)
+            val prevDateDistance = prevDateRange.center - currentDateRange.center
+            val nextDateDistance = nextDateRange.center - currentDateRange.center
+            val prevPxPerDay = (viewportLength * 2) / (prevDateRange.size + currentDateRange.size)
+            val nextPxPerDay = (viewportLength * 2) / (nextDateRange.size + currentDateRange.size)
 
-      prevBlock.center at (prevDateDistance * prevPxPerDay).toFloat()
-      newCenter at 0f
-      nextBlock.center at (nextDateDistance * nextPxPerDay).toFloat()
-    }
+            prevBlock.center at (prevDateDistance * prevPxPerDay).toFloat()
+            newCenter at 0f
+            nextBlock.center at (nextDateDistance * nextPxPerDay).toFloat()
+          }
+      }
     updateAnchors(dateDraggableState, newAnchors, alignAnchor = newCenter)
   }
 
@@ -254,7 +267,7 @@ class NavigationState(
     if (!currentNavPos.timelineNavPos.showChild) return false
     val parentChildIntersection = currentTimeBlock intersection childBlock
     if (parentChildIntersection.isEmpty()) return false
-    viewportSize?.run { updateDateAnchors(parentChildIntersection.center, height) }
+    updateDateAnchors(parentChildIntersection.center)
     return true
   }
 
