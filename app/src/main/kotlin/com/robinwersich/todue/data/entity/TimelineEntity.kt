@@ -12,6 +12,6 @@ data class TimelineEntity(
   @ColumnInfo("time_block_unit") val timeUnit: TimeUnit,
 )
 
-fun TimelineEntity.toModel(): Timeline = Timeline(id = id, timeUnit = timeUnit)
+fun TimelineEntity.toModel(): Timeline = Timeline(timeUnit = timeUnit)
 
-fun Timeline.toEntity() = TimelineEntity(id = id, timeUnit = timeUnit)
+fun Timeline.toEntity() = TimelineEntity(timeUnit = timeUnit)

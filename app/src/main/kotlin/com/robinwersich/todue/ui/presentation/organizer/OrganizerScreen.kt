@@ -38,9 +38,9 @@ fun OrganizerScreen(
   ) { scaffoldPadding ->
     val timelines = remember {
       persistentListOf(
-        Timeline(0, TimeUnit.DAY),
-        Timeline(1, TimeUnit.WEEK),
-        Timeline(2, TimeUnit.MONTH),
+        Timeline(TimeUnit.DAY),
+        Timeline(TimeUnit.WEEK),
+        Timeline(TimeUnit.MONTH),
       )
     }
     val navigationState = remember { NavigationState(timelines) }
