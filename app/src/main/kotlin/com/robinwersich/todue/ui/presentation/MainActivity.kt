@@ -20,6 +20,7 @@ class MainActivity : ComponentActivity() {
         val viewModel: OrganizerViewModel = viewModel(factory = OrganizerViewModel.Factory)
         OrganizerScreen(
           navigationState = viewModel.navigationState,
+          getTasks = { persistentListOf() },
           onEvent = viewModel::handleEvent,
         )
       }

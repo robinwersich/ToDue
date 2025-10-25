@@ -20,6 +20,7 @@ import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.utility.mapIndexedToImmutableList
+import kotlinx.collections.immutable.ImmutableList
 
 @Composable
 fun TaskBlockLabel(
@@ -34,17 +35,14 @@ fun TaskBlockLabel(
 
 @Composable
 fun TaskBlockContent(
+  tasks: ImmutableList<TaskViewState>,
   timeBlock: TimeBlock,
   formatter: TimeBlockFormatter,
   modifier: Modifier = Modifier,
 ) {
-  val tasks =
-    listOf("Task 1", "Task 2", "Task 3").mapIndexedToImmutableList { id, text ->
-      TaskViewState(id = id.toLong(), text = text, focusLevel = FocusLevel.NEUTRAL)
-    }
   Column(modifier) {
     Text(
-      formatter.format(timeBlock),
+      formatter.format(timeBlock, useNarrowFormatting = false),
       style = MaterialTheme.typography.headlineSmall,
       modifier = Modifier.padding(8.dp),
     )
@@ -55,7 +53,11 @@ fun TaskBlockContent(
 @Preview(showBackground = true)
 @Composable
 fun ExpandedTimeBlockViewPreview() {
+  val tasks =
+    listOf("Task 1", "Task 2", "Task 3").mapIndexedToImmutableList { id, text ->
+      TaskViewState(id = id.toLong(), text = text, focusLevel = FocusLevel.NEUTRAL)
+    }
   ToDueTheme {
-    TaskBlockContent(Week(), rememberTimeBlockFormatter(), modifier = Modifier.fillMaxSize())
+    TaskBlockContent(tasks, Week(), rememberTimeBlockFormatter(), modifier = Modifier.fillMaxSize())
   }
 }
