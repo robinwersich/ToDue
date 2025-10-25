@@ -71,7 +71,7 @@ class NavigationState(
   }
 
   /** The ordered list of possible [Timeline]s to navigate through. */
-  private var timelines = timelines.sorted()
+  private var timelines = timelines.sortedBy { it.blockSize }
 
   /** The [AnchoredDraggableState] controlling the time navigation. */
   val dateDraggableState =
@@ -129,7 +129,7 @@ class NavigationState(
 
   fun setTimelines(timelines: Collection<Timeline>) {
     assert(timelines.isNotEmpty()) { "Timelines cannot be empty." }
-    this.timelines = timelines.sorted()
+    this.timelines = timelines.sortedBy { it.blockSize }
     updateTimelineAnchors(
       newCenter =
         if (this.timelines.containsAll(currentTimelineNavPos.visibleTimelines.toList())) {

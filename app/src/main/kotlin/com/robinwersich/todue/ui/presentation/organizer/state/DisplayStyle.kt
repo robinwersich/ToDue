@@ -24,10 +24,10 @@ enum class TimelineStyle {
  */
 fun timelineStyle(timeline: Timeline, navPos: TimelineNavPosition) =
   when {
-    timeline > navPos.timeline -> TimelineStyle.HIDDEN_PARENT
+    timeline.blockSize > navPos.timeline.blockSize -> TimelineStyle.HIDDEN_PARENT
     timeline == navPos.timeline && navPos.showChild -> TimelineStyle.PARENT
     timeline == navPos.timeline && !navPos.showChild -> TimelineStyle.FULLSCREEN
     timeline == navPos.child -> TimelineStyle.CHILD
-    timeline < (navPos.child ?: navPos.timeline) -> TimelineStyle.HIDDEN_CHILD
-    else -> error("Unhandled TimelineStyle case.")
+    timeline.blockSize < (navPos.child ?: navPos.timeline).blockSize -> TimelineStyle.HIDDEN_CHILD
+    else -> error("Unhandled TimelineStyle case. Timeline: $timeline, NavPos: $navPos.")
   }
