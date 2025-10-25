@@ -4,13 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import com.robinwersich.todue.domain.model.Day
-import com.robinwersich.todue.domain.model.Task
-import com.robinwersich.todue.domain.model.TimeUnit
-import com.robinwersich.todue.domain.model.Timeline
-import com.robinwersich.todue.domain.repository.TaskRepository
-import com.robinwersich.todue.toDueApplication
-import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import java.time.Duration
 import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
@@ -20,6 +13,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import com.robinwersich.todue.domain.model.Day
+import com.robinwersich.todue.domain.model.Task
+import com.robinwersich.todue.domain.model.TimeUnit
+import com.robinwersich.todue.domain.model.Timeline
+import com.robinwersich.todue.domain.repository.TaskRepository
+import com.robinwersich.todue.toDueApplication
+import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
+import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
+import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 
 class OrganizerViewModel(private val taskRepository: TaskRepository) : ViewModel() {
   val navigationState =

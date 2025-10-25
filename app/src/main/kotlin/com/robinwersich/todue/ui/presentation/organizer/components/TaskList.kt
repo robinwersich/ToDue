@@ -11,15 +11,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.collections.immutable.ImmutableList
 import com.robinwersich.todue.ui.presentation.organizer.CollapseTasks
 import com.robinwersich.todue.ui.presentation.organizer.ExpandTask
-import com.robinwersich.todue.ui.presentation.organizer.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.ModifyTask
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerEvent
-import com.robinwersich.todue.ui.presentation.organizer.TaskViewState
+import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
+import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.utility.mapIndexedToImmutableList
-import kotlinx.collections.immutable.ImmutableList
 
 @Composable
 fun TaskList(

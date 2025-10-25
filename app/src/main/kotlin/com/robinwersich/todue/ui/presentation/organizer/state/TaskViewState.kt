@@ -1,4 +1,4 @@
-package com.robinwersich.todue.ui.presentation.organizer
+package com.robinwersich.todue.ui.presentation.organizer.state
 
 import androidx.compose.runtime.Immutable
 import com.robinwersich.todue.domain.model.TimeBlock

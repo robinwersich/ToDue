@@ -14,10 +14,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Week
-import com.robinwersich.todue.ui.presentation.organizer.FocusLevel
-import com.robinwersich.todue.ui.presentation.organizer.TaskViewState
 import com.robinwersich.todue.ui.presentation.organizer.formatting.TimeBlockFormatter
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
+import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
+import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.utility.mapIndexedToImmutableList
 
