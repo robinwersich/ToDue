@@ -3,21 +3,28 @@ package com.robinwersich.todue.ui.presentation.organizer.state
 import androidx.compose.foundation.gestures.snapTo
 import androidx.compose.ui.unit.IntSize
 import com.google.common.truth.Truth.assertThat
+import java.time.LocalDate
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.runBlocking
+import org.junit.Test
 import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.Month
 import com.robinwersich.todue.domain.model.TimeUnit
 import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.Week
-import java.time.LocalDate
-import kotlinx.coroutines.runBlocking
-import org.junit.Test
+
+private val defaultTimelines =
+  persistentListOf(
+    Timeline(0, TimeUnit.DAY),
+    Timeline(1, TimeUnit.WEEK),
+    Timeline(2, TimeUnit.MONTH),
+  )
 
 class NavigationStateTest {
   private fun navigationState(
-    timelines: Collection<Timeline> =
-      listOf(TimeUnit.DAY, TimeUnit.WEEK, TimeUnit.MONTH).map { Timeline(it) },
-    initialTimeline: Timeline = timelines.first(),
+    timelines: Collection<Timeline> = defaultTimelines,
+    initialTimeline: Timeline = defaultTimelines.first(),
     initialDate: LocalDate = LocalDate.now(),
   ) =
     NavigationState(
@@ -31,24 +38,21 @@ class NavigationStateTest {
   fun initially_activeTimelineBlocksAreCorrect() {
     val initialWeek = Week()
     val state =
-      navigationState(initialTimeline = Timeline(TimeUnit.WEEK), initialDate = initialWeek.start)
-    assertThat(state.activeTimelineBlocks)
-      .containsExactly(TimelineBlock(Timeline(TimeUnit.WEEK), initialWeek))
+      navigationState(initialTimeline = defaultTimelines[1], initialDate = initialWeek.start)
+    assertThat(state.activeTimelineBlocks).containsExactly(TimelineBlock(1, initialWeek))
   }
 
   @Test
   fun whenScrollingTimelines_activeTimelineBlocksAreCorrect() {
     val initialWeek = Week()
     val state =
-      navigationState(initialTimeline = Timeline(TimeUnit.WEEK), initialDate = initialWeek.start)
+      navigationState(initialTimeline = defaultTimelines[1], initialDate = initialWeek.start)
     runBlocking { with(state.timelineDraggableState) { anchoredDrag { dragTo(offset - 10f) } } }
     assertThat(state.activeTimelineBlocks)
       .containsExactlyElementsIn(
         buildList {
-          with(Timeline(TimeUnit.DAY)) {
-            initialWeek.days.forEach { add(TimelineBlock(this, Day(it))) }
-          }
-          add(TimelineBlock(Timeline(TimeUnit.WEEK), initialWeek))
+          initialWeek.days.forEach { add(TimelineBlock(0, Day(it))) }
+          add(TimelineBlock(1, initialWeek))
         }
       )
   }
@@ -57,13 +61,10 @@ class NavigationStateTest {
   fun whenScrollingDates_activeTimelineBlocksAreCorrect() {
     val initialWeek = Week()
     val state =
-      navigationState(initialTimeline = Timeline(TimeUnit.WEEK), initialDate = initialWeek.start)
+      navigationState(initialTimeline = defaultTimelines[1], initialDate = initialWeek.start)
     runBlocking { with(state.dateDraggableState) { anchoredDrag { dragTo(offset + 10f) } } }
     assertThat(state.activeTimelineBlocks)
-      .containsExactly(
-        TimelineBlock(Timeline(TimeUnit.WEEK), initialWeek),
-        TimelineBlock(Timeline(TimeUnit.WEEK), initialWeek + 1),
-      )
+      .containsExactly(TimelineBlock(1, initialWeek), TimelineBlock(1, initialWeek + 1))
   }
 
   @Test
@@ -74,18 +75,14 @@ class NavigationStateTest {
       }
     runBlocking {
       state.timelineDraggableState.snapTo(
-        TimelineNavPosition(timeline = Timeline(TimeUnit.MONTH), child = Timeline(TimeUnit.WEEK))
+        TimelineNavPosition(timeline = defaultTimelines[2], child = defaultTimelines[1])
       )
     }
     assertThat(state.activeTimelineBlocks)
       .containsExactlyElementsIn(
         buildList {
-          with(Timeline(TimeUnit.WEEK)) {
-            (Week(2019, 52)..Week(2020, 6)).forEach { add(TimelineBlock(this, it)) }
-          }
-          with(Timeline(TimeUnit.MONTH)) {
-            (Month(2019, 12)..Month(2020, 2)).forEach { add(TimelineBlock(this, it)) }
-          }
+          (Week(2019, 52)..Week(2020, 6)).forEach { add(TimelineBlock(1, it)) }
+          (Month(2019, 12)..Month(2020, 2)).forEach { add(TimelineBlock(2, it)) }
         }
       )
   }
@@ -95,11 +92,11 @@ class NavigationStateTest {
     val state = navigationState()
     runBlocking {
       state.timelineDraggableState.snapTo(
-        TimelineNavPosition(timeline = Timeline(TimeUnit.MONTH), child = Timeline(TimeUnit.WEEK))
+        TimelineNavPosition(timeline = defaultTimelines[2], child = defaultTimelines[1])
       )
     }
     val activeTimelineBlocksBefore = state.activeTimelineBlocks
-    state.setTimelines(listOf(Timeline(TimeUnit.WEEK), Timeline(TimeUnit.MONTH)))
+    state.setTimelines(listOf(defaultTimelines[1], defaultTimelines[2]))
     val activeTimelineBlocksAfter = state.activeTimelineBlocks
     assertThat(activeTimelineBlocksAfter).isEqualTo(activeTimelineBlocksBefore)
   }
@@ -107,10 +104,8 @@ class NavigationStateTest {
   @Test
   fun whenSettingNewTimelinesNotIncludingCurrentlyShown_activeTimelineBlocksSnapToAdapt() {
     val initialDate = LocalDate.of(2020, 1, 1)
-    val state =
-      navigationState(initialTimeline = Timeline(TimeUnit.WEEK), initialDate = initialDate)
-    state.setTimelines(listOf(Timeline(TimeUnit.DAY)))
-    assertThat(state.activeTimelineBlocks)
-      .containsExactly(TimelineBlock(Timeline(TimeUnit.DAY), Day(initialDate)))
+    val state = navigationState(initialTimeline = defaultTimelines[1], initialDate = initialDate)
+    state.setTimelines(listOf(defaultTimelines[0]))
+    assertThat(state.activeTimelineBlocks).containsExactly(TimelineBlock(0, Day(initialDate)))
   }
 }

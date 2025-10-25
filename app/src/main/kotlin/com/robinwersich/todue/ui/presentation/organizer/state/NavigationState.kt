@@ -53,7 +53,7 @@ import com.robinwersich.todue.utility.union
 //  https://issuetracker.google.com/issues/448407163 is fixed
 @Stable
 class NavigationState(
-  timelines: Collection<Timeline> = listOf(Timeline(timeUnit = TimeUnit.DAY)),
+  timelines: Collection<Timeline> = listOf(Timeline(0, TimeUnit.DAY)),
   val childTimelineSizeRatio: Float = 0.3f,
   positionalThreshold: (totalDistance: Float) -> Float = { it * 0.3f },
   velocityThreshold: () -> Float = { 500f },
@@ -71,7 +71,7 @@ class NavigationState(
   }
 
   /** The ordered list of possible [Timeline]s to navigate through. */
-  private var timelines = timelines.sortedBy { it.blockSize }
+  private var timelines = timelines.sorted()
 
   /** The [AnchoredDraggableState] controlling the time navigation. */
   val dateDraggableState =
@@ -129,7 +129,7 @@ class NavigationState(
 
   fun setTimelines(timelines: Collection<Timeline>) {
     assert(timelines.isNotEmpty()) { "Timelines cannot be empty." }
-    this.timelines = timelines.sortedBy { it.blockSize }
+    this.timelines = timelines.sorted()
     updateTimelineAnchors(
       newCenter =
         if (this.timelines.containsAll(currentTimelineNavPos.visibleTimelines.toList())) {
@@ -402,12 +402,12 @@ class NavigationState(
       prevPos.dateRange.applyMargin(relativeTopMargin, relativeBottomMargin) union
         nextPos.dateRange.applyMargin(relativeTopMargin, relativeBottomMargin)
     buildImmutableList {
-        activeTimelines.forEach { timeline ->
-          val firstBlock = timeline.timeBlockFrom(activeDateRange.start)
-          val lastBlock = timeline.timeBlockFrom(activeDateRange.endInclusive)
-          (firstBlock..lastBlock).forEach { add(TimelineBlock(timeline, it)) }
-        }
+      activeTimelines.forEach { timeline ->
+        val firstBlock = timeline.timeBlockFrom(activeDateRange.start)
+        val lastBlock = timeline.timeBlockFrom(activeDateRange.endInclusive)
+        (firstBlock..lastBlock).forEach { add(TimelineBlock(timeline, it)) }
       }
+    }
   }
 }
 

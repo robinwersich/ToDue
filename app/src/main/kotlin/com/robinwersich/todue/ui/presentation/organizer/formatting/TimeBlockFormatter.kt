@@ -4,7 +4,11 @@ import android.content.res.Resources
 import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import org.threeten.extra.YearWeek
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.DateRange
 import com.robinwersich.todue.domain.model.Day
@@ -13,9 +17,6 @@ import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimeUnit
 import com.robinwersich.todue.domain.model.TimeUnitInstanceSequence
 import com.robinwersich.todue.domain.model.Week
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import org.threeten.extra.YearWeek
 
 /**
  * Provides an up-to-date [TimeBlockFormatter] based on the current locale and the given options.
@@ -23,7 +24,7 @@ import org.threeten.extra.YearWeek
 @Composable
 fun rememberTimeBlockFormatter(): TimeBlockFormatter {
   val resources = LocalContext.current.resources
-  val languageTag = resources.configuration.locales[0].toLanguageTag()
+  val languageTag = LocalConfiguration.current.locales[0].toLanguageTag()
   // TODO: with strong skipping, it might be possible to use resources as key directly
   return remember(languageTag) { TimeBlockFormatter(resources) }
 }
