@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.roundToIntSize
 import androidx.compose.ui.util.lerp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.TimelineBlock
@@ -47,8 +49,6 @@ import com.robinwersich.todue.ui.presentation.organizer.state.NavigationPosition
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.presentation.organizer.state.TimelineStyle
 import com.robinwersich.todue.ui.presentation.organizer.state.timelineStyle
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 /**
  * A 2-dimensional navigation component that allows the user to navigate through [TimelineBlock]s on
@@ -123,7 +123,7 @@ private fun TaskBlocks(
     key(timelineBlock) {
       TaskBlock(
         navigationState = navigationState,
-        timeBlock = timelineBlock.timeBlock,
+        timeBlock = timelineBlock.section,
         timeline = timelineBlock.timeline,
         navigationAnimationScope = navigationAnimationScope,
         label = { padding -> taskBlockLabel(timelineBlock, padding) },

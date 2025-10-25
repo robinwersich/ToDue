@@ -43,7 +43,7 @@ fun OrganizerScreen(
       contentPadding = scaffoldPadding,
       taskBlockLabel = { timelineBlock, padding ->
         TaskBlockLabel(
-          timeBlock = timelineBlock.timeBlock,
+          timeBlock = timelineBlock.section,
           formatter = formatter,
           modifier = Modifier.padding(padding),
         )
@@ -51,7 +51,7 @@ fun OrganizerScreen(
       taskBlockContent = { timelineBlock, padding ->
         TaskBlockContent(
           tasks = getTasks(timelineBlock),
-          timeBlock = timelineBlock.timeBlock,
+          timeBlock = timelineBlock.section,
           formatter = formatter,
           modifier = Modifier.padding(padding),
         )
