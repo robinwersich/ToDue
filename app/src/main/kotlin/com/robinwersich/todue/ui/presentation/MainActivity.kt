@@ -9,6 +9,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerScreen
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerViewModel
 import com.robinwersich.todue.ui.theme.ToDueTheme
+import kotlinx.collections.immutable.persistentListOf
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -17,8 +18,10 @@ class MainActivity : ComponentActivity() {
     setContent {
       ToDueTheme {
         val viewModel: OrganizerViewModel = viewModel(factory = OrganizerViewModel.Factory)
-        val state by viewModel.viewState.collectAsState()
-        OrganizerScreen(state = state, onEvent = viewModel::handleEvent)
+        OrganizerScreen(
+          navigationState = viewModel.navigationState,
+          onEvent = viewModel::handleEvent,
+        )
       }
     }
   }

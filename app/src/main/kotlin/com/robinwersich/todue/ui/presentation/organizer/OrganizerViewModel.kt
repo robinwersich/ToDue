@@ -6,25 +6,33 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.Task
+import com.robinwersich.todue.domain.model.TimeUnit
+import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.repository.TaskRepository
 import com.robinwersich.todue.toDueApplication
+import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import java.time.Duration
 import java.time.LocalDate
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class OrganizerViewModel(
-  private val taskRepository: TaskRepository,
-) : ViewModel() {
+class OrganizerViewModel(private val taskRepository: TaskRepository) : ViewModel() {
+  val navigationState =
+    NavigationState(
+      timelines =
+        persistentListOf(Timeline(TimeUnit.DAY), Timeline(TimeUnit.WEEK), Timeline(TimeUnit.MONTH))
+    )
+
+  init {
+    viewModelScope.launch { navigationState.updateTimelineAnchorsOnSwipe() }
+    viewModelScope.launch { navigationState.updateDateAnchorsOnSwipe() }
+  }
+
   private val focussedTaskIdFlow = MutableStateFlow<Long?>(null)
 
   private val taskList: Flow<ImmutableList<TaskViewState>> =
@@ -42,20 +50,11 @@ class OrganizerViewModel(
                 null -> FocusLevel.NEUTRAL
                 task.id -> FocusLevel.FOCUSSED
                 else -> FocusLevel.BACKGROUND
-              }
+              },
           )
         }
         .toImmutableList()
     }
-
-  val viewState: StateFlow<OrganizerState> =
-    taskList
-      .map { OrganizerState(tasks = it) }
-      .stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = OrganizerState()
-      )
 
   fun handleEvent(event: OrganizerEvent) {
     when (event) {
@@ -67,7 +66,7 @@ class OrganizerViewModel(
                 text = "",
                 scheduledTimeBlock = Day(),
                 estimatedDuration = Duration.ofHours(1),
-                dueDate = LocalDate.now()
+                dueDate = LocalDate.now(),
               )
             )
         }
@@ -98,7 +97,9 @@ class OrganizerViewModel(
 
   companion object {
     val Factory = viewModelFactory {
-      initializer { OrganizerViewModel(toDueApplication().container.tasksRepository) }
+      initializer {
+        with(toDueApplication().container) { OrganizerViewModel(taskRepository = tasksRepository) }
+      }
     }
   }
 }
