@@ -10,11 +10,14 @@ import androidx.room.TypeConverters
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.robinwersich.todue.data.entity.TaskEntity
 import com.robinwersich.todue.data.entity.TimelineEntity
+import com.robinwersich.todue.domain.model.TimeUnit
 
 @Database(entities = [TaskEntity::class, TimelineEntity::class], version = 4, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class ToDueDatabase : RoomDatabase() {
   abstract fun todoDao(): TaskDao
+
+  abstract fun timelineDao(): TimelineDao
 
   companion object {
     @Volatile private var Instance: ToDueDatabase? = null
@@ -34,10 +37,12 @@ abstract class ToDueDatabase : RoomDatabase() {
 private object CreateInitialTimelines : RoomDatabase.Callback() {
   override fun onCreate(db: SupportSQLiteDatabase) {
     super.onCreate(db)
-    db.insert(
-      "timeline",
-      SQLiteDatabase.CONFLICT_ABORT,
-      ContentValues().apply { put("time_block_unit", "DAY") }
-    )
+    listOf(TimeUnit.DAY, TimeUnit.WEEK, TimeUnit.MONTH).forEach {
+      db.insert(
+        "timeline",
+        SQLiteDatabase.CONFLICT_ABORT,
+        ContentValues().apply { put("time_block_unit", it.name) },
+      )
+    }
   }
 }
