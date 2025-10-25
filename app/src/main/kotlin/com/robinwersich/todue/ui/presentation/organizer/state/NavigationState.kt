@@ -16,10 +16,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.IntSize
+import java.time.LocalDate
+import kotlin.math.ceil
+import kotlinx.collections.immutable.ImmutableList
 import com.robinwersich.todue.domain.model.DateRange
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimeUnit
 import com.robinwersich.todue.domain.model.Timeline
+import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.center
 import com.robinwersich.todue.domain.model.rangeTo
 import com.robinwersich.todue.domain.model.size
@@ -30,16 +34,12 @@ import com.robinwersich.todue.ui.composeextensions.instantStop
 import com.robinwersich.todue.ui.composeextensions.isSettled
 import com.robinwersich.todue.ui.composeextensions.offsetToCurrent
 import com.robinwersich.todue.ui.composeextensions.pairReferentialEqualityPolicy
+import com.robinwersich.todue.utility.buildImmutableList
 import com.robinwersich.todue.utility.center
 import com.robinwersich.todue.utility.intersection
-import com.robinwersich.todue.utility.mapToImmutableList
 import com.robinwersich.todue.utility.size
 import com.robinwersich.todue.utility.toImmutableList
 import com.robinwersich.todue.utility.union
-import java.time.LocalDate
-import kotlin.math.ceil
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 
 /**
  * Holds information about the current navigation position of the organizer. This is mainly defined
@@ -392,21 +392,22 @@ class NavigationState(
    * The [Timeline]s and corresponding [TimeBlock]s that are visible currently or at some point in
    * the current [NavigationPosition] transition.
    */
-  val activeTimelineBlocks:
-    ImmutableList<Pair<Timeline, ImmutableList<TimeBlock>>> by derivedStateOf {
+  val activeTimelineBlocks: ImmutableList<TimelineBlock> by derivedStateOf {
     val (prevPos, nextPos) = navPosTransition.transitionStates()
-    val activeTimelines = buildList {
-      prevPos.timelineNavPos.visibleTimelines.forEach { add(it) }
-      nextPos.timelineNavPos.visibleTimelines.forEach { if (it !in this) add(it) }
+    val activeTimelines = buildSet {
+      addAll(prevPos.timelineNavPos.visibleTimelines)
+      addAll(nextPos.timelineNavPos.visibleTimelines)
     }
     val activeDateRange =
       prevPos.dateRange.applyMargin(relativeTopMargin, relativeBottomMargin) union
         nextPos.dateRange.applyMargin(relativeTopMargin, relativeBottomMargin)
-    activeTimelines.mapToImmutableList { timeline ->
-      val firstBlock = timeline.timeBlockFrom(activeDateRange.start)
-      val lastBlock = timeline.timeBlockFrom(activeDateRange.endInclusive)
-      timeline to (firstBlock..lastBlock).toImmutableList()
-    }
+    buildImmutableList {
+        activeTimelines.forEach { timeline ->
+          val firstBlock = timeline.timeBlockFrom(activeDateRange.start)
+          val lastBlock = timeline.timeBlockFrom(activeDateRange.endInclusive)
+          (firstBlock..lastBlock).forEach { add(TimelineBlock(timeline, it)) }
+        }
+      }
   }
 }
 

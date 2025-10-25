@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.roundToIntSize
 import androidx.compose.ui.util.lerp
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
+import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.daysUntil
 import com.robinwersich.todue.domain.model.size
 import com.robinwersich.todue.ui.composeextensions.PaddedRoundedCornerShape
@@ -51,25 +52,25 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 /**
- * A 2-dimensional navigation component that allows the user to navigate through [TimeBlock]s on a
- * time axis (vertical) and a granularity axis (horizontal). To be able to drag tasks between
- * [TimeBlock]s, there is a navigation state which shows a parent [TimeBlock] together with all its
- * children from the next smaller granularity level.
+ * A 2-dimensional navigation component that allows the user to navigate through [TimelineBlock]s on
+ * a time axis (vertical) and a granularity axis (horizontal). To be able to drag tasks between
+ * [TimelineBlock]s, there is a navigation state which shows a parent [TimelineBlock] together with
+ * all its children from the next smaller granularity level.
  *
  * @param navigationState The [NavigationState] containing info about layout and current position.
  * @param modifier The modifier to apply to this layout.
  * @param contentPadding Padding that should be applied to the focussed area, while still drawing
  *   content within the full bounds.
- * @param taskBlockLabel The label content to display for a [TimeBlock] in preview mode.
- * @param taskBlockContent The content to display for a [TimeBlock] in expanded mode.
+ * @param taskBlockLabel The label content to display for a [TimelineBlock] in preview mode.
+ * @param taskBlockContent The content to display for a [TimelineBlock] in expanded mode.
  */
 @Composable
 fun OrganizerNavigation(
   navigationState: NavigationState,
   modifier: Modifier = Modifier,
   contentPadding: PaddingValues = PaddingValues(0.dp),
-  taskBlockLabel: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
-  taskBlockContent: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
+  taskBlockLabel: @Composable (TimelineBlock, PaddingValues) -> Unit,
+  taskBlockContent: @Composable (TimelineBlock, PaddingValues) -> Unit,
 ) {
   val backgroundColor = MaterialTheme.colorScheme.surface
   val density = LocalDensity.current
@@ -118,23 +119,21 @@ fun OrganizerNavigation(
 @Composable
 private fun TaskBlocks(
   navigationState: NavigationState,
-  taskBlockLabel: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
-  taskBlockContent: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
+  taskBlockLabel: @Composable (TimelineBlock, PaddingValues) -> Unit,
+  taskBlockContent: @Composable (TimelineBlock, PaddingValues) -> Unit,
 ) {
   val navigationAnimationScope = rememberCoroutineScope()
 
-  for ((timeline, timeBlocks) in navigationState.activeTimelineBlocks) {
-    for (timeBlock in timeBlocks) {
-      key(timeline, timeBlock) {
-        TaskBlock(
-          navigationState = navigationState,
-          timeBlock = timeBlock,
-          timeline = timeline,
-          navigationAnimationScope = navigationAnimationScope,
-          label = { padding -> taskBlockLabel(timeline, timeBlock, padding) },
-          content = { padding -> taskBlockContent(timeline, timeBlock, padding) },
-        )
-      }
+  for (timelineBlock in navigationState.activeTimelineBlocks) {
+    key(timelineBlock) {
+      TaskBlock(
+        navigationState = navigationState,
+        timeBlock = timelineBlock.timeBlock,
+        timeline = timelineBlock.timeline,
+        navigationAnimationScope = navigationAnimationScope,
+        label = { padding -> taskBlockLabel(timelineBlock, padding) },
+        content = { padding -> taskBlockContent(timelineBlock, padding) },
+      )
     }
   }
 }

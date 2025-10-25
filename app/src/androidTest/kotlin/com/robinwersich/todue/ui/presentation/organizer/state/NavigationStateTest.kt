@@ -7,10 +7,9 @@ import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.Month
 import com.robinwersich.todue.domain.model.TimeUnit
 import com.robinwersich.todue.domain.model.Timeline
+import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.Week
 import java.time.LocalDate
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.runBlocking
 import org.junit.Test
 
@@ -34,7 +33,7 @@ class NavigationStateTest {
     val state =
       navigationState(initialTimeline = Timeline(TimeUnit.WEEK), initialDate = initialWeek.start)
     assertThat(state.activeTimelineBlocks)
-      .containsExactly(Timeline(TimeUnit.WEEK) to persistentListOf(initialWeek))
+      .containsExactly(TimelineBlock(Timeline(TimeUnit.WEEK), initialWeek))
   }
 
   @Test
@@ -44,9 +43,13 @@ class NavigationStateTest {
       navigationState(initialTimeline = Timeline(TimeUnit.WEEK), initialDate = initialWeek.start)
     runBlocking { with(state.timelineDraggableState) { anchoredDrag { dragTo(offset - 10f) } } }
     assertThat(state.activeTimelineBlocks)
-      .containsExactly(
-        Timeline(TimeUnit.DAY) to initialWeek.days.map(::Day).toImmutableList(),
-        Timeline(TimeUnit.WEEK) to persistentListOf(initialWeek),
+      .containsExactlyElementsIn(
+        buildList {
+          with(Timeline(TimeUnit.DAY)) {
+            initialWeek.days.forEach { add(TimelineBlock(this, Day(it))) }
+          }
+          add(TimelineBlock(Timeline(TimeUnit.WEEK), initialWeek))
+        }
       )
   }
 
@@ -57,7 +60,10 @@ class NavigationStateTest {
       navigationState(initialTimeline = Timeline(TimeUnit.WEEK), initialDate = initialWeek.start)
     runBlocking { with(state.dateDraggableState) { anchoredDrag { dragTo(offset + 10f) } } }
     assertThat(state.activeTimelineBlocks)
-      .containsExactly(Timeline(TimeUnit.WEEK) to persistentListOf(initialWeek, initialWeek + 1))
+      .containsExactly(
+        TimelineBlock(Timeline(TimeUnit.WEEK), initialWeek),
+        TimelineBlock(Timeline(TimeUnit.WEEK), initialWeek + 1),
+      )
   }
 
   @Test
@@ -72,9 +78,15 @@ class NavigationStateTest {
       )
     }
     assertThat(state.activeTimelineBlocks)
-      .containsExactly(
-        Timeline(TimeUnit.WEEK) to (Week(2019, 52)..Week(2020, 6)).toImmutableList(),
-        Timeline(TimeUnit.MONTH) to (Month(2019, 12)..Month(2020, 2)).toImmutableList(),
+      .containsExactlyElementsIn(
+        buildList {
+          with(Timeline(TimeUnit.WEEK)) {
+            (Week(2019, 52)..Week(2020, 6)).forEach { add(TimelineBlock(this, it)) }
+          }
+          with(Timeline(TimeUnit.MONTH)) {
+            (Month(2019, 12)..Month(2020, 2)).forEach { add(TimelineBlock(this, it)) }
+          }
+        }
       )
   }
 
@@ -99,6 +111,6 @@ class NavigationStateTest {
       navigationState(initialTimeline = Timeline(TimeUnit.WEEK), initialDate = initialDate)
     state.setTimelines(listOf(Timeline(TimeUnit.DAY)))
     assertThat(state.activeTimelineBlocks)
-      .containsExactly(Timeline(TimeUnit.DAY) to persistentListOf(Day(initialDate)))
+      .containsExactly(TimelineBlock(Timeline(TimeUnit.DAY), Day(initialDate)))
   }
 }

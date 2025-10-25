@@ -48,16 +48,16 @@ fun OrganizerScreen(
     OrganizerNavigation(
       navigationState = navigationState,
       contentPadding = scaffoldPadding,
-      taskBlockLabel = { _, timeBlock, padding ->
+      taskBlockLabel = { timelineBlock, padding ->
         TaskBlockLabel(
-          timeBlock = timeBlock,
+          timeBlock = timelineBlock.timeBlock,
           formatter = formatter,
           modifier = Modifier.padding(padding),
         )
       },
-      taskBlockContent = { _, timeBlock, padding ->
+      taskBlockContent = { timelineBlock, padding ->
         TaskBlockContent(
-          timeBlock = timeBlock,
+          timeBlock = timelineBlock.timeBlock,
           formatter = formatter,
           modifier = Modifier.padding(padding),
         )
