@@ -59,10 +59,10 @@ import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.ui.composeextensions.DebouncedUpdate
 import com.robinwersich.todue.ui.composeextensions.modifiers.signedPadding
-import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.ModifyTaskEvent
-import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
+import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
+import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import java.time.LocalDate
 
@@ -74,7 +74,7 @@ fun TaskView(
 ) {
   TaskView(
     text = state.text,
-    timeBlock = state.timeBlock,
+    timeBlock = state.timelineBlock?.section,
     dueDate = state.dueDate,
     doneDate = state.doneDate,
     focusLevel = state.focusLevel,

@@ -3,13 +3,14 @@ package com.robinwersich.todue.ui.presentation
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.persistentMapOf
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerScreen
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerViewModel
 import com.robinwersich.todue.ui.theme.ToDueTheme
-import kotlinx.collections.immutable.persistentListOf
 
 class MainActivity : ComponentActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,9 +19,10 @@ class MainActivity : ComponentActivity() {
     setContent {
       ToDueTheme {
         val viewModel: OrganizerViewModel = viewModel(factory = OrganizerViewModel.Factory)
+        val tasks by viewModel.tasksFlow.collectAsStateWithLifecycle(persistentMapOf())
         OrganizerScreen(
           navigationState = viewModel.navigationState,
-          getTasks = { persistentListOf() },
+          getTasks = { timelineBlock -> tasks.getOrElse(timelineBlock) { persistentListOf() } },
           onEvent = viewModel::handleEvent,
         )
       }

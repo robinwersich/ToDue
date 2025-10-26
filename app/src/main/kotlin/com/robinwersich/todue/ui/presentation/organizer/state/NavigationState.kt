@@ -19,11 +19,13 @@ import androidx.compose.ui.unit.IntSize
 import java.time.LocalDate
 import kotlin.math.ceil
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.coroutines.flow.Flow
 import com.robinwersich.todue.domain.model.DateRange
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimeUnit
 import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.TimelineBlock
+import com.robinwersich.todue.domain.model.TimelineRange
 import com.robinwersich.todue.domain.model.center
 import com.robinwersich.todue.domain.model.rangeTo
 import com.robinwersich.todue.domain.model.size
@@ -39,7 +41,6 @@ import com.robinwersich.todue.utility.buildImmutableList
 import com.robinwersich.todue.utility.center
 import com.robinwersich.todue.utility.intersection
 import com.robinwersich.todue.utility.size
-import com.robinwersich.todue.utility.toImmutableList
 import com.robinwersich.todue.utility.union
 
 /**
@@ -125,7 +126,7 @@ class NavigationState(
     get() = currentTimelineNavPos.timeline
 
   /** The currently focussed [TimeBlock]. */
-  internal val currentTimeBlock: TimeBlock
+  private val currentTimeBlock: TimeBlock
     get() = currentNavPos.timeBlock
 
   /**
@@ -346,18 +347,25 @@ class NavigationState(
     )
   }
 
-  /**
-   * All [Timeline]s and corresponding [DateRange]s of the current [AdjacentNavigationPositions].
-   */
-  val prefetchTimelineDateRanges: ImmutableList<Pair<Timeline, DateRange>> by derivedStateOf {
-    val dateRangesByTimeline = mutableMapOf<Timeline, DateRange>()
+  /** A [Flow] of the currently focussed [TimelineBlock]. */
+  val currentTimelineBlockFlow = snapshotFlow {
+    TimelineBlock(currentTimeline.id, currentTimeBlock)
+  }
+
+  /** A [Flow] of all [TimelineRange]s of the current [AdjacentNavigationPositions]. */
+  val prefetchTimelineRangesFlow: Flow<ImmutableList<TimelineRange>> = snapshotFlow {
+    val dateRangesByTimelineId = mutableMapOf<Long, DateRange>()
     for ((timelineNavPos, _, dateRange) in adjacentNavigationPositions) {
       timelineNavPos.visibleTimelines.forEach { timeline ->
-        val currentRange = dateRangesByTimeline.getOrDefault(timeline, dateRange)
-        dateRangesByTimeline[timeline] = currentRange union dateRange
+        val currentRange = dateRangesByTimelineId.getOrDefault(timeline.id, dateRange)
+        dateRangesByTimelineId[timeline.id] = currentRange union dateRange
       }
     }
-    dateRangesByTimeline.toImmutableList()
+    buildImmutableList {
+      dateRangesByTimelineId.forEach { timeline, dateRange ->
+        add(TimelineRange(timeline, dateRange))
+      }
+    }
   }
 
   /**
