@@ -36,7 +36,6 @@ import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import com.robinwersich.todue.domain.model.TimeBlock
-import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.daysUntil
 import com.robinwersich.todue.domain.model.size
@@ -124,7 +123,7 @@ private fun TaskBlocks(
       TaskBlock(
         navigationState = navigationState,
         timeBlock = timelineBlock.section,
-        timeline = timelineBlock.timeline,
+        timelineId = timelineBlock.timelineId,
         navigationAnimationScope = navigationAnimationScope,
         label = { padding -> taskBlockLabel(timelineBlock, padding) },
         content = { padding -> taskBlockContent(timelineBlock, padding) },
@@ -140,7 +139,7 @@ private val taskBlockCornerRadius = 24.dp
 private fun TaskBlock(
   navigationState: NavigationState,
   timeBlock: TimeBlock,
-  timeline: Timeline,
+  timelineId: Long,
   navigationAnimationScope: CoroutineScope,
   label: @Composable (PaddingValues) -> Unit,
   content: @Composable (PaddingValues) -> Unit,
@@ -150,7 +149,7 @@ private fun TaskBlock(
 
   val displayStateTransition =
     navigationState.navPosTransition.derived(cacheStates = true) {
-      blockDisplayState(timeBlock, timeline, it, navigationState.childTimelineSizeRatio)
+      blockDisplayState(timeBlock, timelineId, it, navigationState.childTimelineSizeRatio)
     }
 
   // size for measuring shouldn't change when the block is entering/exiting the screen to
@@ -219,11 +218,11 @@ private data class TaskBlockDisplayState(
 
 private fun blockDisplayState(
   timeBlock: TimeBlock,
-  timeline: Timeline,
+  timelineId: Long,
   navPos: NavigationPosition,
   childTimelineSizeRatio: Float,
 ): TaskBlockDisplayState {
-  val timelineStyle = timelineStyle(timeline, navPos.timelineNavPos)
+  val timelineStyle = timelineStyle(timelineId, navPos.timelineNavPos)
   return TaskBlockDisplayState(
     timelineStyle = timelineStyle,
     isFocussed = timeBlock == navPos.timeBlock,

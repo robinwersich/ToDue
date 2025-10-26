@@ -34,6 +34,7 @@ import com.robinwersich.todue.ui.composeextensions.instantStop
 import com.robinwersich.todue.ui.composeextensions.isSettled
 import com.robinwersich.todue.ui.composeextensions.offsetToCurrent
 import com.robinwersich.todue.ui.composeextensions.pairReferentialEqualityPolicy
+import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState.Companion.defaultTimeline
 import com.robinwersich.todue.utility.buildImmutableList
 import com.robinwersich.todue.utility.center
 import com.robinwersich.todue.utility.intersection
@@ -53,7 +54,7 @@ import com.robinwersich.todue.utility.union
 //  https://issuetracker.google.com/issues/448407163 is fixed
 @Stable
 class NavigationState(
-  timelines: Collection<Timeline> = listOf(Timeline(0, TimeUnit.DAY)),
+  timelines: Collection<Timeline> = listOf(defaultTimeline),
   val childTimelineSizeRatio: Float = 0.3f,
   positionalThreshold: (totalDistance: Float) -> Float = { it * 0.3f },
   velocityThreshold: () -> Float = { 500f },
@@ -66,12 +67,12 @@ class NavigationState(
   initialTimeline: Timeline = timelines.first(),
   initialDate: LocalDate = LocalDate.now(),
 ) {
-  init {
-    assert(timelines.isNotEmpty()) { "Timelines cannot be empty." }
+  companion object {
+    val defaultTimeline = Timeline(0, TimeUnit.DAY)
   }
 
   /** The ordered list of possible [Timeline]s to navigate through. */
-  private var timelines = timelines.sorted()
+  private var timelines = if (timelines.isEmpty()) listOf(defaultTimeline) else timelines.sorted()
 
   /** The [AnchoredDraggableState] controlling the time navigation. */
   val dateDraggableState =
@@ -127,9 +128,12 @@ class NavigationState(
   internal val currentTimeBlock: TimeBlock
     get() = currentNavPos.timeBlock
 
+  /**
+   * @param timelines Non-empty list of timelines to navigate through. Will be sorted by their ID.
+   *   If an empty collection is given, the [defaultTimeline] will be set to avoid exceptions.
+   */
   fun setTimelines(timelines: Collection<Timeline>) {
-    assert(timelines.isNotEmpty()) { "Timelines cannot be empty." }
-    this.timelines = timelines.sorted()
+    this.timelines = if (timelines.isEmpty()) listOf(defaultTimeline) else timelines.sorted()
     updateTimelineAnchors(
       newCenter =
         if (this.timelines.containsAll(currentTimelineNavPos.visibleTimelines.toList())) {
@@ -405,7 +409,7 @@ class NavigationState(
       activeTimelines.forEach { timeline ->
         val firstBlock = timeline.timeBlockFrom(activeDateRange.start)
         val lastBlock = timeline.timeBlockFrom(activeDateRange.endInclusive)
-        (firstBlock..lastBlock).forEach { add(TimelineBlock(timeline, it)) }
+        (firstBlock..lastBlock).forEach { add(TimelineBlock(timeline.id, it)) }
       }
     }
   }

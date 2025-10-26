@@ -1,9 +1,12 @@
 package com.robinwersich.todue.data.database
 
-import androidx.room.*
-import com.robinwersich.todue.data.entity.TaskEntity
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.Query
+import androidx.room.Update
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
+import com.robinwersich.todue.data.entity.TaskEntity
 
 @Dao
 interface TaskDao {
@@ -15,8 +18,10 @@ interface TaskDao {
 
   @Query("UPDATE todo SET text = :text WHERE id = :id") suspend fun setText(id: Long, text: String)
 
-  @Query("UPDATE todo SET scheduled_start = :startDate, scheduled_end = :endDate WHERE id = :id")
-  suspend fun setScheduledRange(id: Long, startDate: LocalDate, endDate: LocalDate)
+  @Query(
+    "UPDATE todo SET scheduled_start = :startDate, scheduled_end_inclusive = :endDateInclusive WHERE id = :id"
+  )
+  suspend fun setScheduledRange(id: Long, startDate: LocalDate, endDateInclusive: LocalDate)
 
   @Query("UPDATE todo SET due_date = :date WHERE id = :id")
   suspend fun setDueDate(id: Long, date: LocalDate)

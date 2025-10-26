@@ -12,7 +12,7 @@ import com.robinwersich.todue.data.entity.TaskEntity
 import com.robinwersich.todue.data.entity.TimelineEntity
 import com.robinwersich.todue.domain.model.TimeUnit
 
-@Database(entities = [TaskEntity::class, TimelineEntity::class], version = 4, exportSchema = false)
+@Database(entities = [TaskEntity::class, TimelineEntity::class], version = 5, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class ToDueDatabase : RoomDatabase() {
   abstract fun todoDao(): TaskDao
@@ -26,7 +26,7 @@ abstract class ToDueDatabase : RoomDatabase() {
       Instance
         ?: synchronized(this) {
           Room.databaseBuilder(context, ToDueDatabase::class.java, "ToDue.db")
-            .fallbackToDestructiveMigration(false)
+            .fallbackToDestructiveMigration(true)
             .addCallback(CreateInitialTimelines)
             .build()
             .also { Instance = it }
