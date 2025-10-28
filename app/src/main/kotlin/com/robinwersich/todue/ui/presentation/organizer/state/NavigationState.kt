@@ -109,25 +109,27 @@ class NavigationState(
    */
   private var relativeBottomMargin: Float by mutableFloatStateOf(0f)
 
-  /** The current [TimelineNavPosition] of the organizer. */
-  private val currentTimelineNavPos: TimelineNavPosition
+  val currentTimelineNavPos: TimelineNavPosition
     get() = timelineDraggableState.currentValue
 
   /** The focussed date of the organizer from which the current [TimeBlock] is derived. */
-  private val currentDate: LocalDate
+  val currentDate: LocalDate
     get() = dateDraggableState.currentValue
 
-  /** The current [NavigationPosition] of the organizer. */
-  private val currentNavPos: NavigationPosition
+  val currentNavPos: NavigationPosition
     get() = adjacentNavigationPositions.current
 
-  /** The currently focussed [Timeline]. */
-  private val currentTimeline: Timeline
+  val currentTimeline: Timeline
     get() = currentTimelineNavPos.timeline
 
-  /** The currently focussed [TimeBlock]. */
-  private val currentTimeBlock: TimeBlock
+  val currentTimeBlock: TimeBlock
     get() = currentNavPos.timeBlock
+
+  val currentTimelineBlock: TimelineBlock
+    get() = TimelineBlock(currentTimeline.id, currentTimeBlock)
+
+  val isSplitView: Boolean
+    get() = currentTimelineNavPos.showChild
 
   /**
    * @param timelines Non-empty list of timelines to navigate through. Will be sorted by their ID.
@@ -309,6 +311,10 @@ class NavigationState(
     return false
   }
 
+  suspend fun animateToParent() {
+    timelineDraggableState.animateTo(TimelineNavPosition(currentTimeline))
+  }
+
   /**
    * Describes the current [NavigationPosition] and the ones reachable from there. If the current
    * position the first or last, the previous or next position will be the same as the current one.
@@ -347,10 +353,9 @@ class NavigationState(
     )
   }
 
-  /** A [Flow] of the currently focussed [TimelineBlock]. */
-  val currentTimelineBlockFlow = snapshotFlow {
-    TimelineBlock(currentTimeline.id, currentTimeBlock)
-  }
+  val currentNavPosFlow = snapshotFlow { currentNavPos }
+
+  val currentTimelineBlockFlow = snapshotFlow { currentTimelineBlock }
 
   /** A [Flow] of all [TimelineRange]s of the current [AdjacentNavigationPositions]. */
   val prefetchTimelineRangesFlow: Flow<ImmutableList<TimelineRange>> = snapshotFlow {

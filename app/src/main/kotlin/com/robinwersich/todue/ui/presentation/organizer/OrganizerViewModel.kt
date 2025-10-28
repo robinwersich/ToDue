@@ -15,10 +15,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
-import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TimelineBlock
-import com.robinwersich.todue.domain.model.TimelineRange
 import com.robinwersich.todue.domain.repository.TaskRepository
 import com.robinwersich.todue.domain.repository.TimeBlockRepository
 import com.robinwersich.todue.toDueApplication
@@ -34,19 +32,24 @@ class OrganizerViewModel(
 ) : ViewModel() {
   val navigationState = NavigationState()
   private val timelinesFlow = timeBlockRepository.getTimelines()
+  private val taskFocusFlow = MutableStateFlow<TaskFocus?>(null)
 
   init {
     viewModelScope.launch { timelinesFlow.collect { navigationState.setTimelines(it) } }
     viewModelScope.launch { navigationState.updateTimelineAnchorsOnSwipe() }
     viewModelScope.launch { navigationState.updateDateAnchorsOnSwipe() }
+    viewModelScope.launch {
+      navigationState.currentNavPosFlow.collect { handleEvent(CollapseTasks) }
+    }
   }
 
-  private val focussedTaskIdFlow = MutableStateFlow<Long?>(null)
   private val activeTaskBlockFlow =
     navigationState.currentTimelineBlockFlow.flatMapLatest { taskRepository.getTaskBlockFlow(it) }
+  //  private val prefetchedTasksFlow =
+  //    navigationState.prefetchTimelineRangesFlow.map { taskRepository.getTasks(it) }
 
   val tasksFlow: Flow<ImmutableMap<TimelineBlock, ImmutableList<TaskViewState>>> =
-    activeTaskBlockFlow.combine(focussedTaskIdFlow) { taskBlock, focussedTaskId ->
+    combine(activeTaskBlockFlow, taskFocusFlow) { taskBlock, focussedTaskId ->
       persistentMapOf(
         taskBlock.timelineBlock to
           taskBlock.tasks.mapToImmutableList { task ->
@@ -59,7 +62,8 @@ class OrganizerViewModel(
               focusLevel =
                 when (focussedTaskId) {
                   null -> FocusLevel.NEUTRAL
-                  task.id -> FocusLevel.FOCUSSED
+                  TaskFocus(task.id, false) -> FocusLevel.FOCUSSED
+                  TaskFocus(task.id, true) -> FocusLevel.FOCUSSED_REQUEST_KEYBOARD
                   else -> FocusLevel.BACKGROUND
                 },
             )
@@ -71,19 +75,22 @@ class OrganizerViewModel(
     when (event) {
       is AddTask ->
         viewModelScope.launch {
-          focussedTaskIdFlow.value =
+          val newTaskId =
             taskRepository.insertTask(
               Task(
                 text = "",
-                // FIXME
-                scheduledTimelineRange = TimelineRange(1, Day()),
+                scheduledTimelineRange = event.timelineBlock,
                 estimatedDuration = Duration.ofHours(1),
-                dueDate = LocalDate.now(),
+                dueDate = event.timelineBlock.section.endInclusive,
               )
             )
+          taskFocusFlow.value = TaskFocus(newTaskId, requestKeyboard = true)
         }
-      is ExpandTask -> focussedTaskIdFlow.value = event.taskId
-      is CollapseTasks -> focussedTaskIdFlow.value = null
+      is ExpandTask ->
+        if (!navigationState.isSplitView) {
+          taskFocusFlow.value = TaskFocus(event.taskId, requestKeyboard = false)
+        }
+      is CollapseTasks -> taskFocusFlow.value = null
       is ModifyTask -> handleModifyTaskEvent(event.event, event.taskId)
     }
   }
@@ -101,7 +108,7 @@ class OrganizerViewModel(
       is ModifyTaskEvent.SetDueDate ->
         viewModelScope.launch { taskRepository.setDueDate(taskId, event.date) }
       is ModifyTaskEvent.Delete -> {
-        if (focussedTaskIdFlow.value == taskId) focussedTaskIdFlow.value = null
+        if (taskFocusFlow.value?.id == taskId) taskFocusFlow.value = null
         viewModelScope.launch { taskRepository.deleteTask(taskId) }
       }
     }
@@ -120,3 +127,5 @@ class OrganizerViewModel(
     }
   }
 }
+
+private data class TaskFocus(val id: Long, val requestKeyboard: Boolean)

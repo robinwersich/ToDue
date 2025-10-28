@@ -5,9 +5,17 @@ import java.time.LocalDate
 import com.robinwersich.todue.domain.model.TimelineBlock
 
 enum class FocusLevel {
+  /** Collapsed, can be interacted with */
   NEUTRAL,
+  /** Expanded, can be interacted with */
   FOCUSSED,
-  BACKGROUND,
+  /** Expanded and keyboard should be opened */
+  FOCUSSED_REQUEST_KEYBOARD,
+  /** Collapsed, cannot be interacted with (because other task is focussed) */
+  BACKGROUND;
+
+  val isFocussed
+    get() = this == FOCUSSED || this == FOCUSSED_REQUEST_KEYBOARD
 }
 
 @Immutable

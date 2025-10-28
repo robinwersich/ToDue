@@ -12,15 +12,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import kotlinx.collections.immutable.ImmutableList
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Week
+import com.robinwersich.todue.ui.presentation.organizer.OrganizerEvent
 import com.robinwersich.todue.ui.presentation.organizer.formatting.TimeBlockFormatter
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
 import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.utility.mapIndexedToImmutableList
-import kotlinx.collections.immutable.ImmutableList
 
 @Composable
 fun TaskBlockLabel(
@@ -39,6 +40,7 @@ fun TaskBlockContent(
   timeBlock: TimeBlock,
   formatter: TimeBlockFormatter,
   modifier: Modifier = Modifier,
+  onEvent: (OrganizerEvent) -> Unit = {},
 ) {
   Column(modifier) {
     Text(
@@ -46,7 +48,7 @@ fun TaskBlockContent(
       style = MaterialTheme.typography.headlineSmall,
       modifier = Modifier.padding(8.dp),
     )
-    tasks.forEach { TaskView(it) }
+    TaskList(tasks, onEvent = onEvent, modifier = Modifier.fillMaxSize())
   }
 }
 

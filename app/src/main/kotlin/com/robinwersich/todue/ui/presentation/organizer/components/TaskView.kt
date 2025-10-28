@@ -32,7 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -93,19 +92,21 @@ fun TaskView(
   modifier: Modifier = Modifier,
 ) {
   val focusRequester = remember { FocusRequester() }
-  // auto focus on create
-  LaunchedEffect(true) { if (focusLevel == FocusLevel.FOCUSSED) focusRequester.requestFocus() }
-
   val focusManager = LocalFocusManager.current
-  // clear focus on collapse
-  if (focusLevel == FocusLevel.FOCUSSED)
-    DisposableEffect(true) { onDispose { focusManager.clearFocus() } }
+  LaunchedEffect(focusLevel) {
+    when (focusLevel) {
+      FocusLevel.FOCUSSED_REQUEST_KEYBOARD -> focusRequester.requestFocus()
+      FocusLevel.NEUTRAL,
+      FocusLevel.BACKGROUND -> focusManager.clearFocus()
+      else -> {}
+    }
+  }
 
   val focusTransition = updateTransition(focusLevel, label = "Focus Level")
 
   val surfaceColor by
     focusTransition.animateColor(label = "Task Color") {
-      if (it == FocusLevel.FOCUSSED) MaterialTheme.colorScheme.surfaceContainerHigh
+      if (it.isFocussed) MaterialTheme.colorScheme.surfaceContainerHigh
       else MaterialTheme.colorScheme.surface
     }
   Surface(shape = RoundedCornerShape(24.dp), color = surfaceColor, modifier = modifier) {
@@ -128,13 +129,13 @@ fun TaskView(
           DebouncedUpdate(
             value = text,
             onValueChanged = { onEvent(ModifyTaskEvent.SetText(it)) },
-            emitUpdates = focusLevel == FocusLevel.FOCUSSED,
+            emitUpdates = focusLevel.isFocussed,
           ) {
             val (cachedText, setCachedText) = it
             BasicTextField(
               value = cachedText,
               onValueChange = setCachedText,
-              enabled = focusLevel == FocusLevel.FOCUSSED,
+              enabled = focusLevel.isFocussed,
               textStyle = textStyle,
               cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
               modifier = Modifier.focusRequester(focusRequester),
@@ -146,7 +147,7 @@ fun TaskView(
 
       val animationAnchor = Alignment.Top
       focusTransition.AnimatedVisibility(
-        visible = { it == FocusLevel.FOCUSSED },
+        visible = { it.isFocussed },
         enter = fadeIn() + expandVertically(expandFrom = animationAnchor),
         exit = fadeOut() + shrinkVertically(shrinkTowards = animationAnchor),
       ) {

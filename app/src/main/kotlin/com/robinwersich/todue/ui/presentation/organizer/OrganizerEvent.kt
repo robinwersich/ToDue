@@ -1,11 +1,12 @@
 package com.robinwersich.todue.ui.presentation.organizer
 
-import com.robinwersich.todue.domain.model.TimeBlock
 import java.time.LocalDate
+import com.robinwersich.todue.domain.model.TimeBlock
+import com.robinwersich.todue.domain.model.TimelineBlock
 
 sealed interface OrganizerEvent
 
-data object AddTask : OrganizerEvent
+data class AddTask(val timelineBlock: TimelineBlock) : OrganizerEvent
 
 data class ExpandTask(val taskId: Long) : OrganizerEvent
 

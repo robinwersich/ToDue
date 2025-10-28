@@ -1,5 +1,8 @@
 package com.robinwersich.todue.ui.presentation.organizer
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
@@ -7,13 +10,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsTopHeight
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.ui.presentation.organizer.components.OrganizerNavigation
 import com.robinwersich.todue.ui.presentation.organizer.components.TaskBlockContent
@@ -33,8 +40,15 @@ fun OrganizerScreen(
   Scaffold(
     modifier = modifier,
     topBar = {
-      val color = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f)
+      val color = MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.5f)
       Box(Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(color))
+    },
+    floatingActionButton = {
+      AnimatedVisibility(!navigationState.isSplitView, enter = scaleIn(), exit = scaleOut()) {
+        FloatingActionButton(onClick = { onEvent(AddTask(navigationState.currentTimelineBlock)) }) {
+          Icon(painter = painterResource(R.drawable.add), contentDescription = null)
+        }
+      }
     },
   ) { scaffoldPadding ->
     val formatter = rememberTimeBlockFormatter()
@@ -53,6 +67,7 @@ fun OrganizerScreen(
           tasks = getTasks(timelineBlock),
           timeBlock = timelineBlock.section,
           formatter = formatter,
+          onEvent = onEvent,
           modifier = Modifier.padding(padding),
         )
       },
