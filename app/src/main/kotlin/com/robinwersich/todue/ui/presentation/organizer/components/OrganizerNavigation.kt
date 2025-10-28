@@ -70,7 +70,7 @@ fun OrganizerNavigation(
   taskBlockLabel: @Composable (TimelineBlock, PaddingValues) -> Unit,
   taskBlockContent: @Composable (TimelineBlock, PaddingValues) -> Unit,
 ) {
-  val backgroundColor = MaterialTheme.colorScheme.surface
+  val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
   val density = LocalDensity.current
 
   val timelineDraggableState = navigationState.timelineDraggableState
@@ -144,7 +144,7 @@ private fun TaskBlock(
   label: @Composable (PaddingValues) -> Unit,
   content: @Composable (PaddingValues) -> Unit,
 ) {
-  val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
+  val backgroundColor = MaterialTheme.colorScheme.surface
   val contentColor = MaterialTheme.colorScheme.onSurface
 
   val displayStateTransition =

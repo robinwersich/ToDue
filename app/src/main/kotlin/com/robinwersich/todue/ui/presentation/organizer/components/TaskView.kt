@@ -44,7 +44,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -54,6 +53,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.TimeBlock
@@ -64,7 +64,6 @@ import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeB
 import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
-import java.time.LocalDate
 
 @Composable
 fun TaskView(
@@ -106,8 +105,8 @@ fun TaskView(
 
   val surfaceColor by
     focusTransition.animateColor(label = "Task Color") {
-      if (it == FocusLevel.FOCUSSED) MaterialTheme.colorScheme.surfaceContainer
-      else Color.Transparent
+      if (it == FocusLevel.FOCUSSED) MaterialTheme.colorScheme.surfaceContainerHigh
+      else MaterialTheme.colorScheme.surface
     }
   Surface(shape = RoundedCornerShape(24.dp), color = surfaceColor, modifier = modifier) {
     val checkBoxWidth = 48.dp
