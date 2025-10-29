@@ -118,7 +118,7 @@ private fun TaskBlocks(
 ) {
   val navigationAnimationScope = rememberCoroutineScope()
 
-  for (timelineBlock in navigationState.activeTimelineBlocks) {
+  for (timelineBlock in navigationState.visibleTimelineBlocks) {
     key(timelineBlock) {
       TaskBlock(
         navigationState = navigationState,

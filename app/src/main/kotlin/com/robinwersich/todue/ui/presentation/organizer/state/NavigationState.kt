@@ -409,19 +409,19 @@ class NavigationState(
    * The [Timeline]s and corresponding [TimeBlock]s that are visible currently or at some point in
    * the current [NavigationPosition] transition.
    */
-  val activeTimelineBlocks: ImmutableList<TimelineBlock> by derivedStateOf {
+  val visibleTimelineBlocks: ImmutableList<TimelineBlock> by derivedStateOf {
     val (prevPos, nextPos) = navPosTransition.transitionStates()
-    val activeTimelines = buildSet {
+    val visibleTimelines = buildSet {
       addAll(prevPos.timelineNavPos.visibleTimelines)
       addAll(nextPos.timelineNavPos.visibleTimelines)
     }
-    val activeDateRange =
+    val visibleDateRange =
       prevPos.dateRange.applyMargin(relativeTopMargin, relativeBottomMargin) union
         nextPos.dateRange.applyMargin(relativeTopMargin, relativeBottomMargin)
     buildImmutableList {
-      activeTimelines.forEach { timeline ->
-        val firstBlock = timeline.timeBlockFrom(activeDateRange.start)
-        val lastBlock = timeline.timeBlockFrom(activeDateRange.endInclusive)
+      visibleTimelines.forEach { timeline ->
+        val firstBlock = timeline.timeBlockFrom(visibleDateRange.start)
+        val lastBlock = timeline.timeBlockFrom(visibleDateRange.endInclusive)
         (firstBlock..lastBlock).forEach { add(TimelineBlock(timeline.id, it)) }
       }
     }
