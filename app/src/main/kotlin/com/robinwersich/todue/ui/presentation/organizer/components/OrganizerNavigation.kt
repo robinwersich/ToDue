@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.roundToIntSize
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.daysUntil
 import com.robinwersich.todue.domain.model.size
@@ -122,8 +121,7 @@ private fun TaskBlocks(
     key(timelineBlock) {
       TaskBlock(
         navigationState = navigationState,
-        timeBlock = timelineBlock.section,
-        timelineId = timelineBlock.timelineId,
+        timelineBlock = timelineBlock,
         navigationAnimationScope = navigationAnimationScope,
         label = { padding -> taskBlockLabel(timelineBlock, padding) },
         content = { padding -> taskBlockContent(timelineBlock, padding) },
@@ -138,8 +136,7 @@ private val taskBlockCornerRadius = 24.dp
 @Composable
 private fun TaskBlock(
   navigationState: NavigationState,
-  timeBlock: TimeBlock,
-  timelineId: Long,
+  timelineBlock: TimelineBlock,
   navigationAnimationScope: CoroutineScope,
   label: @Composable (PaddingValues) -> Unit,
   content: @Composable (PaddingValues) -> Unit,
@@ -149,7 +146,7 @@ private fun TaskBlock(
 
   val displayStateTransition =
     navigationState.navPosTransition.derived(cacheStates = true) {
-      blockDisplayState(timeBlock, timelineId, it, navigationState.childTimelineSizeRatio)
+      blockDisplayState(timelineBlock, it, navigationState.childTimelineSizeRatio)
     }
 
   // size for measuring shouldn't change when the block is entering/exiting the screen to
@@ -186,7 +183,9 @@ private fun TaskBlock(
               enabled = enableChildNavigationClick,
               role = Role.Button,
               onClick = {
-                navigationAnimationScope.launch { navigationState.tryAnimateToChild(timeBlock) }
+                navigationAnimationScope.launch {
+                  navigationState.tryAnimateToChild(timelineBlock.section)
+                }
               },
             )
             .graphicsLayer { alpha = labelAlpha },
@@ -217,15 +216,16 @@ private data class TaskBlockDisplayState(
 )
 
 private fun blockDisplayState(
-  timeBlock: TimeBlock,
-  timelineId: Long,
+  timelineBlock: TimelineBlock,
   navPos: NavigationPosition,
   childTimelineSizeRatio: Float,
 ): TaskBlockDisplayState {
+  val timelineId = timelineBlock.timelineId
+  val timeBlock = timelineBlock.section
   val timelineStyle = timelineStyle(timelineId, navPos.timelineNavPos)
   return TaskBlockDisplayState(
     timelineStyle = timelineStyle,
-    isFocussed = timeBlock == navPos.timeBlock,
+    isFocussed = timelineBlock == navPos.timelineBlock,
     relativeSize =
       Size(
         width =

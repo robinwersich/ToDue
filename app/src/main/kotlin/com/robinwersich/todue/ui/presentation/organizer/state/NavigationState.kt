@@ -126,7 +126,7 @@ class NavigationState(
     get() = currentNavPos.timeBlock
 
   val currentTimelineBlock: TimelineBlock
-    get() = TimelineBlock(currentTimeline.id, currentTimeBlock)
+    get() = currentNavPos.timelineBlock
 
   val isSplitView: Boolean
     get() = currentTimelineNavPos.showChild
