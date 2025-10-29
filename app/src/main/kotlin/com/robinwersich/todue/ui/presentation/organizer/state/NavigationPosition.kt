@@ -1,9 +1,10 @@
 package com.robinwersich.todue.ui.presentation.organizer.state
 
+import java.time.LocalDate
 import com.robinwersich.todue.domain.model.DateRange
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.Timeline
-import java.time.LocalDate
+import com.robinwersich.todue.domain.model.TimelineBlock
 
 /** Describes which timeline(s) should currently be visible. */
 data class TimelineNavPosition(
@@ -36,6 +37,8 @@ data class NavigationPosition(
   /** The time block that is focussed in this navigation position. */
   val timeBlock: TimeBlock,
 ) {
+  /** The timeline block that is focussed in this navigation position */
+  val timelineBlock = TimelineBlock(timelineNavPos.timeline.id, timeBlock)
 
   override fun toString() = "NavigationPosition(timeline=$timelineNavPos, date=$date)"
 }

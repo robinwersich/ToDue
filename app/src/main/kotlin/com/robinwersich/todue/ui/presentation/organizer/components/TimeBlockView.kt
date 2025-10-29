@@ -13,11 +13,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.robinwersich.todue.domain.model.TimeBlock
+import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.Week
-import com.robinwersich.todue.ui.presentation.organizer.FocusLevel
-import com.robinwersich.todue.ui.presentation.organizer.TaskViewState
+import com.robinwersich.todue.ui.presentation.organizer.OrganizerEvent
 import com.robinwersich.todue.ui.presentation.organizer.formatting.TimeBlockFormatter
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
+import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
+import com.robinwersich.todue.ui.presentation.organizer.state.TaskBlockViewState
+import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.utility.mapIndexedToImmutableList
 
@@ -34,28 +37,33 @@ fun TaskBlockLabel(
 
 @Composable
 fun TaskBlockContent(
-  timeBlock: TimeBlock,
+  viewState: TaskBlockViewState,
   formatter: TimeBlockFormatter,
   modifier: Modifier = Modifier,
+  onEvent: (OrganizerEvent) -> Unit = {},
 ) {
-  val tasks =
-    listOf("Task 1", "Task 2", "Task 3").mapIndexedToImmutableList { id, text ->
-      TaskViewState(id = id.toLong(), text = text, focusLevel = FocusLevel.NEUTRAL)
-    }
   Column(modifier) {
     Text(
-      formatter.format(timeBlock),
+      formatter.format(viewState.timeBlock, useNarrowFormatting = false),
       style = MaterialTheme.typography.headlineSmall,
       modifier = Modifier.padding(8.dp),
     )
-    tasks.forEach { TaskView(it) }
+    TaskList(viewState.tasks, onEvent = onEvent, modifier = Modifier.fillMaxSize())
   }
 }
 
 @Preview(showBackground = true)
 @Composable
 fun ExpandedTimeBlockViewPreview() {
+  val tasks =
+    listOf("Task 1", "Task 2", "Task 3").mapIndexedToImmutableList { id, text ->
+      TaskViewState(id = id.toLong(), text = text, focusLevel = FocusLevel.NEUTRAL)
+    }
   ToDueTheme {
-    TaskBlockContent(Week(), rememberTimeBlockFormatter(), modifier = Modifier.fillMaxSize())
+    TaskBlockContent(
+      TaskBlockViewState(TimelineBlock(0, Week()), tasks),
+      rememberTimeBlockFormatter(),
+      modifier = Modifier.fillMaxSize(),
+    )
   }
 }

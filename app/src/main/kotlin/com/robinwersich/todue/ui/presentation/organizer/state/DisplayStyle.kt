@@ -19,15 +19,15 @@ enum class TimelineStyle {
 /**
  * Returns the correct [TimelineStyle] of a [Timeline] based on a [TimelineNavPosition].
  *
- * @param timeline The [Timeline] for which the style should be determined.
+ * @param timelineId The [Timeline.id] for which the style should be determined.
  * @param navPos The [TimelineNavPosition] based on which the style should be determined.
  */
-fun timelineStyle(timeline: Timeline, navPos: TimelineNavPosition) =
+fun timelineStyle(timelineId: Long, navPos: TimelineNavPosition) =
   when {
-    timeline > navPos.timeline -> TimelineStyle.HIDDEN_PARENT
-    timeline == navPos.timeline && navPos.showChild -> TimelineStyle.PARENT
-    timeline == navPos.timeline && !navPos.showChild -> TimelineStyle.FULLSCREEN
-    timeline == navPos.child -> TimelineStyle.CHILD
-    timeline < (navPos.child ?: navPos.timeline) -> TimelineStyle.HIDDEN_CHILD
-    else -> error("Unhandled TimelineStyle case.")
+    timelineId > navPos.timeline.id -> TimelineStyle.HIDDEN_PARENT
+    timelineId == navPos.timeline.id && navPos.showChild -> TimelineStyle.PARENT
+    timelineId == navPos.timeline.id && !navPos.showChild -> TimelineStyle.FULLSCREEN
+    timelineId == navPos.child?.id -> TimelineStyle.CHILD
+    timelineId < (navPos.child ?: navPos.timeline).id -> TimelineStyle.HIDDEN_CHILD
+    else -> error("Unhandled TimelineStyle case. Timeline ID: $timelineId, NavPos: $navPos.")
   }

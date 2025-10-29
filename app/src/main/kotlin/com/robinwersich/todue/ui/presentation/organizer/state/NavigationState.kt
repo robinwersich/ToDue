@@ -2,6 +2,9 @@ package com.robinwersich.todue.ui.presentation.organizer.state
 
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.DecayAnimationSpec
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.animateTo
@@ -13,28 +16,33 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.IntSize
+import java.time.LocalDate
+import kotlin.math.ceil
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.flow.Flow
 import com.robinwersich.todue.domain.model.DateRange
 import com.robinwersich.todue.domain.model.TimeBlock
+import com.robinwersich.todue.domain.model.TimeUnit
 import com.robinwersich.todue.domain.model.Timeline
+import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.center
 import com.robinwersich.todue.domain.model.rangeTo
 import com.robinwersich.todue.domain.model.size
 import com.robinwersich.todue.domain.model.toDoubleRange
 import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
 import com.robinwersich.todue.ui.composeextensions.getAdjacentToCurrentAnchors
+import com.robinwersich.todue.ui.composeextensions.instantStop
 import com.robinwersich.todue.ui.composeextensions.isSettled
 import com.robinwersich.todue.ui.composeextensions.offsetToCurrent
 import com.robinwersich.todue.ui.composeextensions.pairReferentialEqualityPolicy
+import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState.Companion.defaultTimeline
+import com.robinwersich.todue.utility.buildImmutableList
 import com.robinwersich.todue.utility.center
+import com.robinwersich.todue.utility.forEachDistinct
 import com.robinwersich.todue.utility.intersection
-import com.robinwersich.todue.utility.mapToImmutableList
 import com.robinwersich.todue.utility.size
-import com.robinwersich.todue.utility.toImmutableList
 import com.robinwersich.todue.utility.union
-import java.time.LocalDate
-import kotlin.math.ceil
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 
 /**
  * Holds information about the current navigation position of the organizer. This is mainly defined
@@ -44,19 +52,29 @@ import kotlinx.collections.immutable.toImmutableList
  * @param timelines The timelines to navigate through. These do not need to be sorted initially, but
  *   they will be internally.
  */
+// TODO switch to new AnchoredDraggableState constructor once
+//  https://issuetracker.google.com/issues/448407163 is fixed
 @Stable
 class NavigationState(
-  timelines: List<Timeline>,
-  val childTimelineSizeRatio: Float,
-  positionalThreshold: (totalDistance: Float) -> Float,
-  velocityThreshold: () -> Float,
-  snapAnimationSpec: AnimationSpec<Float>,
-  decayAnimationSpec: DecayAnimationSpec<Float>,
+  timelines: Collection<Timeline> = listOf(defaultTimeline),
+  val childTimelineSizeRatio: Float = 0.3f,
+  positionalThreshold: (totalDistance: Float) -> Float = { it * 0.3f },
+  velocityThreshold: () -> Float = { 500f },
+  snapAnimationSpec: AnimationSpec<Float> =
+    spring(
+      stiffness = Spring.StiffnessMediumLow,
+      visibilityThreshold = Int.VisibilityThreshold.toFloat(),
+    ),
+  decayAnimationSpec: DecayAnimationSpec<Float> = instantStop(),
   initialTimeline: Timeline = timelines.first(),
   initialDate: LocalDate = LocalDate.now(),
 ) {
+  companion object {
+    val defaultTimeline = Timeline(0, TimeUnit.DAY)
+  }
+
   /** The ordered list of possible [Timeline]s to navigate through. */
-  private val timelines = timelines.sorted()
+  private var timelines = if (timelines.isEmpty()) listOf(defaultTimeline) else timelines.sorted()
 
   /** The [AnchoredDraggableState] controlling the time navigation. */
   val dateDraggableState =
@@ -92,25 +110,44 @@ class NavigationState(
    */
   private var relativeBottomMargin: Float by mutableFloatStateOf(0f)
 
-  /** The current [TimelineNavPosition] of the organizer. */
-  private val currentTimelineNavPos: TimelineNavPosition
+  val currentTimelineNavPos: TimelineNavPosition
     get() = timelineDraggableState.currentValue
 
   /** The focussed date of the organizer from which the current [TimeBlock] is derived. */
-  private val currentDate: LocalDate
+  val currentDate: LocalDate
     get() = dateDraggableState.currentValue
 
-  /** The current [NavigationPosition] of the organizer. */
-  private val currentNavPos: NavigationPosition
+  val currentNavPos: NavigationPosition
     get() = adjacentNavigationPositions.current
 
-  /** The currently focussed [Timeline]. */
-  private val currentTimeline: Timeline
+  val currentTimeline: Timeline
     get() = currentTimelineNavPos.timeline
 
-  /** The currently focussed [TimeBlock]. */
-  internal val currentTimeBlock: TimeBlock
+  val currentTimeBlock: TimeBlock
     get() = currentNavPos.timeBlock
+
+  val currentTimelineBlock: TimelineBlock
+    get() = currentNavPos.timelineBlock
+
+  val isSplitView: Boolean
+    get() = currentTimelineNavPos.showChild
+
+  /**
+   * @param timelines Non-empty list of timelines to navigate through. Will be sorted by their ID.
+   *   If an empty collection is given, the [defaultTimeline] will be set to avoid exceptions.
+   */
+  fun setTimelines(timelines: Collection<Timeline>) {
+    this.timelines = if (timelines.isEmpty()) listOf(defaultTimeline) else timelines.sorted()
+    updateTimelineAnchors(
+      newCenter =
+        if (this.timelines.containsAll(currentTimelineNavPos.visibleTimelines.toList())) {
+          currentTimelineNavPos
+        } else {
+          TimelineNavPosition(this.timelines.first())
+        }
+    )
+    updateDateAnchors()
+  }
 
   /**
    * This function needs to be launched in the [CoroutineScope][kotlinx.coroutines.CoroutineScope]
@@ -118,9 +155,7 @@ class NavigationState(
    */
   suspend fun updateDateAnchorsOnSwipe() {
     snapshotFlow { timelineDraggableState.currentValue to dateDraggableState.currentValue }
-      .collect { (_, centerAnchor) ->
-        viewportSize?.run { updateDateAnchors(centerAnchor, height) }
-      }
+      .collect { (_, centerAnchor) -> updateDateAnchors(centerAnchor) }
   }
 
   /**
@@ -129,7 +164,7 @@ class NavigationState(
    */
   suspend fun updateTimelineAnchorsOnSwipe() {
     snapshotFlow { timelineDraggableState.settledValue }
-      .collect { centerAnchor -> viewportSize?.run { updateTimelineAnchors(centerAnchor, width) } }
+      .collect { centerAnchor -> updateTimelineAnchors(centerAnchor) }
   }
 
   /**
@@ -141,11 +176,13 @@ class NavigationState(
     relativeTopMargin: Float = this.relativeTopMargin,
     relativeBottomMargin: Float = this.relativeBottomMargin,
   ) {
-    if (size.width != viewportSize?.width) updateTimelineAnchors(currentTimelineNavPos, size.width)
-    if (size.height != viewportSize?.height) updateDateAnchors(currentDate, size.height)
+    val widthChanged = size.width != viewportSize?.width
+    val heightChanged = size.height != viewportSize?.height
     this.viewportSize = size
     this.relativeTopMargin = relativeTopMargin
     this.relativeBottomMargin = relativeBottomMargin
+    if (widthChanged) updateTimelineAnchors()
+    if (heightChanged) updateDateAnchors()
   }
 
   private fun getChild(timeline: Timeline): Timeline? {
@@ -160,50 +197,63 @@ class NavigationState(
     return timelines.getOrNull(timelineIndex + 1)
   }
 
-  private fun updateTimelineAnchors(newCenter: TimelineNavPosition, viewportLength: Int) {
+  private fun updateTimelineAnchors(newCenter: TimelineNavPosition = currentTimelineNavPos) {
+    val viewportLength = viewportSize?.width
     val newAnchors: DraggableAnchors<TimelineNavPosition> =
-      if (newCenter.child != null) {
-        DraggableAnchors {
-          TimelineNavPosition(newCenter.child) at (childTimelineSizeRatio - 1) * viewportLength
-          newCenter at 0f
-          TimelineNavPosition(newCenter.timeline) at childTimelineSizeRatio * viewportLength
-        }
-      } else {
-        DraggableAnchors {
-          getChild(newCenter.timeline)?.let {
-            TimelineNavPosition(child = it, timeline = newCenter.timeline) at
-              -childTimelineSizeRatio * viewportLength
+      when {
+        viewportLength == null -> DraggableAnchors { newCenter at 0f }
+        newCenter.child != null -> {
+          DraggableAnchors {
+            TimelineNavPosition(newCenter.child) at (childTimelineSizeRatio - 1) * viewportLength
+            newCenter at 0f
+            TimelineNavPosition(newCenter.timeline) at childTimelineSizeRatio * viewportLength
           }
-          newCenter at 0f
-          getParent(newCenter.timeline)?.let {
-            TimelineNavPosition(child = newCenter.timeline, timeline = it) at
-              (1 - childTimelineSizeRatio) * viewportLength
+        }
+        else -> {
+          DraggableAnchors {
+            getChild(newCenter.timeline)?.let {
+              TimelineNavPosition(child = it, timeline = newCenter.timeline) at
+                -childTimelineSizeRatio * viewportLength
+            }
+            newCenter at 0f
+            getParent(newCenter.timeline)?.let {
+              TimelineNavPosition(child = newCenter.timeline, timeline = it) at
+                (1 - childTimelineSizeRatio) * viewportLength
+            }
           }
         }
       }
     updateAnchors(timelineDraggableState, newAnchors, alignAnchor = newCenter)
   }
 
-  private fun updateDateAnchors(newCenter: LocalDate, viewportLength: Int) {
-    val newAnchors = DraggableAnchors {
-      val currentBlock = currentTimeline.timeBlockFrom(newCenter)
-      val prevBlock = currentBlock - 1
-      val nextBlock = currentBlock + 1
+  private fun updateDateAnchors(newCenter: LocalDate = currentDate) {
+    val viewportLength = viewportSize?.height
+    val newAnchors =
+      when {
+        viewportLength == null -> DraggableAnchors { newCenter at 0f }
+        else ->
+          DraggableAnchors {
+            val currentBlock = currentTimeline.timeBlockFrom(newCenter)
+            val prevBlock = currentBlock - 1
+            val nextBlock = currentBlock + 1
 
-      val currentDateRange =
-        getVisibleDateRange(currentTimelineNavPos, currentBlock).toDoubleRange()
-      val prevDateRange = getVisibleDateRange(currentTimelineNavPos, prevBlock).toDoubleRange()
-      val nextDateRange = getVisibleDateRange(currentTimelineNavPos, nextBlock).toDoubleRange()
+            val currentDateRange =
+              getVisibleDateRange(currentTimelineNavPos, currentBlock).toDoubleRange()
+            val prevDateRange =
+              getVisibleDateRange(currentTimelineNavPos, prevBlock).toDoubleRange()
+            val nextDateRange =
+              getVisibleDateRange(currentTimelineNavPos, nextBlock).toDoubleRange()
 
-      val prevDateDistance = prevDateRange.center - currentDateRange.center
-      val nextDateDistance = nextDateRange.center - currentDateRange.center
-      val prevPxPerDay = (viewportLength * 2) / (prevDateRange.size + currentDateRange.size)
-      val nextPxPerDay = (viewportLength * 2) / (nextDateRange.size + currentDateRange.size)
+            val prevDateDistance = prevDateRange.center - currentDateRange.center
+            val nextDateDistance = nextDateRange.center - currentDateRange.center
+            val prevPxPerDay = (viewportLength * 2) / (prevDateRange.size + currentDateRange.size)
+            val nextPxPerDay = (viewportLength * 2) / (nextDateRange.size + currentDateRange.size)
 
-      prevBlock.center at (prevDateDistance * prevPxPerDay).toFloat()
-      newCenter at 0f
-      nextBlock.center at (nextDateDistance * nextPxPerDay).toFloat()
-    }
+            prevBlock.center at (prevDateDistance * prevPxPerDay).toFloat()
+            newCenter at 0f
+            nextBlock.center at (nextDateDistance * nextPxPerDay).toFloat()
+          }
+      }
     updateAnchors(dateDraggableState, newAnchors, alignAnchor = newCenter)
   }
 
@@ -244,7 +294,7 @@ class NavigationState(
     if (!currentNavPos.timelineNavPos.showChild) return false
     val parentChildIntersection = currentTimeBlock intersection childBlock
     if (parentChildIntersection.isEmpty()) return false
-    viewportSize?.run { updateDateAnchors(parentChildIntersection.center, height) }
+    updateDateAnchors(parentChildIntersection.center)
     return true
   }
 
@@ -260,6 +310,10 @@ class NavigationState(
       return true
     }
     return false
+  }
+
+  suspend fun animateToParent() {
+    timelineDraggableState.animateTo(TimelineNavPosition(currentTimeline))
   }
 
   /**
@@ -301,20 +355,6 @@ class NavigationState(
   }
 
   /**
-   * All [Timeline]s and corresponding [DateRange]s of the current [AdjacentNavigationPositions].
-   */
-  val prefetchTimelineDateRanges: ImmutableList<Pair<Timeline, DateRange>> by derivedStateOf {
-    val dateRangesByTimeline = mutableMapOf<Timeline, DateRange>()
-    for ((timelineNavPos, _, dateRange) in adjacentNavigationPositions) {
-      timelineNavPos.visibleTimelines.forEach { timeline ->
-        val currentRange = dateRangesByTimeline.getOrDefault(timeline, dateRange)
-        dateRangesByTimeline[timeline] = currentRange union dateRange
-      }
-    }
-    dateRangesByTimeline.toImmutableList()
-  }
-
-  /**
    * The transition of the current [NavigationPosition]. This combines two [AnchoredDraggableState]s
    * into a single [SwipeableTransition].
    */
@@ -348,22 +388,52 @@ class NavigationState(
 
   /**
    * The [Timeline]s and corresponding [TimeBlock]s that are visible currently or at some point in
-   * the current [NavigationPosition] transition.
+   * the current [NavigationPosition] transition (not necessarily showing data.
    */
-  val activeTimelineBlocks:
-    ImmutableList<Pair<Timeline, ImmutableList<TimeBlock>>> by derivedStateOf {
+  val visibleTimelineBlocks: ImmutableList<TimelineBlock> by derivedStateOf {
     val (prevPos, nextPos) = navPosTransition.transitionStates()
-    val activeTimelines = buildList {
-      prevPos.timelineNavPos.visibleTimelines.forEach { add(it) }
-      nextPos.timelineNavPos.visibleTimelines.forEach { if (it !in this) add(it) }
+    val visibleTimelines = buildSet {
+      addAll(prevPos.timelineNavPos.visibleTimelines)
+      addAll(nextPos.timelineNavPos.visibleTimelines)
     }
-    val activeDateRange =
+    val visibleDateRange =
       prevPos.dateRange.applyMargin(relativeTopMargin, relativeBottomMargin) union
         nextPos.dateRange.applyMargin(relativeTopMargin, relativeBottomMargin)
-    activeTimelines.mapToImmutableList { timeline ->
-      val firstBlock = timeline.timeBlockFrom(activeDateRange.start)
-      val lastBlock = timeline.timeBlockFrom(activeDateRange.endInclusive)
-      timeline to (firstBlock..lastBlock).toImmutableList()
+    buildImmutableList {
+      visibleTimelines.forEach { timeline ->
+        val firstBlock = timeline.timeBlockFrom(visibleDateRange.start)
+        val lastBlock = timeline.timeBlockFrom(visibleDateRange.endInclusive)
+        (firstBlock..lastBlock).forEach { add(TimelineBlock(timeline.id, it)) }
+      }
+    }
+  }
+
+  val currentNavPosFlow = snapshotFlow { currentNavPos }
+  val currentTimelineBlockFlow = snapshotFlow { currentTimelineBlock }
+
+  /** The visible [TimelineBlock]s that currently are expanded. */
+  val focussedTimelineBlocksFlow = snapshotFlow {
+    val (prevPos, nextPos) = navPosTransition.transitionStates()
+    val prevTimelineBlock = prevPos.timelineBlock
+    val nextTimelineBlock = nextPos.timelineBlock
+    if (prevTimelineBlock == nextTimelineBlock) persistentListOf(prevTimelineBlock)
+    else persistentListOf(prevTimelineBlock, nextTimelineBlock)
+  }
+
+  /** The [TimelineBlock]s that currently show some data. */
+  val activeTimelineBlocksFlow: Flow<ImmutableList<TimelineBlock>> = snapshotFlow {
+    val activeDateRangesByTimeline = mutableMapOf<Timeline, DateRange>()
+    navPosTransition.transitionStates().forEachDistinct { navPos ->
+      val dateRange = navPos.timeBlock
+      navPos.timelineNavPos.visibleTimelines.forEach { timeline ->
+        activeDateRangesByTimeline[timeline] =
+          activeDateRangesByTimeline.getOrDefault(timeline, dateRange) union dateRange
+      }
+    }
+    buildImmutableList {
+      activeDateRangesByTimeline.forEach { timeline, dateRange ->
+        addAll(getTimelineBlocks(timeline, dateRange))
+      }
     }
   }
 }
@@ -394,4 +464,10 @@ private fun getVisibleEnd(timelineNavPos: TimelineNavPosition, timeBlock: TimeBl
     val childBlock = it.timeBlockFrom(timeBlock.endInclusive)
     childBlock.endInclusive
   } ?: timeBlock.endInclusive
+}
+
+private fun getTimelineBlocks(timeline: Timeline, dateRange: DateRange): Sequence<TimelineBlock> {
+  val firstBlock = timeline.timeBlockFrom(dateRange.start)
+  val lastBlock = timeline.timeBlockFrom(dateRange.endInclusive)
+  return (firstBlock..lastBlock).map { TimelineBlock(timeline.id, it) }
 }

@@ -8,7 +8,7 @@ import com.robinwersich.todue.domain.model.Timeline
 
 @Entity(tableName = "timeline")
 data class TimelineEntity(
-  @ColumnInfo("id") @PrimaryKey(autoGenerate = true) val id: Int = 0,
+  @ColumnInfo("id") @PrimaryKey(autoGenerate = true) val id: Long = 0,
   @ColumnInfo("time_block_unit") val timeUnit: TimeUnit,
 )
 

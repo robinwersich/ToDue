@@ -32,7 +32,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,7 +43,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -54,17 +52,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.ui.composeextensions.DebouncedUpdate
 import com.robinwersich.todue.ui.composeextensions.modifiers.signedPadding
-import com.robinwersich.todue.ui.presentation.organizer.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.ModifyTaskEvent
-import com.robinwersich.todue.ui.presentation.organizer.TaskViewState
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
+import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
+import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
-import java.time.LocalDate
 
 @Composable
 fun TaskView(
@@ -74,7 +72,7 @@ fun TaskView(
 ) {
   TaskView(
     text = state.text,
-    timeBlock = state.timeBlock,
+    timeBlock = state.timelineBlock?.section,
     dueDate = state.dueDate,
     doneDate = state.doneDate,
     focusLevel = state.focusLevel,
@@ -94,20 +92,22 @@ fun TaskView(
   modifier: Modifier = Modifier,
 ) {
   val focusRequester = remember { FocusRequester() }
-  // auto focus on create
-  LaunchedEffect(true) { if (focusLevel == FocusLevel.FOCUSSED) focusRequester.requestFocus() }
-
   val focusManager = LocalFocusManager.current
-  // clear focus on collapse
-  if (focusLevel == FocusLevel.FOCUSSED)
-    DisposableEffect(true) { onDispose { focusManager.clearFocus() } }
+  LaunchedEffect(focusLevel) {
+    when (focusLevel) {
+      FocusLevel.FOCUSSED_REQUEST_KEYBOARD -> focusRequester.requestFocus()
+      FocusLevel.NEUTRAL,
+      FocusLevel.BACKGROUND -> focusManager.clearFocus()
+      else -> {}
+    }
+  }
 
   val focusTransition = updateTransition(focusLevel, label = "Focus Level")
 
   val surfaceColor by
     focusTransition.animateColor(label = "Task Color") {
-      if (it == FocusLevel.FOCUSSED) MaterialTheme.colorScheme.surfaceContainer
-      else Color.Transparent
+      if (it.isFocussed) MaterialTheme.colorScheme.surfaceContainerHigh
+      else MaterialTheme.colorScheme.surface
     }
   Surface(shape = RoundedCornerShape(24.dp), color = surfaceColor, modifier = modifier) {
     val checkBoxWidth = 48.dp
@@ -129,13 +129,13 @@ fun TaskView(
           DebouncedUpdate(
             value = text,
             onValueChanged = { onEvent(ModifyTaskEvent.SetText(it)) },
-            emitUpdates = focusLevel == FocusLevel.FOCUSSED,
+            emitUpdates = focusLevel.isFocussed,
           ) {
             val (cachedText, setCachedText) = it
             BasicTextField(
               value = cachedText,
               onValueChange = setCachedText,
-              enabled = focusLevel == FocusLevel.FOCUSSED,
+              enabled = focusLevel.isFocussed,
               textStyle = textStyle,
               cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
               modifier = Modifier.focusRequester(focusRequester),
@@ -147,7 +147,7 @@ fun TaskView(
 
       val animationAnchor = Alignment.Top
       focusTransition.AnimatedVisibility(
-        visible = { it == FocusLevel.FOCUSSED },
+        visible = { it.isFocussed },
         enter = fadeIn() + expandVertically(expandFrom = animationAnchor),
         exit = fadeOut() + shrinkVertically(shrinkTowards = animationAnchor),
       ) {

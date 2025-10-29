@@ -6,8 +6,8 @@ import java.time.LocalDate
 data class Task(
   val id: Long = 0,
   val text: String,
-  val scheduledTimeBlock: TimeBlock,
+  val scheduledTimelineRange: TimelineRange,
   val dueDate: LocalDate,
   val estimatedDuration: Duration,
-  val doneDate: LocalDate? = null
+  val doneDate: LocalDate? = null,
 )

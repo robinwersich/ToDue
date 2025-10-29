@@ -7,7 +7,7 @@ import java.time.YearMonth
 import kotlin.ranges.rangeTo as nativeRangeTo
 import org.threeten.extra.YearWeek
 
-/** A range with a semantic meaning */
+/** A date range with a semantic meaning */
 interface TimeBlock : DateRange, Comparable<TimeBlock> {
   /** The sequence of days contained in this block */
   val days: DateSequence

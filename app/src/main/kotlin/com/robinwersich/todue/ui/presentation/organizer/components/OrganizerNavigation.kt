@@ -1,8 +1,5 @@
 package com.robinwersich.todue.ui.presentation.organizer.components
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -17,7 +14,6 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -37,13 +33,13 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.roundToIntSize
 import androidx.compose.ui.util.lerp
-import com.robinwersich.todue.domain.model.TimeBlock
-import com.robinwersich.todue.domain.model.Timeline
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.daysUntil
 import com.robinwersich.todue.domain.model.size
 import com.robinwersich.todue.ui.composeextensions.PaddedRoundedCornerShape
 import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
-import com.robinwersich.todue.ui.composeextensions.instantStop
 import com.robinwersich.todue.ui.composeextensions.modifiers.placeRelative
 import com.robinwersich.todue.ui.composeextensions.modifiers.scaleFromSize
 import com.robinwersich.todue.ui.composeextensions.reversed
@@ -51,60 +47,33 @@ import com.robinwersich.todue.ui.presentation.organizer.state.NavigationPosition
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.presentation.organizer.state.TimelineStyle
 import com.robinwersich.todue.ui.presentation.organizer.state.timelineStyle
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 
 /**
- * A 2-dimensional navigation component that allows the user to navigate through [TimeBlock]s on a
- * time axis (vertical) and a granularity axis (horizontal). To be able to drag tasks between
- * [TimeBlock]s, there is a navigation state which shows a parent [TimeBlock] together with all its
- * children from the next smaller granularity level.
+ * A 2-dimensional navigation component that allows the user to navigate through [TimelineBlock]s on
+ * a time axis (vertical) and a granularity axis (horizontal). To be able to drag tasks between
+ * [TimelineBlock]s, there is a navigation state which shows a parent [TimelineBlock] together with
+ * all its children from the next smaller granularity level.
  *
- * @param timelines The timelines (i.e. granularity levels) to display.
+ * @param navigationState The [NavigationState] containing info about layout and current position.
  * @param modifier The modifier to apply to this layout.
- * @param childTimelineSizeFraction The fraction of the screen width that the child timeline should
- *   take up in a split view with two timelines.
  * @param contentPadding Padding that should be applied to the focussed area, while still drawing
  *   content within the full bounds.
- * @param taskBlockLabel The label content to display for a [TimeBlock] in preview mode.
- * @param taskBlockContent The content to display for a [TimeBlock] in expanded mode.
+ * @param taskBlockLabel The label content to display for a [TimelineBlock] in preview mode.
+ * @param taskBlockContent The content to display for a [TimelineBlock] in expanded mode.
  */
 @Composable
 fun OrganizerNavigation(
-  timelines: ImmutableList<Timeline>,
+  navigationState: NavigationState,
   modifier: Modifier = Modifier,
-  childTimelineSizeFraction: Float = 0.3f,
   contentPadding: PaddingValues = PaddingValues(0.dp),
-  taskBlockLabel: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
-  taskBlockContent: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
+  taskBlockLabel: @Composable (TimelineBlock, PaddingValues) -> Unit,
+  taskBlockContent: @Composable (TimelineBlock, PaddingValues) -> Unit,
 ) {
-  val backgroundColor = MaterialTheme.colorScheme.surface
-  val positionalThreshold = 0.3f
-  val velocityThreshold = with(LocalDensity.current) { 500.dp.toPx() }
+  val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
   val density = LocalDensity.current
 
-  val navigationState =
-    remember(timelines, childTimelineSizeFraction) {
-      NavigationState(
-        timelines = timelines,
-        childTimelineSizeRatio = childTimelineSizeFraction,
-        positionalThreshold = { it * positionalThreshold },
-        velocityThreshold = { velocityThreshold },
-        snapAnimationSpec =
-          spring(
-            stiffness = Spring.StiffnessMediumLow,
-            visibilityThreshold = Int.VisibilityThreshold.toFloat(),
-          ),
-        decayAnimationSpec = instantStop(),
-      )
-    }
   val timelineDraggableState = navigationState.timelineDraggableState
   val dateDraggableState = navigationState.dateDraggableState
-  LaunchedEffect(navigationState) {
-    launch { navigationState.updateDateAnchorsOnSwipe() }
-    launch { navigationState.updateTimelineAnchorsOnSwipe() }
-  }
 
   val overscrollEffect = rememberOverscrollEffect()?.reversed()
   Box(
@@ -143,23 +112,20 @@ fun OrganizerNavigation(
 @Composable
 private fun TaskBlocks(
   navigationState: NavigationState,
-  taskBlockLabel: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
-  taskBlockContent: @Composable (Timeline, TimeBlock, PaddingValues) -> Unit,
+  taskBlockLabel: @Composable (TimelineBlock, PaddingValues) -> Unit,
+  taskBlockContent: @Composable (TimelineBlock, PaddingValues) -> Unit,
 ) {
   val navigationAnimationScope = rememberCoroutineScope()
 
-  for ((timeline, timeBlocks) in navigationState.activeTimelineBlocks) {
-    for (timeBlock in timeBlocks) {
-      key(timeline, timeBlock) {
-        TaskBlock(
-          navigationState = navigationState,
-          timeBlock = timeBlock,
-          timeline = timeline,
-          navigationAnimationScope = navigationAnimationScope,
-          label = { padding -> taskBlockLabel(timeline, timeBlock, padding) },
-          content = { padding -> taskBlockContent(timeline, timeBlock, padding) },
-        )
-      }
+  for (timelineBlock in navigationState.visibleTimelineBlocks) {
+    key(timelineBlock) {
+      TaskBlock(
+        navigationState = navigationState,
+        timelineBlock = timelineBlock,
+        navigationAnimationScope = navigationAnimationScope,
+        label = { padding -> taskBlockLabel(timelineBlock, padding) },
+        content = { padding -> taskBlockContent(timelineBlock, padding) },
+      )
     }
   }
 }
@@ -170,18 +136,17 @@ private val taskBlockCornerRadius = 24.dp
 @Composable
 private fun TaskBlock(
   navigationState: NavigationState,
-  timeBlock: TimeBlock,
-  timeline: Timeline,
+  timelineBlock: TimelineBlock,
   navigationAnimationScope: CoroutineScope,
   label: @Composable (PaddingValues) -> Unit,
   content: @Composable (PaddingValues) -> Unit,
 ) {
-  val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
+  val backgroundColor = MaterialTheme.colorScheme.surface
   val contentColor = MaterialTheme.colorScheme.onSurface
 
   val displayStateTransition =
     navigationState.navPosTransition.derived(cacheStates = true) {
-      blockDisplayState(timeBlock, timeline, it, navigationState.childTimelineSizeRatio)
+      blockDisplayState(timelineBlock, it, navigationState.childTimelineSizeRatio)
     }
 
   // size for measuring shouldn't change when the block is entering/exiting the screen to
@@ -218,7 +183,9 @@ private fun TaskBlock(
               enabled = enableChildNavigationClick,
               role = Role.Button,
               onClick = {
-                navigationAnimationScope.launch { navigationState.tryAnimateToChild(timeBlock) }
+                navigationAnimationScope.launch {
+                  navigationState.tryAnimateToChild(timelineBlock.section)
+                }
               },
             )
             .graphicsLayer { alpha = labelAlpha },
@@ -249,15 +216,16 @@ private data class TaskBlockDisplayState(
 )
 
 private fun blockDisplayState(
-  timeBlock: TimeBlock,
-  timeline: Timeline,
+  timelineBlock: TimelineBlock,
   navPos: NavigationPosition,
   childTimelineSizeRatio: Float,
 ): TaskBlockDisplayState {
-  val timelineStyle = timelineStyle(timeline, navPos.timelineNavPos)
+  val timelineId = timelineBlock.timelineId
+  val timeBlock = timelineBlock.section
+  val timelineStyle = timelineStyle(timelineId, navPos.timelineNavPos)
   return TaskBlockDisplayState(
     timelineStyle = timelineStyle,
-    isFocussed = timeBlock == navPos.timeBlock,
+    isFocussed = timelineBlock == navPos.timelineBlock,
     relativeSize =
       Size(
         width =

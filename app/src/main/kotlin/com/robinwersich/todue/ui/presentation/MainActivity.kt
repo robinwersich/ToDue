@@ -3,11 +3,13 @@ package com.robinwersich.todue.ui.presentation
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.collections.immutable.persistentMapOf
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerScreen
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerViewModel
+import com.robinwersich.todue.ui.presentation.organizer.state.TaskBlockViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 
 class MainActivity : ComponentActivity() {
@@ -17,8 +19,15 @@ class MainActivity : ComponentActivity() {
     setContent {
       ToDueTheme {
         val viewModel: OrganizerViewModel = viewModel(factory = OrganizerViewModel.Factory)
-        val state by viewModel.viewState.collectAsState()
-        OrganizerScreen(state = state, onEvent = viewModel::handleEvent)
+        val taskBlockViewStates by
+          viewModel.focussedTaskBlockViewStatesFlow.collectAsStateWithLifecycle(persistentMapOf())
+        OrganizerScreen(
+          navigationState = viewModel.navigationState,
+          getTaskBlockViewState = { timelineBlock ->
+            taskBlockViewStates.getOrElse(timelineBlock) { TaskBlockViewState(timelineBlock) }
+          },
+          onEvent = viewModel::handleEvent,
+        )
       }
     }
   }
