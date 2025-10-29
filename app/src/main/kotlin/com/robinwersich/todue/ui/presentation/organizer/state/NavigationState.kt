@@ -19,13 +19,13 @@ import androidx.compose.ui.unit.IntSize
 import java.time.LocalDate
 import kotlin.math.ceil
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.Flow
 import com.robinwersich.todue.domain.model.DateRange
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimeUnit
 import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.TimelineBlock
-import com.robinwersich.todue.domain.model.TimelineRange
 import com.robinwersich.todue.domain.model.center
 import com.robinwersich.todue.domain.model.rangeTo
 import com.robinwersich.todue.domain.model.size
@@ -39,6 +39,7 @@ import com.robinwersich.todue.ui.composeextensions.pairReferentialEqualityPolicy
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState.Companion.defaultTimeline
 import com.robinwersich.todue.utility.buildImmutableList
 import com.robinwersich.todue.utility.center
+import com.robinwersich.todue.utility.forEachDistinct
 import com.robinwersich.todue.utility.intersection
 import com.robinwersich.todue.utility.size
 import com.robinwersich.todue.utility.union
@@ -353,26 +354,6 @@ class NavigationState(
     )
   }
 
-  val currentNavPosFlow = snapshotFlow { currentNavPos }
-
-  val currentTimelineBlockFlow = snapshotFlow { currentTimelineBlock }
-
-  /** A [Flow] of all [TimelineRange]s of the current [AdjacentNavigationPositions]. */
-  val prefetchTimelineRangesFlow: Flow<ImmutableList<TimelineRange>> = snapshotFlow {
-    val dateRangesByTimelineId = mutableMapOf<Long, DateRange>()
-    for ((timelineNavPos, _, dateRange) in adjacentNavigationPositions) {
-      timelineNavPos.visibleTimelines.forEach { timeline ->
-        val currentRange = dateRangesByTimelineId.getOrDefault(timeline.id, dateRange)
-        dateRangesByTimelineId[timeline.id] = currentRange union dateRange
-      }
-    }
-    buildImmutableList {
-      dateRangesByTimelineId.forEach { timeline, dateRange ->
-        add(TimelineRange(timeline, dateRange))
-      }
-    }
-  }
-
   /**
    * The transition of the current [NavigationPosition]. This combines two [AnchoredDraggableState]s
    * into a single [SwipeableTransition].
@@ -407,7 +388,7 @@ class NavigationState(
 
   /**
    * The [Timeline]s and corresponding [TimeBlock]s that are visible currently or at some point in
-   * the current [NavigationPosition] transition.
+   * the current [NavigationPosition] transition (not necessarily showing data.
    */
   val visibleTimelineBlocks: ImmutableList<TimelineBlock> by derivedStateOf {
     val (prevPos, nextPos) = navPosTransition.transitionStates()
@@ -423,6 +404,35 @@ class NavigationState(
         val firstBlock = timeline.timeBlockFrom(visibleDateRange.start)
         val lastBlock = timeline.timeBlockFrom(visibleDateRange.endInclusive)
         (firstBlock..lastBlock).forEach { add(TimelineBlock(timeline.id, it)) }
+      }
+    }
+  }
+
+  val currentNavPosFlow = snapshotFlow { currentNavPos }
+  val currentTimelineBlockFlow = snapshotFlow { currentTimelineBlock }
+
+  /** The visible [TimelineBlock]s that currently are expanded. */
+  val focussedTimelineBlocksFlow = snapshotFlow {
+    val (prevPos, nextPos) = navPosTransition.transitionStates()
+    val prevTimelineBlock = prevPos.timelineBlock
+    val nextTimelineBlock = nextPos.timelineBlock
+    if (prevTimelineBlock == nextTimelineBlock) persistentListOf(prevTimelineBlock)
+    else persistentListOf(prevTimelineBlock, nextTimelineBlock)
+  }
+
+  /** The [TimelineBlock]s that currently show some data. */
+  val activeTimelineBlocksFlow: Flow<ImmutableList<TimelineBlock>> = snapshotFlow {
+    val activeDateRangesByTimeline = mutableMapOf<Timeline, DateRange>()
+    navPosTransition.transitionStates().forEachDistinct { navPos ->
+      val dateRange = navPos.timeBlock
+      navPos.timelineNavPos.visibleTimelines.forEach { timeline ->
+        activeDateRangesByTimeline[timeline] =
+          activeDateRangesByTimeline.getOrDefault(timeline, dateRange) union dateRange
+      }
+    }
+    buildImmutableList {
+      activeDateRangesByTimeline.forEach { timeline, dateRange ->
+        addAll(getTimelineBlocks(timeline, dateRange))
       }
     }
   }
@@ -454,4 +464,10 @@ private fun getVisibleEnd(timelineNavPos: TimelineNavPosition, timeBlock: TimeBl
     val childBlock = it.timeBlockFrom(timeBlock.endInclusive)
     childBlock.endInclusive
   } ?: timeBlock.endInclusive
+}
+
+private fun getTimelineBlocks(timeline: Timeline, dateRange: DateRange): Sequence<TimelineBlock> {
+  val firstBlock = timeline.timeBlockFrom(dateRange.start)
+  val lastBlock = timeline.timeBlockFrom(dateRange.endInclusive)
+  return (firstBlock..lastBlock).map { TimelineBlock(timeline.id, it) }
 }

@@ -6,22 +6,22 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import java.time.Duration
 import java.time.LocalDate
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.ImmutableMap
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import com.robinwersich.todue.domain.model.Task
+import com.robinwersich.todue.domain.model.TaskBlock
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.repository.TaskRepository
 import com.robinwersich.todue.domain.repository.TimeBlockRepository
 import com.robinwersich.todue.toDueApplication
 import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
+import com.robinwersich.todue.ui.presentation.organizer.state.TaskBlockViewState
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.utility.mapToImmutableList
 
@@ -43,33 +43,47 @@ class OrganizerViewModel(
     }
   }
 
-  private val activeTaskBlockFlow =
+  private val activeTaskBlocksFlow =
+    navigationState.activeTimelineBlocksFlow.map { taskRepository.getTaskBlocksMap(it) }
+  private val currentTaskBlockFlow =
     navigationState.currentTimelineBlockFlow.flatMapLatest { taskRepository.getTaskBlockFlow(it) }
-  //  private val prefetchedTasksFlow =
-  //    navigationState.prefetchTimelineRangesFlow.map { taskRepository.getTasks(it) }
-
-  val tasksFlow: Flow<ImmutableMap<TimelineBlock, ImmutableList<TaskViewState>>> =
-    combine(activeTaskBlockFlow, taskFocusFlow) { taskBlock, focussedTaskId ->
-      persistentMapOf(
-        taskBlock.timelineBlock to
-          taskBlock.tasks.mapToImmutableList { task ->
-            TaskViewState(
-              id = task.id,
-              text = task.text,
-              timelineBlock = taskBlock.timelineBlock,
-              dueDate = task.dueDate,
-              doneDate = task.doneDate,
-              focusLevel =
-                when (focussedTaskId) {
-                  null -> FocusLevel.NEUTRAL
-                  TaskFocus(task.id, false) -> FocusLevel.FOCUSSED
-                  TaskFocus(task.id, true) -> FocusLevel.FOCUSSED_REQUEST_KEYBOARD
-                  else -> FocusLevel.BACKGROUND
-                },
-            )
-          }
-      )
+  val focussedTaskBlockViewStatesFlow =
+    combine(
+      activeTaskBlocksFlow,
+      currentTaskBlockFlow,
+      navigationState.focussedTimelineBlocksFlow,
+      taskFocusFlow,
+    ) { activeTaskBlocks, currentTaskBlock, focussedTimelineBlocks, taskFocus ->
+      focussedTimelineBlocks.associateWithTo(
+        persistentMapOf<TimelineBlock, TaskBlockViewState>().builder()
+      ) {
+        val taskBlock =
+          if (it == currentTaskBlock.timelineBlock) currentTaskBlock
+          else activeTaskBlocks.getOrElse(it) { TaskBlock(it) }
+        taskBlock.toViewState(taskFocus)
+      }
     }
+
+  private fun TaskBlock.toViewState(taskFocus: TaskFocus? = null) =
+    TaskBlockViewState(
+      timelineBlock,
+      tasks.mapToImmutableList { task ->
+        TaskViewState(
+          id = task.id,
+          text = task.text,
+          timelineBlock = timelineBlock,
+          dueDate = task.dueDate,
+          doneDate = task.doneDate,
+          focusLevel =
+            when (taskFocus) {
+              null -> FocusLevel.NEUTRAL
+              TaskFocus(task.id, false) -> FocusLevel.FOCUSSED
+              TaskFocus(task.id, true) -> FocusLevel.FOCUSSED_REQUEST_KEYBOARD
+              else -> FocusLevel.BACKGROUND
+            },
+        )
+      },
+    )
 
   fun handleEvent(event: OrganizerEvent) {
     when (event) {

@@ -1,7 +1,6 @@
 package com.robinwersich.todue.domain.repository
 
 import java.time.LocalDate
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TaskBlock
@@ -24,5 +23,13 @@ interface TaskRepository {
 
   fun getTaskBlockFlow(timelineBlock: TimelineBlock): Flow<TaskBlock>
 
-  suspend fun getTasks(timelineSection: TimelineSection<*>): ImmutableList<Task>
+  suspend fun getTasks(timelineSection: TimelineSection<*>): List<Task>
+
+  suspend fun getTaskBlock(timelineBlock: TimelineBlock): TaskBlock
+
+  suspend fun getTaskBlocks(timelineBlocks: Collection<TimelineBlock>): List<TaskBlock>
+
+  suspend fun getTaskBlocksMap(
+    timelineBlocks: Collection<TimelineBlock>
+  ): Map<TimelineBlock, TaskBlock>
 }

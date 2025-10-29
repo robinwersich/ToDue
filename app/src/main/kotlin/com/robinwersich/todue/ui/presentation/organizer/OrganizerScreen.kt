@@ -18,8 +18,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.ui.presentation.organizer.components.OrganizerNavigation
@@ -27,13 +25,13 @@ import com.robinwersich.todue.ui.presentation.organizer.components.TaskBlockCont
 import com.robinwersich.todue.ui.presentation.organizer.components.TaskBlockLabel
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
-import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
+import com.robinwersich.todue.ui.presentation.organizer.state.TaskBlockViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 
 @Composable
 fun OrganizerScreen(
   navigationState: NavigationState,
-  getTasks: (TimelineBlock) -> ImmutableList<TaskViewState>,
+  getTaskBlockViewState: (TimelineBlock) -> TaskBlockViewState,
   modifier: Modifier = Modifier,
   onEvent: (OrganizerEvent) -> Unit = {},
 ) {
@@ -64,8 +62,7 @@ fun OrganizerScreen(
       },
       taskBlockContent = { timelineBlock, padding ->
         TaskBlockContent(
-          tasks = getTasks(timelineBlock),
-          timeBlock = timelineBlock.section,
+          viewState = getTaskBlockViewState(timelineBlock),
           formatter = formatter,
           onEvent = onEvent,
           modifier = Modifier.padding(padding),
@@ -78,5 +75,5 @@ fun OrganizerScreen(
 @Preview(showSystemUi = true)
 @Composable
 private fun OrganizerScreenPreview() {
-  ToDueTheme { OrganizerScreen(NavigationState(), { persistentListOf() }) }
+  ToDueTheme { OrganizerScreen(NavigationState(), { TaskBlockViewState(it) }) }
 }

@@ -1,7 +1,6 @@
 package com.robinwersich.todue.data.repository
 
 import java.time.LocalDate
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.robinwersich.todue.data.database.TaskDao
@@ -43,12 +42,22 @@ class DatabaseTaskRepository(private val taskDao: TaskDao) : TaskRepository {
       )
       .map { TaskBlock(timelineBlock, it.mapToImmutableList(TaskEntity::toModel)) }
 
-  override suspend fun getTasks(timelineSection: TimelineSection<*>): ImmutableList<Task> =
+  override suspend fun getTasks(timelineSection: TimelineSection<*>): List<Task> =
     taskDao
       .getTasks(
         timelineId = timelineSection.timelineId,
         start = timelineSection.section.start,
         endInclusive = timelineSection.section.endInclusive,
       )
-      .mapToImmutableList(TaskEntity::toModel)
+      .map(TaskEntity::toModel)
+
+  override suspend fun getTaskBlock(timelineBlock: TimelineBlock): TaskBlock =
+    TaskBlock(timelineBlock, getTasks(timelineBlock))
+
+  override suspend fun getTaskBlocks(timelineBlocks: Collection<TimelineBlock>): List<TaskBlock> =
+    timelineBlocks.map { getTaskBlock(it) }
+
+  override suspend fun getTaskBlocksMap(
+    timelineBlocks: Collection<TimelineBlock>
+  ): Map<TimelineBlock, TaskBlock> = timelineBlocks.associateWith { getTaskBlock(it) }
 }

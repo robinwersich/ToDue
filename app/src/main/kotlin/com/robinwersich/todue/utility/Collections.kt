@@ -49,3 +49,8 @@ inline fun <T> Pair<T, T>.forEach(action: (T) -> Unit) {
   action(first)
   action(second)
 }
+
+inline fun <T> Pair<T, T>.forEachDistinct(action: (T) -> Unit) {
+  action(first)
+  if (first != second) action(second)
+}

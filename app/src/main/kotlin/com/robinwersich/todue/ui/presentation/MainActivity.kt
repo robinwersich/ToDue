@@ -6,10 +6,10 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerScreen
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerViewModel
+import com.robinwersich.todue.ui.presentation.organizer.state.TaskBlockViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 
 class MainActivity : ComponentActivity() {
@@ -19,10 +19,13 @@ class MainActivity : ComponentActivity() {
     setContent {
       ToDueTheme {
         val viewModel: OrganizerViewModel = viewModel(factory = OrganizerViewModel.Factory)
-        val tasks by viewModel.tasksFlow.collectAsStateWithLifecycle(persistentMapOf())
+        val taskBlockViewStates by
+          viewModel.focussedTaskBlockViewStatesFlow.collectAsStateWithLifecycle(persistentMapOf())
         OrganizerScreen(
           navigationState = viewModel.navigationState,
-          getTasks = { timelineBlock -> tasks.getOrElse(timelineBlock) { persistentListOf() } },
+          getTaskBlockViewState = { timelineBlock ->
+            taskBlockViewStates.getOrElse(timelineBlock) { TaskBlockViewState(timelineBlock) }
+          },
           onEvent = viewModel::handleEvent,
         )
       }
