@@ -3,12 +3,22 @@ package com.robinwersich.todue.ui.composeextensions
 import androidx.compose.foundation.OverscrollEffect
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
+import androidx.compose.foundation.gestures.FlingBehavior
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.anchoredDraggable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScrollModifierNode
+import androidx.compose.ui.node.DelegatingNode
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.platform.InspectorInfo
 import androidx.compose.ui.unit.Velocity
 import kotlin.math.nextDown
 import kotlin.math.nextUp
@@ -36,7 +46,8 @@ fun <T> AnchoredDraggableState<T>.toSwipeableTransition(): SwipeableTransition<T
 
 /**
  * Returns the two anchors adjacent to the current [offset][AnchoredDraggableState.offset]. If the
- * draggable is settled or is not initialized, the same anchor is returned twice.
+ * draggable is settled or is not initialized, the same anchor is returned twice. The returned
+ * anchors are sorted by their position.
  */
 fun <T> AnchoredDraggableState<T>.getAdjacentToOffsetAnchors(): Pair<T, T> {
   if (offset.isNaN() || anchors.size == 0 || anchors.positionOf(settledValue) == offset) {
@@ -99,14 +110,21 @@ fun <T> DraggableAnchors<T>.nextAnchor(anchor: T): T? {
  * Distance between [current anchor][AnchoredDraggableState.currentValue] and current offset. If the
  * anchors are not initialized yet, this will always return 0.
  */
-val <T> AnchoredDraggableState<T>.offsetToCurrent: Float
+val AnchoredDraggableState<*>.offsetToCurrent: Float
   get() = if (offset.isNaN()) 0f else offset - anchors.positionOf(currentValue)
+
+/**
+ * Distance between [settled anchor][AnchoredDraggableState.settledValue] and current offset. If the
+ * anchors are not initialized yet, this will always return 0.
+ */
+val AnchoredDraggableState<*>.offsetToSettled: Float
+  get() = if (offset.isNaN()) 0f else offset - anchors.positionOf(settledValue)
 
 /**
  * Returns whether the [AnchoredDraggableState] is currently settled at an anchor. If the anchors
  * are not initialized yet, this will always return true.
  */
-val <T> AnchoredDraggableState<T>.isSettled: Boolean
+val AnchoredDraggableState<*>.isSettled: Boolean
   get() = offset.isNaN() || anchors.positionOf(settledValue) == offset
 
 /**
@@ -126,3 +144,150 @@ fun OverscrollEffect.reversed() =
       performFling: suspend (Velocity) -> Velocity,
     ) = this@reversed.applyToFling(-velocity, { -performFling(-it) })
   }
+
+/**
+ * Modifier to allow an anchoredDraggable to consume deltas from the nested scroll hierarchy.
+ *
+ * @param state The [AnchoredDraggableState] that should be controlled by the nested scroll.
+ * @param orientation The orientation of the drag, matching the one used in `anchoredDraggable`.
+ */
+fun Modifier.anchoredDraggableWithNestedScroll(
+  state: AnchoredDraggableState<*>,
+  reverseDirection: Boolean,
+  orientation: Orientation,
+  enabled: Boolean = true,
+  interactionSource: MutableInteractionSource? = null,
+  overscrollEffect: OverscrollEffect? = null,
+  flingBehavior: FlingBehavior? = null,
+): Modifier =
+  this.then(
+      AnchoredDraggableWithNestedScrollElement(
+        state = state,
+        reverseDirection = reverseDirection,
+        orientation = orientation,
+        enabled = enabled,
+      )
+    )
+    .anchoredDraggable(
+      state = state,
+      reverseDirection = reverseDirection,
+      orientation = orientation,
+      enabled = enabled,
+      interactionSource = interactionSource,
+      overscrollEffect = overscrollEffect,
+      flingBehavior = flingBehavior,
+    )
+
+private data class AnchoredDraggableWithNestedScrollElement<T>(
+  val state: AnchoredDraggableState<T>,
+  val reverseDirection: Boolean,
+  val orientation: Orientation,
+  val enabled: Boolean,
+) : ModifierNodeElement<AnchoredDraggableWithNestedScrollNode<T>>() {
+  override fun create() =
+    AnchoredDraggableWithNestedScrollNode(state, reverseDirection, orientation, enabled)
+
+  override fun update(node: AnchoredDraggableWithNestedScrollNode<T>) {
+    node.nestedScrollConnection.state = state
+    node.nestedScrollConnection.reverseDirection = reverseDirection
+    node.nestedScrollConnection.orientation = orientation
+    node.nestedScrollConnection.enabled = enabled
+  }
+
+  override fun InspectorInfo.inspectableProperties() {
+    name = "anchoredDraggableWithNestedScroll"
+    properties["state"] = state
+    properties["reverseDirection"] = reverseDirection
+    properties["orientation"] = orientation
+    properties["enabled"] = enabled
+  }
+}
+
+private class AnchoredDraggableWithNestedScrollNode<T>(
+  state: AnchoredDraggableState<T>,
+  reverseDirection: Boolean,
+  orientation: Orientation,
+  enabled: Boolean,
+) : DelegatingNode() {
+  val nestedScrollConnection =
+    AnchoredDraggableNestedScrollConnection(state, reverseDirection, orientation, enabled)
+
+  init {
+    delegate(nestedScrollModifierNode(nestedScrollConnection, null))
+  }
+}
+
+class AnchoredDraggableNestedScrollConnection<T>(
+  var state: AnchoredDraggableState<T>,
+  var reverseDirection: Boolean,
+  var orientation: Orientation,
+  var enabled: Boolean,
+) : NestedScrollConnection {
+  override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+    // draggable should only be moved by direct user interaction
+    if (!enabled || source != NestedScrollSource.UserInput) return Offset.Zero
+    // if settled, let child scroll first and only consume excess delta
+    if (state.isSettled) return Offset.Zero
+    // if not settled, scroll back draggable to settled before scrolling child
+    val adjustedAvailable = available.toFloat().reverseIfNeeded()
+    val (prevAnchor, nextAnchor) = state.getAdjacentToOffsetAnchors()
+    val delta =
+      adjustedAvailable.coerceIn(
+        state.anchors.positionOf(prevAnchor) - state.offset,
+        state.anchors.positionOf(nextAnchor) - state.offset,
+      )
+    return state.dispatchRawDelta(delta).reverseIfNeeded().toOffset()
+  }
+
+  override suspend fun onPreFling(available: Velocity): Velocity {
+    // if settled, fling child
+    if (!enabled || state.isSettled) return Velocity.Zero
+    // if not settled, fling draggable to next anchor and don't fling child
+    return state.settle(available.toFloat().reverseIfNeeded()).reverseIfNeeded().toVelocity()
+  }
+
+  override fun onPostScroll(
+    consumed: Offset,
+    available: Offset,
+    source: NestedScrollSource,
+  ): Offset {
+    // Draggable should only be moved by direct user interaction
+    if (!enabled || source != NestedScrollSource.UserInput) return Offset.Zero
+    return state
+      .dispatchRawDelta(available.toFloat().reverseIfNeeded())
+      .reverseIfNeeded()
+      .toOffset()
+  }
+
+  override suspend fun onPostFling(consumed: Velocity, available: Velocity): Velocity {
+    if (!enabled) return Velocity.Zero
+    // excess velocity will be ignored if already settled, allowing overscroll effect in child
+    return state.settle(available.toFloat().reverseIfNeeded()).reverseIfNeeded().toVelocity()
+  }
+
+  private fun Float.reverseIfNeeded() = if (reverseDirection) -this else this
+
+  private fun Float.toOffset() =
+    when (orientation) {
+      Orientation.Horizontal -> Offset(this, 0f)
+      Orientation.Vertical -> Offset(0f, this)
+    }
+
+  private fun Offset.toFloat() =
+    when (orientation) {
+      Orientation.Horizontal -> this.x
+      Orientation.Vertical -> this.y
+    }
+
+  private fun Float.toVelocity() =
+    when (orientation) {
+      Orientation.Horizontal -> Velocity(this, 0f)
+      Orientation.Vertical -> Velocity(0f, this)
+    }
+
+  private fun Velocity.toFloat() =
+    when (orientation) {
+      Orientation.Horizontal -> this.x
+      Orientation.Vertical -> this.y
+    }
+}

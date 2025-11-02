@@ -40,6 +40,7 @@ import com.robinwersich.todue.domain.model.daysUntil
 import com.robinwersich.todue.domain.model.size
 import com.robinwersich.todue.ui.composeextensions.PaddedRoundedCornerShape
 import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
+import com.robinwersich.todue.ui.composeextensions.anchoredDraggableWithNestedScroll
 import com.robinwersich.todue.ui.composeextensions.modifiers.placeRelative
 import com.robinwersich.todue.ui.composeextensions.modifiers.scaleFromSize
 import com.robinwersich.todue.ui.composeextensions.reversed
@@ -91,7 +92,7 @@ fun OrganizerNavigation(
             reverseDirection = true,
             overscrollEffect = overscrollEffect,
           )
-          .anchoredDraggable(
+          .anchoredDraggableWithNestedScroll(
             dateDraggableState,
             orientation = Orientation.Vertical,
             reverseDirection = true,
