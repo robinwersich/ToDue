@@ -1,27 +1,27 @@
 package com.robinwersich.todue.ui.presentation.organizer
 
-import java.time.LocalDate
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimelineBlock
+import java.time.LocalDate
 
-sealed interface OrganizerEvent
+sealed interface OrganizerEvent {
+  data class AddTask(val timelineBlock: TimelineBlock) : OrganizerEvent
 
-data class AddTask(val timelineBlock: TimelineBlock) : OrganizerEvent
+  data class ExpandTask(val taskId: Long) : OrganizerEvent
 
-data class ExpandTask(val taskId: Long) : OrganizerEvent
+  data object CollapseTasks : OrganizerEvent
 
-data object CollapseTasks : OrganizerEvent
+  data class ForTask(val taskId: Long, val event: TaskEvent) : OrganizerEvent
+}
 
-data class ModifyTask(val event: ModifyTaskEvent, val taskId: Long) : OrganizerEvent
+sealed interface TaskEvent {
+  data class SetDone(val done: Boolean) : TaskEvent
 
-sealed interface ModifyTaskEvent {
-  data class SetDone(val done: Boolean) : ModifyTaskEvent
+  data class SetText(val text: String) : TaskEvent
 
-  data class SetText(val text: String) : ModifyTaskEvent
+  data class SetTimeBlock(val timeBlock: TimeBlock) : TaskEvent
 
-  data class SetTimeBlock(val timeBlock: TimeBlock) : ModifyTaskEvent
+  data class SetDueDate(val date: LocalDate) : TaskEvent
 
-  data class SetDueDate(val date: LocalDate) : ModifyTaskEvent
-
-  data object Delete : ModifyTaskEvent
+  data object Delete : TaskEvent
 }

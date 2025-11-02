@@ -4,15 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import java.time.Duration
-import java.time.LocalDate
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TaskBlock
 import com.robinwersich.todue.domain.model.TimelineBlock
@@ -24,6 +15,15 @@ import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskBlockViewState
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.utility.mapToImmutableList
+import java.time.Duration
+import java.time.LocalDate
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OrganizerViewModel(
@@ -39,7 +39,7 @@ class OrganizerViewModel(
     viewModelScope.launch { navigationState.updateTimelineAnchorsOnSwipe() }
     viewModelScope.launch { navigationState.updateDateAnchorsOnSwipe() }
     viewModelScope.launch {
-      navigationState.currentNavPosFlow.collect { handleEvent(CollapseTasks) }
+      navigationState.currentNavPosFlow.collect { handleEvent(OrganizerEvent.CollapseTasks) }
     }
   }
 
@@ -87,7 +87,7 @@ class OrganizerViewModel(
 
   fun handleEvent(event: OrganizerEvent) {
     when (event) {
-      is AddTask ->
+      is OrganizerEvent.AddTask ->
         viewModelScope.launch {
           val newTaskId =
             taskRepository.insertTask(
@@ -100,28 +100,27 @@ class OrganizerViewModel(
             )
           taskFocusFlow.value = TaskFocus(newTaskId, requestKeyboard = true)
         }
-      is ExpandTask ->
+      is OrganizerEvent.ExpandTask ->
         if (!navigationState.isSplitView) {
           taskFocusFlow.value = TaskFocus(event.taskId, requestKeyboard = false)
         }
-      is CollapseTasks -> taskFocusFlow.value = null
-      is ModifyTask -> handleModifyTaskEvent(event.event, event.taskId)
+      is OrganizerEvent.CollapseTasks -> taskFocusFlow.value = null
+      is OrganizerEvent.ForTask -> handleModifyTaskEvent(event.event, event.taskId)
     }
   }
 
-  private fun handleModifyTaskEvent(event: ModifyTaskEvent, taskId: Long) {
+  private fun handleModifyTaskEvent(event: TaskEvent, taskId: Long) {
     when (event) {
-      is ModifyTaskEvent.SetText ->
-        viewModelScope.launch { taskRepository.setText(taskId, event.text) }
-      is ModifyTaskEvent.SetDone -> {
+      is TaskEvent.SetText -> viewModelScope.launch { taskRepository.setText(taskId, event.text) }
+      is TaskEvent.SetDone -> {
         val doneDate = if (event.done) LocalDate.now() else null
         viewModelScope.launch { taskRepository.setDoneDate(taskId, doneDate) }
       }
-      is ModifyTaskEvent.SetTimeBlock ->
+      is TaskEvent.SetTimeBlock ->
         viewModelScope.launch { taskRepository.setTimeBlock(taskId, event.timeBlock) }
-      is ModifyTaskEvent.SetDueDate ->
+      is TaskEvent.SetDueDate ->
         viewModelScope.launch { taskRepository.setDueDate(taskId, event.date) }
-      is ModifyTaskEvent.Delete -> {
+      is TaskEvent.Delete -> {
         if (taskFocusFlow.value?.id == taskId) taskFocusFlow.value = null
         viewModelScope.launch { taskRepository.deleteTask(taskId) }
       }

@@ -14,9 +14,6 @@ import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
-import com.robinwersich.todue.ui.presentation.organizer.CollapseTasks
-import com.robinwersich.todue.ui.presentation.organizer.ExpandTask
-import com.robinwersich.todue.ui.presentation.organizer.ModifyTask
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerEvent
 import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
@@ -31,7 +28,9 @@ fun TaskList(
 ) {
   val taskListModifier =
     remember(modifier, onEvent) {
-      modifier.clickable(interactionSource = null, indication = null) { onEvent(CollapseTasks) }
+      modifier.clickable(interactionSource = null, indication = null) {
+        onEvent(OrganizerEvent.CollapseTasks)
+      }
     }
   LookaheadScope {
     LazyColumn(modifier = taskListModifier.padding(horizontal = 8.dp)) {
@@ -40,7 +39,7 @@ fun TaskList(
         val taskId = taskState.id
         TaskView(
           state = taskState,
-          onEvent = { onEvent(ModifyTask(it, taskId)) },
+          onEvent = { onEvent(OrganizerEvent.ForTask(taskId, it)) },
           modifier =
             when (taskState.focusLevel) {
               FocusLevel.FOCUSSED,
@@ -48,7 +47,7 @@ fun TaskList(
                 Modifier.clickable(interactionSource = null, indication = null) {}
               FocusLevel.NEUTRAL ->
                 Modifier.clickable(interactionSource = null, indication = null) {
-                  onEvent(ExpandTask(taskState.id))
+                  onEvent(OrganizerEvent.ExpandTask(taskState.id))
                 }
               FocusLevel.BACKGROUND -> Modifier
             }.animateItem(fadeOutSpec = spring(stiffness = Spring.StiffnessHigh)),

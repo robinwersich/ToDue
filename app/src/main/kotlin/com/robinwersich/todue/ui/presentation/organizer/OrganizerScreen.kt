@@ -43,7 +43,9 @@ fun OrganizerScreen(
     },
     floatingActionButton = {
       AnimatedVisibility(!navigationState.isSplitView, enter = scaleIn(), exit = scaleOut()) {
-        FloatingActionButton(onClick = { onEvent(AddTask(navigationState.currentTimelineBlock)) }) {
+        FloatingActionButton(
+          onClick = { onEvent(OrganizerEvent.AddTask(navigationState.currentTimelineBlock)) }
+        ) {
           Icon(painter = painterResource(R.drawable.add), contentDescription = null)
         }
       }

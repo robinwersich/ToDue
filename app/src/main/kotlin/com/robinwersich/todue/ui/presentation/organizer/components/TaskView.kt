@@ -53,23 +53,23 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
-import java.time.LocalDate
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.ui.composeextensions.DebouncedUpdate
 import com.robinwersich.todue.ui.composeextensions.modifiers.signedPadding
-import com.robinwersich.todue.ui.presentation.organizer.ModifyTaskEvent
+import com.robinwersich.todue.ui.presentation.organizer.TaskEvent
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
 import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
+import java.time.LocalDate
 
 @Composable
 fun TaskView(
   state: TaskViewState,
   modifier: Modifier = Modifier,
-  onEvent: (ModifyTaskEvent) -> Unit = {},
+  onEvent: (TaskEvent) -> Unit = {},
 ) {
   val focusTransition = updateTransition(targetState = state.focusLevel, label = "Focus Level")
   val surfaceColor by
@@ -98,7 +98,7 @@ private fun TaskViewContent(
   dueDate: LocalDate,
   focusTransition: Transition<FocusLevel>,
   modifier: Modifier = Modifier,
-  onEvent: (ModifyTaskEvent) -> Unit,
+  onEvent: (TaskEvent) -> Unit,
 ) {
   val checkBoxWidth = 48.dp
 
@@ -117,7 +117,7 @@ private fun TaskViewContent(
     Row(verticalAlignment = Alignment.CenterVertically) {
       TaskCheckbox(
         checked = doneDate != null,
-        onCheckedChange = { onEvent(ModifyTaskEvent.SetDone(it)) },
+        onCheckedChange = { onEvent(TaskEvent.SetDone(it)) },
         enabled = focusTransition.targetState != FocusLevel.BACKGROUND,
         modifier = Modifier.width(checkBoxWidth),
       )
@@ -131,7 +131,7 @@ private fun TaskViewContent(
       Column(modifier = Modifier.padding(vertical = 8.dp)) {
         DebouncedUpdate(
           value = text,
-          onValueChanged = { onEvent(ModifyTaskEvent.SetText(it)) },
+          onValueChanged = { onEvent(TaskEvent.SetText(it)) },
           emitUpdates = focusTransition.targetState.isFocussed,
         ) {
           val (cachedText, setCachedText) = it
@@ -191,7 +191,7 @@ private fun TaskCheckbox(
 private fun TaskProperties(
   timeBlock: TimeBlock?,
   dueDate: LocalDate,
-  onEvent: (ModifyTaskEvent) -> Unit,
+  onEvent: (TaskEvent) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   Column(modifier = modifier) {
@@ -210,7 +210,7 @@ private fun TaskProperties(
     ) {
       TaskAction(
         R.drawable.delete,
-        onClick = { onEvent(ModifyTaskEvent.Delete) },
+        onClick = { onEvent(TaskEvent.Delete) },
         modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.End),
       )
     }
@@ -218,7 +218,7 @@ private fun TaskProperties(
 }
 
 @Composable
-private fun ScheduledTimeBlockProperty(timeBlock: TimeBlock?, onEvent: (ModifyTaskEvent) -> Unit) {
+private fun ScheduledTimeBlockProperty(timeBlock: TimeBlock?, onEvent: (TaskEvent) -> Unit) {
   val timeBlockFormatter = rememberTimeBlockFormatter()
   var showSelection by rememberSaveable { mutableStateOf(false) }
   if (showSelection) {
@@ -226,7 +226,7 @@ private fun ScheduledTimeBlockProperty(timeBlock: TimeBlock?, onEvent: (ModifyTa
       initialSelection = timeBlock?.endInclusive ?: LocalDate.now(),
       onConfirm = {
         // TODO: put meaningful timeline ID here
-        onEvent(ModifyTaskEvent.SetTimeBlock(Day(it)))
+        onEvent(TaskEvent.SetTimeBlock(Day(it)))
         showSelection = false
       },
       onCancel = { showSelection = false },
@@ -237,13 +237,13 @@ private fun ScheduledTimeBlockProperty(timeBlock: TimeBlock?, onEvent: (ModifyTa
 }
 
 @Composable
-private fun DueDateProperty(dueDate: LocalDate, onEvent: (ModifyTaskEvent) -> Unit) {
+private fun DueDateProperty(dueDate: LocalDate, onEvent: (TaskEvent) -> Unit) {
   var showSelection by rememberSaveable { mutableStateOf(false) }
   if (showSelection) {
     DueDatePicker(
       initialSelection = dueDate,
       onConfirm = {
-        onEvent(ModifyTaskEvent.SetDueDate(it))
+        onEvent(TaskEvent.SetDueDate(it))
         showSelection = false
       },
       onCancel = { showSelection = false },
