@@ -4,6 +4,7 @@ import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.Transition
 import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -70,31 +71,41 @@ fun TaskView(
   modifier: Modifier = Modifier,
   onEvent: (ModifyTaskEvent) -> Unit = {},
 ) {
-  TaskView(
-    text = state.text,
-    timeBlock = state.timelineBlock?.section,
-    dueDate = state.dueDate,
-    doneDate = state.doneDate,
-    focusLevel = state.focusLevel,
-    onEvent = onEvent,
-    modifier = modifier,
-  )
+  val focusTransition = updateTransition(targetState = state.focusLevel, label = "Focus Level")
+  val surfaceColor by
+    focusTransition.animateColor(label = "Task Color") {
+      if (it.isFocussed) MaterialTheme.colorScheme.surfaceContainerHigh
+      else MaterialTheme.colorScheme.surface
+    }
+
+  Surface(shape = RoundedCornerShape(24.dp), color = surfaceColor, modifier = modifier) {
+    TaskViewContent(
+      text = state.text,
+      timeBlock = state.timelineBlock?.section,
+      doneDate = state.doneDate,
+      dueDate = state.dueDate,
+      focusTransition = focusTransition,
+      onEvent = onEvent,
+    )
+  }
 }
 
 @Composable
-fun TaskView(
+private fun TaskViewContent(
   text: String,
   timeBlock: TimeBlock?,
-  dueDate: LocalDate,
   doneDate: LocalDate?,
-  focusLevel: FocusLevel,
-  onEvent: (ModifyTaskEvent) -> Unit,
+  dueDate: LocalDate,
+  focusTransition: Transition<FocusLevel>,
   modifier: Modifier = Modifier,
+  onEvent: (ModifyTaskEvent) -> Unit,
 ) {
+  val checkBoxWidth = 48.dp
+
   val focusRequester = remember { FocusRequester() }
   val focusManager = LocalFocusManager.current
-  LaunchedEffect(focusLevel) {
-    when (focusLevel) {
+  LaunchedEffect(focusTransition.targetState) {
+    when (focusTransition.targetState) {
       FocusLevel.FOCUSSED_REQUEST_KEYBOARD -> focusRequester.requestFocus()
       FocusLevel.NEUTRAL,
       FocusLevel.BACKGROUND -> focusManager.clearFocus()
@@ -102,64 +113,55 @@ fun TaskView(
     }
   }
 
-  val focusTransition = updateTransition(focusLevel, label = "Focus Level")
+  Column(modifier = modifier.padding(end = 16.dp).fillMaxWidth()) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      TaskCheckbox(
+        checked = doneDate != null,
+        onCheckedChange = { onEvent(ModifyTaskEvent.SetDone(it)) },
+        enabled = focusTransition.targetState != FocusLevel.BACKGROUND,
+        modifier = Modifier.width(checkBoxWidth),
+      )
 
-  val surfaceColor by
-    focusTransition.animateColor(label = "Task Color") {
-      if (it.isFocussed) MaterialTheme.colorScheme.surfaceContainerHigh
-      else MaterialTheme.colorScheme.surface
-    }
-  Surface(shape = RoundedCornerShape(24.dp), color = surfaceColor, modifier = modifier) {
-    val checkBoxWidth = 48.dp
-    Column(modifier = Modifier.padding(end = 16.dp).fillMaxWidth()) {
-      Row(verticalAlignment = Alignment.CenterVertically) {
-        TaskCheckbox(
-          checked = doneDate != null,
-          onCheckedChange = { onEvent(ModifyTaskEvent.SetDone(it)) },
-          enabled = focusLevel != FocusLevel.BACKGROUND,
-          modifier = Modifier.width(checkBoxWidth),
+      val textColor =
+        LocalContentColor.current.copy(
+          alpha = if (focusTransition.targetState == FocusLevel.BACKGROUND) 0.38f else 1f
         )
+      val textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = textColor))
 
-        val textColor =
-          LocalContentColor.current.copy(
-            alpha = if (focusLevel == FocusLevel.BACKGROUND) 0.38f else 1f
+      Column(modifier = Modifier.padding(vertical = 8.dp)) {
+        DebouncedUpdate(
+          value = text,
+          onValueChanged = { onEvent(ModifyTaskEvent.SetText(it)) },
+          emitUpdates = focusTransition.targetState.isFocussed,
+        ) {
+          val (cachedText, setCachedText) = it
+          BasicTextField(
+            value = cachedText,
+            onValueChange = setCachedText,
+            enabled = focusTransition.targetState.isFocussed,
+            textStyle = textStyle,
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            modifier = Modifier.focusRequester(focusRequester),
           )
-        val textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = textColor))
-        Column(modifier = Modifier.padding(vertical = 8.dp)) {
-          DebouncedUpdate(
-            value = text,
-            onValueChanged = { onEvent(ModifyTaskEvent.SetText(it)) },
-            emitUpdates = focusLevel.isFocussed,
-          ) {
-            val (cachedText, setCachedText) = it
-            BasicTextField(
-              value = cachedText,
-              onValueChange = setCachedText,
-              enabled = focusLevel.isFocussed,
-              textStyle = textStyle,
-              cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-              modifier = Modifier.focusRequester(focusRequester),
-            )
-          }
-          // put task info here if collapsed
         }
+        // put task info here if collapsed
       }
+    }
 
-      val animationAnchor = Alignment.Top
-      focusTransition.AnimatedVisibility(
-        visible = { it.isFocussed },
-        enter = fadeIn() + expandVertically(expandFrom = animationAnchor),
-        exit = fadeOut() + shrinkVertically(shrinkTowards = animationAnchor),
-      ) {
-        TaskProperties(
-          timeBlock = timeBlock,
-          dueDate = dueDate,
-          onEvent = onEvent,
-          modifier =
-            Modifier.padding(start = checkBoxWidth)
-              .wrapContentHeight(animationAnchor, unbounded = true),
-        )
-      }
+    val animationAnchor = Alignment.Top
+    focusTransition.AnimatedVisibility(
+      visible = { it.isFocussed },
+      enter = fadeIn() + expandVertically(expandFrom = animationAnchor),
+      exit = fadeOut() + shrinkVertically(shrinkTowards = animationAnchor),
+    ) {
+      TaskProperties(
+        timeBlock = timeBlock,
+        dueDate = dueDate,
+        onEvent = onEvent,
+        modifier =
+          Modifier.padding(start = checkBoxWidth)
+            .wrapContentHeight(animationAnchor, unbounded = true),
+      )
     }
   }
 }

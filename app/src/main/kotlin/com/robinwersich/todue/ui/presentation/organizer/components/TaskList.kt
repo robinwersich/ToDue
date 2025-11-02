@@ -38,17 +38,15 @@ fun TaskList(
         state = taskState,
         onEvent = { onEvent(ModifyTask(it, taskId)) },
         modifier =
-          remember(taskState.id, taskState.focusLevel, onEvent) {
-            when (taskState.focusLevel) {
-              FocusLevel.FOCUSSED,
-              FocusLevel.FOCUSSED_REQUEST_KEYBOARD ->
-                Modifier.clickable(interactionSource = null, indication = null) {}
-              FocusLevel.NEUTRAL ->
-                Modifier.clickable(interactionSource = null, indication = null) {
-                  onEvent(ExpandTask(taskState.id))
-                }
-              FocusLevel.BACKGROUND -> Modifier
-            }
+          when (taskState.focusLevel) {
+            FocusLevel.FOCUSSED,
+            FocusLevel.FOCUSSED_REQUEST_KEYBOARD ->
+              Modifier.clickable(interactionSource = null, indication = null) {}
+            FocusLevel.NEUTRAL ->
+              Modifier.clickable(interactionSource = null, indication = null) {
+                onEvent(ExpandTask(taskState.id))
+              }
+            FocusLevel.BACKGROUND -> Modifier
           },
       )
     }
