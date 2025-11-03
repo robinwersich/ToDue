@@ -33,12 +33,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,17 +56,19 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.TimeBlock
-import com.robinwersich.todue.ui.composeextensions.DebouncedUpdate
 import com.robinwersich.todue.ui.composeextensions.modifiers.signedPadding
 import com.robinwersich.todue.ui.presentation.organizer.TaskEvent
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
 import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
-import java.time.LocalDate
 
 @Composable
 fun TaskView(
@@ -90,6 +95,7 @@ fun TaskView(
   }
 }
 
+@OptIn(FlowPreview::class)
 @Composable
 private fun TaskViewContent(
   text: String,
@@ -102,15 +108,17 @@ private fun TaskViewContent(
 ) {
   val checkBoxWidth = 48.dp
 
-  val focusRequester = remember { FocusRequester() }
-  val focusManager = LocalFocusManager.current
-  LaunchedEffect(focusTransition.targetState) {
-    when (focusTransition.targetState) {
-      FocusLevel.FOCUSSED_REQUEST_KEYBOARD -> focusRequester.requestFocus()
-      FocusLevel.NEUTRAL,
-      FocusLevel.BACKGROUND -> focusManager.clearFocus()
-      else -> {}
+  // Internal text state to avoid full DB update on every character
+  val currentTextState = remember { mutableStateOf(text) }
+  var currentText by currentTextState
+  LaunchedEffect(text) { currentText = text }
+  if (focusTransition.targetState.isFocussed) {
+    LaunchedEffect(onEvent) {
+      snapshotFlow { currentText }
+        .debounce { 1000.milliseconds }
+        .collect { onEvent(TaskEvent.SetText(it)) }
     }
+    DisposableEffect(onEvent) { onDispose { onEvent(TaskEvent.SetText(currentText)) } }
   }
 
   Column(modifier = modifier.padding(end = 16.dp).fillMaxWidth()) {
@@ -122,28 +130,8 @@ private fun TaskViewContent(
         modifier = Modifier.width(checkBoxWidth),
       )
 
-      val textColor =
-        LocalContentColor.current.copy(
-          alpha = if (focusTransition.targetState == FocusLevel.BACKGROUND) 0.38f else 1f
-        )
-      val textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = textColor))
-
       Column(modifier = Modifier.padding(vertical = 8.dp)) {
-        DebouncedUpdate(
-          value = text,
-          onValueChanged = { onEvent(TaskEvent.SetText(it)) },
-          emitUpdates = focusTransition.targetState.isFocussed,
-        ) {
-          val (cachedText, setCachedText) = it
-          BasicTextField(
-            value = cachedText,
-            onValueChange = setCachedText,
-            enabled = focusTransition.targetState.isFocussed,
-            textStyle = textStyle,
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            modifier = Modifier.focusRequester(focusRequester),
-          )
-        }
+        TaskTitle(currentTextState, focusTransition.targetState)
         // put task info here if collapsed
       }
     }
@@ -164,6 +152,32 @@ private fun TaskViewContent(
       )
     }
   }
+}
+
+@Composable
+private fun TaskTitle(text: MutableState<String>, focusLevel: FocusLevel) {
+  val focusRequester = remember { FocusRequester() }
+  val focusManager = LocalFocusManager.current
+  LaunchedEffect(focusLevel) {
+    when (focusLevel) {
+      FocusLevel.FOCUSSED_REQUEST_KEYBOARD -> focusRequester.requestFocus()
+      FocusLevel.NEUTRAL,
+      FocusLevel.BACKGROUND -> focusManager.clearFocus()
+      else -> {}
+    }
+  }
+
+  val textColor =
+    LocalContentColor.current.copy(alpha = if (focusLevel == FocusLevel.BACKGROUND) 0.38f else 1f)
+  val textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = textColor))
+  BasicTextField(
+    value = text.value,
+    onValueChange = { text.value = it },
+    enabled = focusLevel.isFocussed,
+    textStyle = textStyle,
+    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+    modifier = Modifier.focusRequester(focusRequester),
+  )
 }
 
 @Composable
