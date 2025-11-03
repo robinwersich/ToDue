@@ -136,6 +136,13 @@ private fun TaskViewContent(
       }
     }
 
+    // Delete Task if it's de-focussed or fully removed from composition while empty
+    if (focusTransition.targetState.isFocussed) {
+      DisposableEffect(onEvent) {
+        onDispose { if (currentText.isEmpty()) onEvent(TaskEvent.Delete) }
+      }
+    }
+
     val animationAnchor = Alignment.Top
     focusTransition.AnimatedVisibility(
       visible = { it.isFocussed },
