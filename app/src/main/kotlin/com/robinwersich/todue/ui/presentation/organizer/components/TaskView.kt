@@ -65,17 +65,29 @@ import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.ui.composeextensions.modifiers.signedPadding
 import com.robinwersich.todue.ui.presentation.organizer.TaskEvent
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
-import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
+
+enum class FocusLevel {
+  /** Collapsed, can be interacted with */
+  NEUTRAL,
+  /** Expanded, can be interacted with */
+  FOCUSSED,
+  /** Collapsed, cannot be interacted with (because other task is focussed) */
+  BACKGROUND;
+
+  val isFocussed
+    get() = this == FOCUSSED
+}
 
 @Composable
 fun TaskView(
   state: TaskViewState,
+  focusLevel: FocusLevel,
   modifier: Modifier = Modifier,
   onEvent: (TaskEvent) -> Unit = {},
 ) {
-  val focusTransition = updateTransition(targetState = state.focusLevel, label = "Focus Level")
+  val focusTransition = updateTransition(targetState = focusLevel, label = "Focus Level")
   val surfaceColor by
     focusTransition.animateColor(label = "Task Color") {
       if (it.isFocussed) MaterialTheme.colorScheme.surfaceContainerHigh
@@ -302,17 +314,13 @@ private fun TaskAction(
   }
 }
 
-class TaskPreviewProvider : PreviewParameterProvider<TaskViewState> {
-  override val values: Sequence<TaskViewState> = sequence {
+private class TaskPreviewProvider : PreviewParameterProvider<Pair<TaskViewState, FocusLevel>> {
+  override val values: Sequence<Pair<TaskViewState, FocusLevel>> = sequence {
     for (focusLevel in FocusLevel.entries) {
-      for (doneDate in listOf(null, LocalDate.now())) {
-        yield(TaskViewState(text = "Create Todo App", doneDate = doneDate, focusLevel = focusLevel))
-      }
+      yield(TaskViewState(text = "Create Todo App", doneDate = LocalDate.now()) to focusLevel)
       yield(
-        TaskViewState(
-          text = "This is a relatively long task spanning over two lines.",
-          focusLevel = focusLevel,
-        )
+        TaskViewState(text = "This is a relatively long task spanning over two lines.") to
+          focusLevel
       )
     }
   }
@@ -320,16 +328,22 @@ class TaskPreviewProvider : PreviewParameterProvider<TaskViewState> {
 
 @Preview()
 @Composable
-private fun TaskPreview(@PreviewParameter(TaskPreviewProvider::class) state: TaskViewState) {
+private fun TaskPreview(
+  @PreviewParameter(TaskPreviewProvider::class) taskAndFocus: Pair<TaskViewState, FocusLevel>
+) {
+  val (task, focusLevel) = taskAndFocus
   ToDueTheme {
-    TaskView(state, modifier = Modifier.background(MaterialTheme.colorScheme.background))
+    TaskView(task, focusLevel, modifier = Modifier.background(MaterialTheme.colorScheme.background))
   }
 }
 
 @Preview(uiMode = UI_MODE_NIGHT_YES)
 @Composable
-private fun TaskPreviewDark(@PreviewParameter(TaskPreviewProvider::class) state: TaskViewState) {
+private fun TaskPreviewDark(
+  @PreviewParameter(TaskPreviewProvider::class) taskAndFocus: Pair<TaskViewState, FocusLevel>
+) {
+  val (task, focusLevel) = taskAndFocus
   ToDueTheme {
-    TaskView(state, modifier = Modifier.background(MaterialTheme.colorScheme.background))
+    TaskView(task, focusLevel, modifier = Modifier.background(MaterialTheme.colorScheme.background))
   }
 }

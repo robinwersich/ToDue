@@ -8,7 +8,6 @@ import java.time.Duration
 import java.time.LocalDate
 import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -19,7 +18,6 @@ import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.repository.TaskRepository
 import com.robinwersich.todue.domain.repository.TimeBlockRepository
 import com.robinwersich.todue.toDueApplication
-import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskBlockViewState
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
@@ -32,15 +30,11 @@ class OrganizerViewModel(
 ) : ViewModel() {
   val navigationState = NavigationState()
   private val timelinesFlow = timeBlockRepository.getTimelines()
-  private val focussedTaskIdFlow = MutableStateFlow<Long?>(null)
 
   init {
     viewModelScope.launch { timelinesFlow.collect { navigationState.setTimelines(it) } }
     viewModelScope.launch { navigationState.updateTimelineAnchorsOnSwipe() }
     viewModelScope.launch { navigationState.updateDateAnchorsOnSwipe() }
-    viewModelScope.launch {
-      navigationState.currentNavPosFlow.collect { handleEvent(OrganizerEvent.CollapseTasks) }
-    }
   }
 
   private val activeTaskBlocksFlow =
@@ -52,19 +46,18 @@ class OrganizerViewModel(
       activeTaskBlocksFlow,
       currentTaskBlockFlow,
       navigationState.focussedTimelineBlocksFlow,
-      focussedTaskIdFlow,
-    ) { activeTaskBlocks, currentTaskBlock, focussedTimelineBlocks, focussedTaskId ->
+    ) { activeTaskBlocks, currentTaskBlock, focussedTimelineBlocks ->
       focussedTimelineBlocks.associateWithTo(
         persistentMapOf<TimelineBlock, TaskBlockViewState>().builder()
       ) {
         val taskBlock =
           if (it == currentTaskBlock.timelineBlock) currentTaskBlock
           else activeTaskBlocks.getOrElse(it) { TaskBlock(it) }
-        taskBlock.toViewState(focussedTaskId)
+        taskBlock.toViewState()
       }
     }
 
-  private fun TaskBlock.toViewState(focussedTaskId: Long? = null) =
+  private fun TaskBlock.toViewState() =
     TaskBlockViewState(
       timelineBlock,
       tasks.mapToImmutableList { task ->
@@ -74,12 +67,6 @@ class OrganizerViewModel(
           timelineBlock = timelineBlock,
           dueDate = task.dueDate,
           doneDate = task.doneDate,
-          focusLevel =
-            when (focussedTaskId) {
-              null -> FocusLevel.NEUTRAL
-              task.id -> FocusLevel.FOCUSSED
-              else -> FocusLevel.BACKGROUND
-            },
         )
       },
     )
@@ -97,13 +84,7 @@ class OrganizerViewModel(
                 dueDate = event.timelineBlock.section.endInclusive,
               )
             )
-          focussedTaskIdFlow.value = newTaskId
         }
-      is OrganizerEvent.ExpandTask ->
-        if (!navigationState.isSplitView) {
-          focussedTaskIdFlow.value = event.taskId
-        }
-      is OrganizerEvent.CollapseTasks -> focussedTaskIdFlow.value = null
       is OrganizerEvent.ForTask -> handleModifyTaskEvent(event.event, event.taskId)
     }
   }
@@ -120,7 +101,6 @@ class OrganizerViewModel(
       is TaskEvent.SetDueDate ->
         viewModelScope.launch { taskRepository.setDueDate(taskId, event.date) }
       is TaskEvent.Delete -> {
-        if (focussedTaskIdFlow.value == taskId) focussedTaskIdFlow.value = null
         viewModelScope.launch { taskRepository.deleteTask(taskId) }
       }
     }

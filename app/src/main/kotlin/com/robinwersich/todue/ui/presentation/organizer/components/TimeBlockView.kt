@@ -18,7 +18,6 @@ import com.robinwersich.todue.domain.model.Week
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerEvent
 import com.robinwersich.todue.ui.presentation.organizer.formatting.TimeBlockFormatter
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
-import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskBlockViewState
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
@@ -57,7 +56,7 @@ fun TaskBlockContent(
 fun ExpandedTimeBlockViewPreview() {
   val tasks =
     listOf("Task 1", "Task 2", "Task 3").mapIndexedToImmutableList { id, text ->
-      TaskViewState(id = id.toLong(), text = text, focusLevel = FocusLevel.NEUTRAL)
+      TaskViewState(id = id.toLong(), text = text)
     }
   ToDueTheme {
     TaskBlockContent(
