@@ -13,12 +13,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlinx.collections.immutable.ImmutableList
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerEvent
 import com.robinwersich.todue.ui.presentation.organizer.state.FocusLevel
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.utility.mapIndexedToImmutableList
+import kotlinx.collections.immutable.ImmutableList
 
 @Composable
 fun TaskList(
@@ -42,8 +42,7 @@ fun TaskList(
           onEvent = { onEvent(OrganizerEvent.ForTask(taskId, it)) },
           modifier =
             when (taskState.focusLevel) {
-              FocusLevel.FOCUSSED,
-              FocusLevel.FOCUSSED_REQUEST_KEYBOARD ->
+              FocusLevel.FOCUSSED ->
                 Modifier.clickable(interactionSource = null, indication = null) {}
               FocusLevel.NEUTRAL ->
                 Modifier.clickable(interactionSource = null, indication = null) {

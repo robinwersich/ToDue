@@ -48,7 +48,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
@@ -164,15 +163,7 @@ private fun TaskViewContent(
 @Composable
 private fun TaskTitle(text: MutableState<String>, focusLevel: FocusLevel) {
   val focusRequester = remember { FocusRequester() }
-  val focusManager = LocalFocusManager.current
-  LaunchedEffect(focusLevel) {
-    when (focusLevel) {
-      FocusLevel.FOCUSSED_REQUEST_KEYBOARD -> focusRequester.requestFocus()
-      FocusLevel.NEUTRAL,
-      FocusLevel.BACKGROUND -> focusManager.clearFocus()
-      else -> {}
-    }
-  }
+  LaunchedEffect(text.value.isEmpty()) { if (text.value.isEmpty()) focusRequester.requestFocus() }
 
   val textColor =
     LocalContentColor.current.copy(alpha = if (focusLevel == FocusLevel.BACKGROUND) 0.38f else 1f)

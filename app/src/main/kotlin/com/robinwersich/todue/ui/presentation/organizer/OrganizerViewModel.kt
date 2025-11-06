@@ -4,6 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import java.time.Duration
+import java.time.LocalDate
+import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TaskBlock
 import com.robinwersich.todue.domain.model.TimelineBlock
@@ -15,15 +24,6 @@ import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskBlockViewState
 import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.utility.mapToImmutableList
-import java.time.Duration
-import java.time.LocalDate
-import kotlinx.collections.immutable.persistentMapOf
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OrganizerViewModel(
@@ -32,7 +32,7 @@ class OrganizerViewModel(
 ) : ViewModel() {
   val navigationState = NavigationState()
   private val timelinesFlow = timeBlockRepository.getTimelines()
-  private val taskFocusFlow = MutableStateFlow<TaskFocus?>(null)
+  private val focussedTaskIdFlow = MutableStateFlow<Long?>(null)
 
   init {
     viewModelScope.launch { timelinesFlow.collect { navigationState.setTimelines(it) } }
@@ -52,19 +52,19 @@ class OrganizerViewModel(
       activeTaskBlocksFlow,
       currentTaskBlockFlow,
       navigationState.focussedTimelineBlocksFlow,
-      taskFocusFlow,
-    ) { activeTaskBlocks, currentTaskBlock, focussedTimelineBlocks, taskFocus ->
+      focussedTaskIdFlow,
+    ) { activeTaskBlocks, currentTaskBlock, focussedTimelineBlocks, focussedTaskId ->
       focussedTimelineBlocks.associateWithTo(
         persistentMapOf<TimelineBlock, TaskBlockViewState>().builder()
       ) {
         val taskBlock =
           if (it == currentTaskBlock.timelineBlock) currentTaskBlock
           else activeTaskBlocks.getOrElse(it) { TaskBlock(it) }
-        taskBlock.toViewState(taskFocus)
+        taskBlock.toViewState(focussedTaskId)
       }
     }
 
-  private fun TaskBlock.toViewState(taskFocus: TaskFocus? = null) =
+  private fun TaskBlock.toViewState(focussedTaskId: Long? = null) =
     TaskBlockViewState(
       timelineBlock,
       tasks.mapToImmutableList { task ->
@@ -75,10 +75,9 @@ class OrganizerViewModel(
           dueDate = task.dueDate,
           doneDate = task.doneDate,
           focusLevel =
-            when (taskFocus) {
+            when (focussedTaskId) {
               null -> FocusLevel.NEUTRAL
-              TaskFocus(task.id, false) -> FocusLevel.FOCUSSED
-              TaskFocus(task.id, true) -> FocusLevel.FOCUSSED_REQUEST_KEYBOARD
+              task.id -> FocusLevel.FOCUSSED
               else -> FocusLevel.BACKGROUND
             },
         )
@@ -98,13 +97,13 @@ class OrganizerViewModel(
                 dueDate = event.timelineBlock.section.endInclusive,
               )
             )
-          taskFocusFlow.value = TaskFocus(newTaskId, requestKeyboard = true)
+          focussedTaskIdFlow.value = newTaskId
         }
       is OrganizerEvent.ExpandTask ->
         if (!navigationState.isSplitView) {
-          taskFocusFlow.value = TaskFocus(event.taskId, requestKeyboard = false)
+          focussedTaskIdFlow.value = event.taskId
         }
-      is OrganizerEvent.CollapseTasks -> taskFocusFlow.value = null
+      is OrganizerEvent.CollapseTasks -> focussedTaskIdFlow.value = null
       is OrganizerEvent.ForTask -> handleModifyTaskEvent(event.event, event.taskId)
     }
   }
@@ -121,7 +120,7 @@ class OrganizerViewModel(
       is TaskEvent.SetDueDate ->
         viewModelScope.launch { taskRepository.setDueDate(taskId, event.date) }
       is TaskEvent.Delete -> {
-        if (taskFocusFlow.value?.id == taskId) taskFocusFlow.value = null
+        if (focussedTaskIdFlow.value == taskId) focussedTaskIdFlow.value = null
         viewModelScope.launch { taskRepository.deleteTask(taskId) }
       }
     }
@@ -140,5 +139,3 @@ class OrganizerViewModel(
     }
   }
 }
-
-private data class TaskFocus(val id: Long, val requestKeyboard: Boolean)
