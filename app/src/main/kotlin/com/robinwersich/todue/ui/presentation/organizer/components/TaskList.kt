@@ -62,15 +62,16 @@ fun TaskList(
           focusLevel = focusLevel,
           onEvent = onEvent,
           modifier =
-            when (focusLevel) {
-              FocusLevel.FOCUSSED ->
-                Modifier.clickable(interactionSource = null, indication = null) {}
-              FocusLevel.NEUTRAL ->
-                Modifier.clickable(interactionSource = null, indication = null) {
-                  focussedTaskId = taskId
-                }
-              FocusLevel.BACKGROUND -> Modifier
-            }.animateItem(fadeOutSpec = spring(stiffness = Spring.StiffnessHigh)),
+            Modifier.animateItem(fadeOutSpec = spring(stiffness = Spring.StiffnessHigh)).clickable(
+              interactionSource = null,
+              indication = null,
+            ) {
+              when (focusLevel) {
+                FocusLevel.NEUTRAL -> focussedTaskId = taskId
+                FocusLevel.BACKGROUND -> focussedTaskId = null
+                FocusLevel.FOCUSSED -> {}
+              }
+            },
         )
       }
     }
