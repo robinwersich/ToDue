@@ -12,14 +12,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
+import com.robinwersich.todue.domain.model.Day
+import com.robinwersich.todue.domain.model.Task
+import com.robinwersich.todue.domain.model.TaskBlock
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.Week
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerEvent
 import com.robinwersich.todue.ui.presentation.organizer.formatting.TimeBlockFormatter
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
-import com.robinwersich.todue.ui.presentation.organizer.state.TaskBlockViewState
-import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.utility.mapIndexedToImmutableList
 
@@ -36,18 +38,18 @@ fun TaskBlockLabel(
 
 @Composable
 fun TaskBlockContent(
-  viewState: TaskBlockViewState,
+  taskBlock: TaskBlock,
   formatter: TimeBlockFormatter,
   modifier: Modifier = Modifier,
   onEvent: (OrganizerEvent) -> Unit = {},
 ) {
   Column(modifier) {
     Text(
-      formatter.format(viewState.timeBlock, useNarrowFormatting = false),
+      formatter.format(taskBlock.timeBlock, useNarrowFormatting = false),
       style = MaterialTheme.typography.headlineSmall,
       modifier = Modifier.padding(8.dp),
     )
-    TaskList(viewState.tasks, onEvent = onEvent, modifier = Modifier.fillMaxSize())
+    TaskList(taskBlock.tasks, onEvent = onEvent, modifier = Modifier.fillMaxSize())
   }
 }
 
@@ -55,12 +57,17 @@ fun TaskBlockContent(
 @Composable
 fun ExpandedTimeBlockViewPreview() {
   val tasks =
-    listOf("Task 1", "Task 2", "Task 3").mapIndexedToImmutableList { id, text ->
-      TaskViewState(id = id.toLong(), text = text)
+    listOf("Task 1", "Task 2", "Task 3").mapIndexedToImmutableList() { id, text ->
+      Task(
+        id = id.toLong(),
+        text = text,
+        scheduledBlock = TimelineBlock(0, Day()),
+        dueDate = LocalDate.now(),
+      )
     }
   ToDueTheme {
     TaskBlockContent(
-      TaskBlockViewState(TimelineBlock(0, Week()), tasks),
+      TaskBlock(TimelineBlock(0, Week()), tasks),
       rememberTimeBlockFormatter(),
       modifier = Modifier.fillMaxSize(),
     )

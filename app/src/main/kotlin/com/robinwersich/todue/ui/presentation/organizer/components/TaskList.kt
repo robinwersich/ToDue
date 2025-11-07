@@ -17,15 +17,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import kotlinx.collections.immutable.ImmutableList
+import java.time.LocalDate
+import com.robinwersich.todue.domain.model.Day
+import com.robinwersich.todue.domain.model.Task
+import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerEvent
-import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.utility.mapIndexedToImmutableList
 
 @Composable
 fun TaskList(
-  tasks: ImmutableList<TaskViewState>,
+  tasks: List<Task>,
   modifier: Modifier = Modifier,
   onEvent: (OrganizerEvent) -> Unit = {},
   focussedTaskIdState: MutableState<Long?> = remember { mutableStateOf(null) },
@@ -56,7 +58,7 @@ fun TaskList(
             else -> FocusLevel.BACKGROUND
           }
         TaskView(
-          state = taskState,
+          task = taskState,
           focusLevel = focusLevel,
           onEvent = { onEvent(OrganizerEvent.ForTask(taskId, it)) },
           modifier =
@@ -80,7 +82,12 @@ fun TaskList(
 private fun TaskListPreview() {
   val tasks =
     listOf("Task 1", "Task 2", "Task 3").mapIndexedToImmutableList() { id, text ->
-      TaskViewState(id = id.toLong(), text = text)
+      Task(
+        id = id.toLong(),
+        text = text,
+        scheduledBlock = TimelineBlock(0, Day()),
+        dueDate = LocalDate.now(),
+      )
     }
   ToDueTheme {
     TaskList(

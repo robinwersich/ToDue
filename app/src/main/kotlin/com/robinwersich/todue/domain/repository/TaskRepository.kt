@@ -6,7 +6,6 @@ import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TaskBlock
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimelineBlock
-import com.robinwersich.todue.domain.model.TimelineSection
 
 interface TaskRepository {
   suspend fun insertTask(task: Task): Long
@@ -23,7 +22,7 @@ interface TaskRepository {
 
   fun getTaskBlockFlow(timelineBlock: TimelineBlock): Flow<TaskBlock>
 
-  suspend fun getTasks(timelineSection: TimelineSection<*>): List<Task>
+  suspend fun getTasks(timelineBlock: TimelineBlock): List<Task>
 
   suspend fun getTaskBlock(timelineBlock: TimelineBlock): TaskBlock
 

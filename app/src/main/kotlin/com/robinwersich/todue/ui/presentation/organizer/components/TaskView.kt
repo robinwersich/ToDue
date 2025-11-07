@@ -61,11 +61,13 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.Day
+import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TimeBlock
+import com.robinwersich.todue.domain.model.TimelineBlock
+import com.robinwersich.todue.domain.model.Week
 import com.robinwersich.todue.ui.composeextensions.modifiers.signedPadding
 import com.robinwersich.todue.ui.presentation.organizer.TaskEvent
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
-import com.robinwersich.todue.ui.presentation.organizer.state.TaskViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 
 enum class FocusLevel {
@@ -82,7 +84,7 @@ enum class FocusLevel {
 
 @Composable
 fun TaskView(
-  state: TaskViewState,
+  task: Task,
   focusLevel: FocusLevel,
   modifier: Modifier = Modifier,
   onEvent: (TaskEvent) -> Unit = {},
@@ -96,10 +98,10 @@ fun TaskView(
 
   Surface(shape = RoundedCornerShape(24.dp), color = surfaceColor, modifier = modifier) {
     TaskViewContent(
-      text = state.text,
-      timeBlock = state.timelineBlock?.section,
-      doneDate = state.doneDate,
-      dueDate = state.dueDate,
+      text = task.text,
+      timeBlock = task.scheduledBlock.section,
+      doneDate = task.doneDate,
+      dueDate = task.dueDate,
       focusTransition = focusTransition,
       onEvent = onEvent,
     )
@@ -314,13 +316,23 @@ private fun TaskAction(
   }
 }
 
-private class TaskPreviewProvider : PreviewParameterProvider<Pair<TaskViewState, FocusLevel>> {
-  override val values: Sequence<Pair<TaskViewState, FocusLevel>> = sequence {
+private class TaskPreviewProvider : PreviewParameterProvider<Pair<Task, FocusLevel>> {
+  override val values: Sequence<Pair<Task, FocusLevel>> = sequence {
     for (focusLevel in FocusLevel.entries) {
-      yield(TaskViewState(text = "Create Todo App", doneDate = LocalDate.now()) to focusLevel)
       yield(
-        TaskViewState(text = "This is a relatively long task spanning over two lines.") to
-          focusLevel
+        Task(
+          text = "Create Todo App",
+          scheduledBlock = TimelineBlock(0, Day()),
+          dueDate = LocalDate.now(),
+          doneDate = LocalDate.now(),
+        ) to focusLevel
+      )
+      yield(
+        Task(
+          text = "This is a relatively long task spanning over two lines.",
+          scheduledBlock = TimelineBlock(1, Week()),
+          dueDate = LocalDate.now(),
+        ) to focusLevel
       )
     }
   }
@@ -329,7 +341,7 @@ private class TaskPreviewProvider : PreviewParameterProvider<Pair<TaskViewState,
 @Preview()
 @Composable
 private fun TaskPreview(
-  @PreviewParameter(TaskPreviewProvider::class) taskAndFocus: Pair<TaskViewState, FocusLevel>
+  @PreviewParameter(TaskPreviewProvider::class) taskAndFocus: Pair<Task, FocusLevel>
 ) {
   val (task, focusLevel) = taskAndFocus
   ToDueTheme {
@@ -340,7 +352,7 @@ private fun TaskPreview(
 @Preview(uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun TaskPreviewDark(
-  @PreviewParameter(TaskPreviewProvider::class) taskAndFocus: Pair<TaskViewState, FocusLevel>
+  @PreviewParameter(TaskPreviewProvider::class) taskAndFocus: Pair<Task, FocusLevel>
 ) {
   val (task, focusLevel) = taskAndFocus
   ToDueTheme {

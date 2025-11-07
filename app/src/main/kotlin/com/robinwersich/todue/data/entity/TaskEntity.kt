@@ -6,9 +6,12 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.robinwersich.todue.domain.model.Task
+import com.robinwersich.todue.domain.model.TimelineBlock
 import java.time.Duration
 import java.time.LocalDate
-import com.robinwersich.todue.domain.model.Task
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.toJavaDuration
 
 @Entity(
   tableName = "todo",
@@ -39,13 +42,12 @@ data class TaskEntity(
   @ColumnInfo(name = "done_date") val doneDate: LocalDate? = null,
 )
 
-fun TaskEntity.toModel() =
+fun TaskEntity.toModel(scheduledBlock: TimelineBlock) =
   Task(
     id = id,
     text = text,
-    scheduledTimelineRange = scheduledTimelineSection.toModel(),
+    scheduledBlock = scheduledBlock,
     dueDate = dueDate,
-    estimatedDuration = estimatedDuration,
     doneDate = doneDate,
   )
 
@@ -53,8 +55,8 @@ fun Task.toEntity() =
   TaskEntity(
     id = id,
     text = text,
-    scheduledTimelineSection = scheduledTimelineRange.toEntity(),
+    scheduledTimelineSection = scheduledBlock.toEntity(),
     dueDate = dueDate,
-    estimatedDuration = estimatedDuration,
+    estimatedDuration = 1.hours.toJavaDuration(),
     doneDate = doneDate,
   )
