@@ -12,6 +12,8 @@ interface TaskRepository {
 
   suspend fun deleteTask(id: Long)
 
+  suspend fun updateTask(task: Task)
+
   suspend fun setText(id: Long, text: String)
 
   suspend fun setTimeBlock(id: Long, timeBlock: TimeBlock)

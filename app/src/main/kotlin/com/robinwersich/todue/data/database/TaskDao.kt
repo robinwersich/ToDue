@@ -3,6 +3,7 @@ package com.robinwersich.todue.data.database
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import com.robinwersich.todue.data.entity.TaskEntity
@@ -12,6 +13,8 @@ interface TaskDao {
   @Insert suspend fun insert(task: TaskEntity): Long
 
   @Query("DELETE FROM todo WHERE id = :id") suspend fun delete(id: Long)
+
+  @Update suspend fun update(task: TaskEntity)
 
   @Query("UPDATE todo SET text = :text WHERE id = :id") suspend fun setText(id: Long, text: String)
 

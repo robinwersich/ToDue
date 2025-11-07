@@ -60,7 +60,7 @@ fun TaskList(
         TaskView(
           task = taskState,
           focusLevel = focusLevel,
-          onEvent = { onEvent(OrganizerEvent.ForTask(taskId, it)) },
+          onEvent = onEvent,
           modifier =
             when (focusLevel) {
               FocusLevel.FOCUSSED ->

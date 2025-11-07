@@ -51,32 +51,22 @@ class OrganizerViewModel(
     when (event) {
       is OrganizerEvent.AddTask ->
         viewModelScope.launch {
-          val newTaskId =
-            taskRepository.insertTask(
-              Task(
-                text = "",
-                scheduledBlock = event.timelineBlock,
-                dueDate = event.timelineBlock.section.endInclusive,
-              )
+          taskRepository.insertTask(
+            Task(
+              text = "",
+              scheduledBlock = event.timelineBlock,
+              dueDate = event.timelineBlock.section.endInclusive,
             )
+          )
         }
-      is OrganizerEvent.ForTask -> handleModifyTaskEvent(event.event, event.taskId)
-    }
-  }
-
-  private fun handleModifyTaskEvent(event: TaskEvent, taskId: Long) {
-    when (event) {
-      is TaskEvent.SetText -> viewModelScope.launch { taskRepository.setText(taskId, event.text) }
-      is TaskEvent.SetDone -> {
-        val doneDate = if (event.done) LocalDate.now() else null
-        viewModelScope.launch { taskRepository.setDoneDate(taskId, doneDate) }
+      is OrganizerEvent.DeleteTask -> {
+        viewModelScope.launch { taskRepository.deleteTask(event.taskId) }
       }
-      is TaskEvent.SetTimeBlock ->
-        viewModelScope.launch { taskRepository.setTimeBlock(taskId, event.timeBlock) }
-      is TaskEvent.SetDueDate ->
-        viewModelScope.launch { taskRepository.setDueDate(taskId, event.date) }
-      is TaskEvent.Delete -> {
-        viewModelScope.launch { taskRepository.deleteTask(taskId) }
+      is OrganizerEvent.UpdateTask ->
+        viewModelScope.launch { taskRepository.updateTask(event.task) }
+      is OrganizerEvent.SetTaskDone -> {
+        val doneDate = if (event.done) LocalDate.now() else null
+        viewModelScope.launch { taskRepository.setDoneDate(event.taskId, doneDate) }
       }
     }
   }

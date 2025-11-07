@@ -18,6 +18,8 @@ class DatabaseTaskRepository(private val taskDao: TaskDao) : TaskRepository {
 
   override suspend fun deleteTask(id: Long) = taskDao.delete(id)
 
+  override suspend fun updateTask(task: Task) = taskDao.update(task.toEntity())
+
   override suspend fun setTimeBlock(id: Long, timeBlock: TimeBlock) =
     taskDao.setScheduledRange(
       id,
