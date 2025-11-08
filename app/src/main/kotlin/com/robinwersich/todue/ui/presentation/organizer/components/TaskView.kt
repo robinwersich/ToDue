@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -51,7 +52,7 @@ import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.ui.composeextensions.modifiers.signedPadding
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
 
-val checkBoxWidth = 48.dp
+val checkboxSize = 48.dp
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -78,7 +79,7 @@ fun SharedTransitionScope.CollapsedTaskView(
         checked = task.doneDate != null,
         onCheckedChange = onDone,
         modifier =
-          Modifier.width(checkBoxWidth)
+          Modifier.size(checkboxSize)
             .sharedElement(
               rememberSharedContentState(SharedTaskElement.CHECKBOX),
               animatedVisibilityScope,
@@ -131,7 +132,7 @@ fun SharedTransitionScope.ExpandedTaskView(
             onChange(task.copy(doneDate = if (checked) LocalDate.now() else null))
           },
           modifier =
-            Modifier.width(checkBoxWidth)
+            Modifier.size(checkboxSize)
               .sharedElement(
                 rememberSharedContentState(SharedTaskElement.CHECKBOX),
                 animatedVisibilityScope,
@@ -166,7 +167,7 @@ fun SharedTransitionScope.ExpandedTaskView(
         onDueDateChanged = { onChange(task.copy(dueDate = it)) },
         onDelete = onDelete,
         modifier =
-          Modifier.padding(start = checkBoxWidth).wrapContentHeight(Alignment.Top, unbounded = true),
+          Modifier.padding(start = checkboxSize).wrapContentHeight(Alignment.Top, unbounded = true),
       )
     }
   }
