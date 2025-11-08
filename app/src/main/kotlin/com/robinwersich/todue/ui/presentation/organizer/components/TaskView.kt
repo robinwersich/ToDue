@@ -1,18 +1,10 @@
 package com.robinwersich.todue.ui.presentation.organizer.components
 
-import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,7 +27,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,88 +42,20 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TimelineBlock
-import com.robinwersich.todue.domain.model.Week
 import com.robinwersich.todue.ui.composeextensions.modifiers.signedPadding
-import com.robinwersich.todue.ui.presentation.organizer.OrganizerEvent
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
-import com.robinwersich.todue.ui.theme.ToDueTheme
-
-enum class FocusLevel {
-  /** Collapsed, can be interacted with */
-  NEUTRAL,
-  /** Expanded, can be interacted with */
-  FOCUSSED,
-  /** Collapsed, cannot be interacted with (because other task is focussed) */
-  BACKGROUND;
-
-  val isFocussed
-    get() = this == FOCUSSED
-}
-
-@OptIn(ExperimentalSharedTransitionApi::class)
-@Composable
-fun TaskView(
-  task: Task,
-  focusLevel: FocusLevel,
-  modifier: Modifier = Modifier,
-  onEvent: (OrganizerEvent) -> Unit = {},
-) {
-  var taskState by remember { mutableStateOf(task) }
-  if (focusLevel.isFocussed) {
-    DisposableEffect(onEvent) {
-      onDispose {
-        onEvent(
-          // We don't want collapsed empty tasks, delete if they are empty
-          if (taskState.text.isBlank()) OrganizerEvent.DeleteTask(taskState.id)
-          else OrganizerEvent.UpdateTask(taskState)
-        )
-      }
-    }
-  }
-
-  SharedTransitionScope { sharedTransitionModifier ->
-    AnimatedContent(
-      focusLevel,
-      transitionSpec = {
-        fadeIn() + expandVertically(expandFrom = Alignment.Top) togetherWith
-          fadeOut() + shrinkVertically(shrinkTowards = Alignment.Top)
-      },
-      contentKey = { it.isFocussed },
-      modifier = modifier.then(sharedTransitionModifier),
-    ) { level ->
-      if (level.isFocussed) {
-        ExpandedTaskView(
-          task = taskState,
-          onChange = { taskState = it },
-          onDelete = { onEvent(OrganizerEvent.DeleteTask(taskState.id)) },
-          animatedVisibilityScope = this@AnimatedContent,
-        )
-      } else {
-        CollapsedTaskView(
-          task = taskState,
-          onDone = { onEvent(OrganizerEvent.SetTaskDone(taskState.id, it)) },
-          enabled = level != FocusLevel.BACKGROUND,
-          animatedVisibilityScope = this@AnimatedContent,
-        )
-      }
-    }
-  }
-}
 
 val checkBoxWidth = 48.dp
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun SharedTransitionScope.CollapsedTaskView(
+fun SharedTransitionScope.CollapsedTaskView(
   task: Task,
   onDone: (Boolean) -> Unit,
   enabled: Boolean,
@@ -183,7 +106,7 @@ private fun SharedTransitionScope.CollapsedTaskView(
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-private fun SharedTransitionScope.ExpandedTaskView(
+fun SharedTransitionScope.ExpandedTaskView(
   task: Task,
   onChange: (Task) -> Unit,
   onDelete: () -> Unit,
@@ -377,52 +300,8 @@ private fun TaskAction(
   }
 }
 
-private class TaskPreviewProvider : PreviewParameterProvider<Pair<Task, FocusLevel>> {
-  override val values: Sequence<Pair<Task, FocusLevel>> = sequence {
-    for (focusLevel in FocusLevel.entries) {
-      yield(
-        Task(
-          text = "Create Todo App",
-          scheduledBlock = TimelineBlock(0, Day()),
-          dueDate = LocalDate.now(),
-          doneDate = LocalDate.now(),
-        ) to focusLevel
-      )
-      yield(
-        Task(
-          text = "This is a relatively long task spanning over two lines.",
-          scheduledBlock = TimelineBlock(1, Week()),
-          dueDate = LocalDate.now(),
-        ) to focusLevel
-      )
-    }
-  }
-}
-
 private enum class SharedTaskElement {
   CARD,
   CHECKBOX,
   TEXT,
-}
-
-@Preview()
-@Composable
-private fun TaskPreview(
-  @PreviewParameter(TaskPreviewProvider::class) taskAndFocus: Pair<Task, FocusLevel>
-) {
-  val (task, focusLevel) = taskAndFocus
-  ToDueTheme {
-    TaskView(task, focusLevel, modifier = Modifier.background(MaterialTheme.colorScheme.background))
-  }
-}
-
-@Preview(uiMode = UI_MODE_NIGHT_YES)
-@Composable
-private fun TaskPreviewDark(
-  @PreviewParameter(TaskPreviewProvider::class) taskAndFocus: Pair<Task, FocusLevel>
-) {
-  val (task, focusLevel) = taskAndFocus
-  ToDueTheme {
-    TaskView(task, focusLevel, modifier = Modifier.background(MaterialTheme.colorScheme.background))
-  }
 }
