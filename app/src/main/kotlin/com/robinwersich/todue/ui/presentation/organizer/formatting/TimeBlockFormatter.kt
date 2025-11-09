@@ -24,7 +24,7 @@ import com.robinwersich.todue.domain.model.Week
 @Composable
 fun rememberTimeBlockFormatter(): TimeBlockFormatter {
   val resources = LocalContext.current.resources
-  val languageTag = LocalConfiguration.current.locales[0].toLanguageTag()
+  val languageTag = resources.configuration.locales[0].toLanguageTag()
   // TODO: with strong skipping, it might be possible to use resources as key directly
   return remember(languageTag) { TimeBlockFormatter(resources) }
 }

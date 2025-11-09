@@ -4,14 +4,12 @@ import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import com.robinwersich.todue.data.database.TaskDao
-import com.robinwersich.todue.data.entity.TaskEntity
 import com.robinwersich.todue.data.entity.toEntity
 import com.robinwersich.todue.data.entity.toModel
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TaskBlock
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimelineBlock
-import com.robinwersich.todue.domain.model.TimelineSection
 import com.robinwersich.todue.domain.repository.TaskRepository
 import com.robinwersich.todue.utility.mapToImmutableList
 
@@ -19,6 +17,8 @@ class DatabaseTaskRepository(private val taskDao: TaskDao) : TaskRepository {
   override suspend fun insertTask(task: Task) = taskDao.insert(task.toEntity())
 
   override suspend fun deleteTask(id: Long) = taskDao.delete(id)
+
+  override suspend fun updateTask(task: Task) = taskDao.update(task.toEntity())
 
   override suspend fun setTimeBlock(id: Long, timeBlock: TimeBlock) =
     taskDao.setScheduledRange(
@@ -40,16 +40,18 @@ class DatabaseTaskRepository(private val taskDao: TaskDao) : TaskRepository {
         start = timelineBlock.section.start,
         endInclusive = timelineBlock.section.endInclusive,
       )
-      .map { TaskBlock(timelineBlock, it.mapToImmutableList(TaskEntity::toModel)) }
+      .map { tasks ->
+        TaskBlock(timelineBlock, tasks.mapToImmutableList { it.toModel(timelineBlock) })
+      }
 
-  override suspend fun getTasks(timelineSection: TimelineSection<*>): List<Task> =
+  override suspend fun getTasks(timelineBlock: TimelineBlock): List<Task> =
     taskDao
       .getTasks(
-        timelineId = timelineSection.timelineId,
-        start = timelineSection.section.start,
-        endInclusive = timelineSection.section.endInclusive,
+        timelineId = timelineBlock.timelineId,
+        start = timelineBlock.section.start,
+        endInclusive = timelineBlock.section.endInclusive,
       )
-      .map(TaskEntity::toModel)
+      .map { it.toModel(timelineBlock) }
 
   override suspend fun getTaskBlock(timelineBlock: TimelineBlock): TaskBlock =
     TaskBlock(timelineBlock, getTasks(timelineBlock))

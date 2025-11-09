@@ -19,7 +19,6 @@ import androidx.compose.ui.unit.IntSize
 import java.time.LocalDate
 import kotlin.math.ceil
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.Flow
 import com.robinwersich.todue.domain.model.DateRange
 import com.robinwersich.todue.domain.model.TimeBlock
@@ -416,8 +415,8 @@ class NavigationState(
     val (prevPos, nextPos) = navPosTransition.transitionStates()
     val prevTimelineBlock = prevPos.timelineBlock
     val nextTimelineBlock = nextPos.timelineBlock
-    if (prevTimelineBlock == nextTimelineBlock) persistentListOf(prevTimelineBlock)
-    else persistentListOf(prevTimelineBlock, nextTimelineBlock)
+    if (prevTimelineBlock == nextTimelineBlock) listOf(prevTimelineBlock)
+    else listOf(prevTimelineBlock, nextTimelineBlock)
   }
 
   /** The [TimelineBlock]s that currently show some data. */

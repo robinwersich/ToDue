@@ -19,19 +19,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import com.robinwersich.todue.R
+import com.robinwersich.todue.domain.model.TaskBlock
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.ui.presentation.organizer.components.OrganizerNavigation
 import com.robinwersich.todue.ui.presentation.organizer.components.TaskBlockContent
 import com.robinwersich.todue.ui.presentation.organizer.components.TaskBlockLabel
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
-import com.robinwersich.todue.ui.presentation.organizer.state.TaskBlockViewState
 import com.robinwersich.todue.ui.theme.ToDueTheme
 
 @Composable
 fun OrganizerScreen(
   navigationState: NavigationState,
-  getTaskBlockViewState: (TimelineBlock) -> TaskBlockViewState,
+  getTaskBlock: (TimelineBlock) -> TaskBlock,
   modifier: Modifier = Modifier,
   onEvent: (OrganizerEvent) -> Unit = {},
 ) {
@@ -64,7 +64,7 @@ fun OrganizerScreen(
       },
       taskBlockContent = { timelineBlock, padding ->
         TaskBlockContent(
-          viewState = getTaskBlockViewState(timelineBlock),
+          taskBlock = getTaskBlock(timelineBlock),
           formatter = formatter,
           onEvent = onEvent,
           modifier = Modifier.padding(padding),
@@ -77,5 +77,5 @@ fun OrganizerScreen(
 @Preview(showSystemUi = true)
 @Composable
 private fun OrganizerScreenPreview() {
-  ToDueTheme { OrganizerScreen(NavigationState(), { TaskBlockViewState(it) }) }
+  ToDueTheme { OrganizerScreen(NavigationState(), { TaskBlock(it) }) }
 }
