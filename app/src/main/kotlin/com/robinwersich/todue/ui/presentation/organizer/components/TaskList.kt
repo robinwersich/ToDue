@@ -172,7 +172,7 @@ class TaskListState(val onEvent: (OrganizerEvent) -> Unit) {
    * will be focussed.
    */
   fun update(tasks: List<Task>) {
-    if (isLocalTaskStateFocussed) invalidateLocalTaskState()
+    if (!isLocalTaskStateFocussed) invalidateLocalTaskState()
     val emptyTask = tasks.findLast { it.text.isEmpty() }
     if (emptyTask != null) {
       focus(emptyTask)
