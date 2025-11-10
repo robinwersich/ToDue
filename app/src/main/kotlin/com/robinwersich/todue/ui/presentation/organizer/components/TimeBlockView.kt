@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
 import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TaskBlock
@@ -23,7 +24,6 @@ import com.robinwersich.todue.ui.presentation.organizer.formatting.TimeBlockForm
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.utility.mapIndexedToImmutableList
-import java.time.LocalDate
 
 @Composable
 fun TaskBlockLabel(
@@ -39,6 +39,7 @@ fun TaskBlockLabel(
 @Composable
 fun TaskBlockContent(
   taskBlock: TaskBlock,
+  mode: TaskBlockContentMode,
   formatter: TimeBlockFormatter,
   modifier: Modifier = Modifier,
   onEvent: (OrganizerEvent) -> Unit = {},
@@ -49,7 +50,7 @@ fun TaskBlockContent(
       style = MaterialTheme.typography.headlineSmall,
       modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
     )
-    TaskList(taskBlock.tasks, onEvent = onEvent, modifier = Modifier.fillMaxSize())
+    TaskList(taskBlock.tasks, mode = mode, onEvent = onEvent, modifier = Modifier.fillMaxSize())
   }
 }
 
@@ -68,6 +69,7 @@ fun ExpandedTimeBlockViewPreview() {
   ToDueTheme {
     TaskBlockContent(
       TaskBlock(TimelineBlock(0, Week()), tasks),
+      TaskBlockContentMode.FULLSCREEN,
       rememberTimeBlockFormatter(),
       modifier = Modifier.fillMaxSize(),
     )

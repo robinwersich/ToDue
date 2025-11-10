@@ -31,6 +31,7 @@ import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.ui.composeextensions.mutablePeekableStateOf
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerEvent
 import com.robinwersich.todue.ui.theme.ToDueTheme
+import com.robinwersich.todue.utility.letIf
 import com.robinwersich.todue.utility.mapIndexedToImmutableList
 
 @OptIn(ExperimentalSharedTransitionApi::class)
@@ -38,20 +39,27 @@ import com.robinwersich.todue.utility.mapIndexedToImmutableList
 fun TaskList(
   tasks: List<Task>,
   modifier: Modifier = Modifier,
+  mode: TaskBlockContentMode = TaskBlockContentMode.FULLSCREEN,
   onEvent: (OrganizerEvent) -> Unit = {},
   state: TaskListState = remember { TaskListState(onEvent) },
 ) {
-  state.update(tasks)
-  DisposableEffect(Unit) { onDispose { state.saveOrDeleteFocussedTask() } }
+  if (mode.isFullscreen) {
+    state.update(tasks)
+    DisposableEffect(Unit) { onDispose { state.saveOrDeleteFocussedTask() } }
+  } else {
+    state.removeFocus()
+  }
   val focusManager = LocalFocusManager.current
 
   LookaheadScope {
     LazyColumn(
       modifier =
         modifier
-          .clickable(interactionSource = null, indication = null) {
-            state.removeFocus()
-            focusManager.clearFocus()
+          .letIf(mode.isFullscreen) {
+            it.clickable(interactionSource = null, indication = null) {
+              state.removeFocus()
+              focusManager.clearFocus()
+            }
           }
           .padding(horizontal = 8.dp)
     ) {
@@ -63,14 +71,17 @@ fun TaskList(
             modifier =
               sharedTransitionModifier
                 .animateItem(fadeOutSpec = spring(stiffness = Spring.StiffnessHigh))
-                .clickable(interactionSource = null, indication = null) {
-                  when {
-                    state.isFocussed(task) -> {}
-                    state.isAnyTaskFocussed -> {
-                      state.removeFocus()
-                      focusManager.clearFocus()
+                .letIf(mode.isFullscreen) {
+                  it.clickable(interactionSource = null, indication = null) {
+                    when {
+                      state.isFocussed(task) -> {}
+                      state.isAnyTaskFocussed -> {
+                        state.removeFocus()
+                        focusManager.clearFocus()
+                      }
+
+                      else -> state.focus(task)
                     }
-                    else -> state.focus(task)
                   }
                 },
           ) { isFocussed ->

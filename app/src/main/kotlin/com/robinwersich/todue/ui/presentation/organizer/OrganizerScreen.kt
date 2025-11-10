@@ -62,9 +62,10 @@ fun OrganizerScreen(
           modifier = Modifier.padding(padding),
         )
       },
-      taskBlockContent = { timelineBlock, padding ->
+      taskBlockContent = { timelineBlock, mode, padding ->
         TaskBlockContent(
           taskBlock = getTaskBlock(timelineBlock),
+          mode = mode,
           formatter = formatter,
           onEvent = onEvent,
           modifier = Modifier.padding(padding),

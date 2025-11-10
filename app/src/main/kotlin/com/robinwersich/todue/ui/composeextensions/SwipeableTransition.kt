@@ -165,18 +165,17 @@ class SwipeableTransition<T>(
    * Returns a [State] object with a value derived from the current transition state (without
    * interpolation).
    *
-   * @param threshold Progress at which the value should switch.
    * @param transform A function that returns the target value for a given state.
    */
   @Composable
-  fun <V> derivedValue(threshold: Float = 0.5f, transform: (state: T) -> V) =
-    remember(this, transform, threshold) {
+  fun <V> derivedValue(transform: (state: T) -> V) =
+    remember(this, transform) {
       object : State<V> {
         private val currentState: State<T> =
           derivedStateOf(structuralEqualityPolicy()) {
             val (prevState, nextState) = transitionStates()
             if (prevState == nextState) prevState
-            else if (progress() < threshold) prevState else nextState
+            else if (progress() < 0.5f) prevState else nextState
           }
         override val value
           get() = transform(currentState.value)

@@ -49,6 +49,19 @@ import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.presentation.organizer.state.TimelineStyle
 import com.robinwersich.todue.ui.presentation.organizer.state.timelineStyle
 
+enum class TaskBlockContentMode {
+  /** Block occupies the whole viewport. */
+  FULLSCREEN,
+  /** Block is parent in split view. */
+  PARENT;
+
+  val isFullscreen
+    get() = this == FULLSCREEN
+
+  val isParent
+    get() = this == PARENT
+}
+
 /**
  * A 2-dimensional navigation component that allows the user to navigate through [TimelineBlock]s on
  * a time axis (vertical) and a granularity axis (horizontal). To be able to drag tasks between
@@ -68,7 +81,7 @@ fun OrganizerNavigation(
   modifier: Modifier = Modifier,
   contentPadding: PaddingValues = PaddingValues(0.dp),
   taskBlockLabel: @Composable (TimelineBlock, PaddingValues) -> Unit,
-  taskBlockContent: @Composable (TimelineBlock, PaddingValues) -> Unit,
+  taskBlockContent: @Composable (TimelineBlock, TaskBlockContentMode, PaddingValues) -> Unit,
 ) {
   val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
   val density = LocalDensity.current
@@ -114,7 +127,7 @@ fun OrganizerNavigation(
 private fun TaskBlocks(
   navigationState: NavigationState,
   taskBlockLabel: @Composable (TimelineBlock, PaddingValues) -> Unit,
-  taskBlockContent: @Composable (TimelineBlock, PaddingValues) -> Unit,
+  taskBlockContent: @Composable (TimelineBlock, TaskBlockContentMode, PaddingValues) -> Unit,
 ) {
   val navigationAnimationScope = rememberCoroutineScope()
 
@@ -125,7 +138,7 @@ private fun TaskBlocks(
         timelineBlock = timelineBlock,
         navigationAnimationScope = navigationAnimationScope,
         label = { padding -> taskBlockLabel(timelineBlock, padding) },
-        content = { padding -> taskBlockContent(timelineBlock, padding) },
+        content = { mode, padding -> taskBlockContent(timelineBlock, mode, padding) },
       )
     }
   }
@@ -140,7 +153,7 @@ private fun TaskBlock(
   timelineBlock: TimelineBlock,
   navigationAnimationScope: CoroutineScope,
   label: @Composable (PaddingValues) -> Unit,
-  content: @Composable (PaddingValues) -> Unit,
+  content: @Composable (TaskBlockContentMode, PaddingValues) -> Unit,
 ) {
   val backgroundColor = MaterialTheme.colorScheme.surface
   val contentColor = MaterialTheme.colorScheme.onSurface
@@ -167,6 +180,21 @@ private fun TaskBlock(
       prevState.timelineStyle == TimelineStyle.CHILD &&
         nextState.timelineStyle == TimelineStyle.CHILD
     }
+  val contentMode by
+    displayStateTransition
+      .derived { state ->
+        when (state.timelineStyle) {
+          TimelineStyle.HIDDEN_CHILD,
+          TimelineStyle.CHILD,
+          TimelineStyle.FULLSCREEN -> TaskBlockContentMode.FULLSCREEN
+          TimelineStyle.PARENT,
+          TimelineStyle.HIDDEN_PARENT -> TaskBlockContentMode.PARENT
+        }
+      }
+      .derivedValue(useState = true) { prevState, nextState ->
+        if (prevState.isFullscreen && nextState.isFullscreen) TaskBlockContentMode.FULLSCREEN
+        else TaskBlockContentMode.PARENT
+      }
   val shape = PaddedRoundedCornerShape(taskBlockCornerRadius, taskBlockPadding)
 
   Box(
@@ -202,7 +230,7 @@ private fun TaskBlock(
             .graphicsLayer { alpha = contentAlpha },
           propagateMinConstraints = true,
         ) {
-          content(taskBlockPadding)
+          content(contentMode, taskBlockPadding)
         }
       }
     }
