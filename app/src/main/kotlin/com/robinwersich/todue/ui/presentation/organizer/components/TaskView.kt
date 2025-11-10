@@ -42,7 +42,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import com.robinwersich.todue.R
@@ -78,6 +77,7 @@ fun SharedTransitionScope.CollapsedTaskView(
       TaskCheckbox(
         checked = task.doneDate != null,
         onCheckedChange = onDone,
+        enabled = enabled,
         modifier =
           Modifier.size(checkboxSize)
             .sharedElement(
@@ -87,7 +87,7 @@ fun SharedTransitionScope.CollapsedTaskView(
       )
       Column(modifier = Modifier.padding(vertical = 8.dp)) {
         val textColor = LocalContentColor.current.copy(alpha = if (enabled) 1f else 0.38f)
-        val textStyle = MaterialTheme.typography.bodyLarge.merge(TextStyle(color = textColor))
+        val textStyle = MaterialTheme.typography.bodyLarge.merge(color = textColor)
         BasicTextField(
           value = task.text,
           onValueChange = {},
@@ -148,7 +148,7 @@ fun SharedTransitionScope.ExpandedTaskView(
             value = task.text,
             onValueChange = { it: String -> onChange(task.copy(text = it)) },
             enabled = true,
-            textStyle = MaterialTheme.typography.bodyLarge,
+            textStyle = MaterialTheme.typography.bodyLarge.merge(color = LocalContentColor.current),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             modifier =
               Modifier.sharedElement(
