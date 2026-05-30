@@ -66,6 +66,7 @@ class NavigationState(
     ),
   decayAnimationSpec: DecayAnimationSpec<Float> = instantStop(),
   initialTimeline: Timeline = timelines.first(),
+  initialShowChild: Boolean = false,
   initialDate: LocalDate = LocalDate.now(),
 ) {
   companion object {
@@ -87,7 +88,11 @@ class NavigationState(
   /** The [AnchoredDraggableState] controlling the granularity navigation. */
   val timelineDraggableState =
     AnchoredDraggableState(
-      initialValue = TimelineNavPosition(initialTimeline),
+      initialValue =
+        TimelineNavPosition(
+          initialTimeline,
+          child = if (initialShowChild) getChild(initialTimeline) else null,
+        ),
       snapAnimationSpec = snapAnimationSpec,
       decayAnimationSpec = decayAnimationSpec,
       positionalThreshold = positionalThreshold,

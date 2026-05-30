@@ -15,8 +15,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import java.time.LocalDate
 import com.robinwersich.todue.R
+import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TaskBlock
+import com.robinwersich.todue.domain.model.TimeUnit
+import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.ui.presentation.organizer.components.OrganizerNavigation
 import com.robinwersich.todue.ui.presentation.organizer.components.TaskBlockContent
@@ -70,8 +74,67 @@ fun OrganizerScreen(
   }
 }
 
+private val previewTimelines =
+  listOf(
+    Timeline(0, TimeUnit.DAY),
+    Timeline(1, TimeUnit.WEEK),
+    Timeline(2, TimeUnit.MONTH),
+  )
+
+private val previewDate = LocalDate.of(2026, 7, 25)
+
+private fun sampleTaskBlock(timelineBlock: TimelineBlock) =
+  TaskBlock(
+    timelineBlock,
+    tasks =
+      listOf(
+        Task(
+          id = 1,
+          text = "Buy groceries",
+          scheduledBlock = timelineBlock,
+          dueDate = timelineBlock.section.endInclusive,
+        ),
+        Task(
+          id = 2,
+          text = "Clean house",
+          scheduledBlock = timelineBlock,
+          dueDate = timelineBlock.section.endInclusive,
+        ),
+      ),
+  )
+
 @Preview(showSystemUi = true)
 @Composable
 private fun OrganizerScreenPreview() {
   ToDueTheme { OrganizerScreen(NavigationState(), { TaskBlock(it) }) }
+}
+
+@Preview(showSystemUi = true)
+@Composable
+private fun OrganizerScreenSplitViewPreview() {
+  val navigationState =
+    NavigationState(
+      timelines = previewTimelines,
+      initialTimeline = previewTimelines[1],
+      initialShowChild = true,
+      initialDate = previewDate,
+    )
+  ToDueTheme {
+    OrganizerScreen(navigationState = navigationState, getTaskBlock = ::sampleTaskBlock)
+  }
+}
+
+@Preview(showSystemUi = true)
+@Composable
+private fun OrganizerScreenMonthPreview() {
+  val navigationState =
+    NavigationState(
+      timelines = previewTimelines,
+      initialTimeline = previewTimelines[2],
+      initialDate = previewDate,
+      initialShowChild = true,
+    )
+  ToDueTheme {
+    OrganizerScreen(navigationState = navigationState, getTaskBlock = ::sampleTaskBlock)
+  }
 }
