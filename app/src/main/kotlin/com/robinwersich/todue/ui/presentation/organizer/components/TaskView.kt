@@ -1,10 +1,14 @@
 package com.robinwersich.todue.ui.presentation.organizer.components
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -42,6 +46,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import com.robinwersich.todue.R
@@ -49,13 +54,66 @@ import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.ui.composeextensions.modifiers.signedPadding
+import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
+import com.robinwersich.todue.utility.letIf
+
+data class TaskViewState(
+  val task: Task,
+  val isFocussed: Boolean = false,
+  val isEnabled: Boolean = true,
+  val isClickable: Boolean = true,
+)
+
+sealed interface TaskViewEvent {
+  data object Click : TaskViewEvent
+  data object Update : TaskViewEvent
+  data object Delete : TaskViewEvent
+  data class SetDone(val done: Boolean) : TaskViewEvent
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+@Composable
+fun TaskView(
+  state: TaskViewState,
+  onEvent: (Task, TaskViewEvent) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  SharedTransitionScope { sharedTransitionModifier ->
+    AnimatedContent(
+      state.isFocussed,
+      transitionSpec = { fadeIn() togetherWith fadeOut() },
+      modifier =
+        sharedTransitionModifier.then(modifier).letIf(state.isClickable) {
+          it.clickable(interactionSource = null, indication = null) {
+            onEvent(state.task, TaskViewEvent.Click)
+          }
+        },
+    ) { isFocussed ->
+      if (isFocussed) {
+        ExpandedTaskView(
+          task = state.task,
+          onChange = { onEvent(it, TaskViewEvent.Update) },
+          onDelete = { onEvent(state.task, TaskViewEvent.Delete) },
+          animatedVisibilityScope = this@AnimatedContent,
+        )
+      } else {
+        CollapsedTaskView(
+          task = state.task,
+          onDone = { onEvent(state.task, TaskViewEvent.SetDone(it)) },
+          enabled = state.isEnabled,
+          animatedVisibilityScope = this@AnimatedContent,
+        )
+      }
+    }
+  }
+}
 
 val checkboxSize = 48.dp
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun SharedTransitionScope.CollapsedTaskView(
+private fun SharedTransitionScope.CollapsedTaskView(
   task: Task,
   onDone: (Boolean) -> Unit,
   enabled: Boolean,
@@ -107,7 +165,7 @@ fun SharedTransitionScope.CollapsedTaskView(
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun SharedTransitionScope.ExpandedTaskView(
+private fun SharedTransitionScope.ExpandedTaskView(
   task: Task,
   onChange: (Task) -> Unit,
   onDelete: () -> Unit,
@@ -305,4 +363,31 @@ private enum class SharedTaskElement {
   CARD,
   CHECKBOX,
   TEXT,
+}
+
+private val previewTask =
+  Task(
+    id = 1,
+    text = "Buy groceries",
+    scheduledBlock = TimelineBlock(0, Day()),
+    dueDate = LocalDate.now(),
+  )
+
+@Preview(showBackground = true)
+@Composable
+private fun CollapsedTaskViewPreview() {
+  ToDueTheme {
+    TaskView(state = TaskViewState(task = previewTask), onEvent = { _, _ -> })
+  }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun ExpandedTaskViewPreview() {
+  ToDueTheme {
+    TaskView(
+      state = TaskViewState(task = previewTask, isFocussed = true),
+      onEvent = { _, _ -> },
+    )
+  }
 }
