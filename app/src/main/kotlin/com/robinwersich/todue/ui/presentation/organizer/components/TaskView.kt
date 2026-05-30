@@ -333,6 +333,7 @@ private fun TaskProperty(
   val clickAreaMargin = 8.dp
 
   Row(
+    verticalAlignment = Alignment.CenterVertically,
     modifier =
       modifier
         .height(48.dp)
