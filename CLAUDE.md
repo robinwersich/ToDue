@@ -53,6 +53,8 @@ Package root: `com.robinwersich.todue`
 - **Timeline** — Configurable time-based view of tasks
 - **NavigationState** — Custom navigation (not NavController)
 
+See [docs/organizer-architecture.md](docs/organizer-architecture.md) for the full organizer architecture: domain model type hierarchy, navigation state mechanics, split-view rendering, and data flow.
+
 ## Testing
 
 - Unit tests: JUnit 4 + Google Truth assertions + kotlin-test
