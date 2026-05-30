@@ -62,6 +62,12 @@ enum class TaskBlockContentMode {
     get() = this == PARENT
 }
 
+enum class TaskBlockClickTarget {
+  CHILD,
+  PARENT,
+  NONE,
+}
+
 /**
  * A 2-dimensional navigation component that allows the user to navigate through [TimelineBlock]s on
  * a time axis (vertical) and a granularity axis (horizontal). To be able to drag tasks between
@@ -175,10 +181,15 @@ private fun TaskBlock(
   val labelAlpha by labelAlphaState
   val showLabel by remember(labelAlphaState) { derivedStateOf { labelAlpha > 0f } }
   val showContent by remember(contentAlphaState) { derivedStateOf { contentAlpha > 0f } }
-  val enableChildNavigationClick by
+  val clickTarget by
     displayStateTransition.derivedValue { prevState, nextState ->
-      prevState.timelineStyle == TimelineStyle.CHILD &&
-        nextState.timelineStyle == TimelineStyle.CHILD
+      when {
+        prevState.timelineStyle == TimelineStyle.CHILD &&
+          nextState.timelineStyle == TimelineStyle.CHILD -> TaskBlockClickTarget.CHILD
+        prevState.timelineStyle == TimelineStyle.PARENT &&
+          nextState.timelineStyle == TimelineStyle.PARENT -> TaskBlockClickTarget.PARENT
+        else -> TaskBlockClickTarget.NONE
+      }
     }
   val contentMode by
     displayStateTransition
@@ -200,24 +211,28 @@ private fun TaskBlock(
   Box(
     Modifier.placeRelative({ relativeOffset }, { relativeSize })
       .clip(shape)
-      .background(backgroundColor),
+      .background(backgroundColor)
+      .clickable(
+        interactionSource = null,
+        indication = null,
+        enabled = clickTarget != TaskBlockClickTarget.NONE,
+        role = Role.Button,
+      ) {
+        navigationAnimationScope.launch {
+          when (clickTarget) {
+            TaskBlockClickTarget.CHILD ->
+              navigationState.tryAnimateToChild(timelineBlock.section)
+            TaskBlockClickTarget.PARENT -> navigationState.animateToParent()
+            TaskBlockClickTarget.NONE -> {}
+          }
+        }
+      },
     propagateMinConstraints = true,
   ) {
     CompositionLocalProvider(LocalContentColor provides contentColor) {
       if (showLabel) {
         Box(
-          Modifier.clickable(
-              interactionSource = null,
-              indication = null,
-              enabled = enableChildNavigationClick,
-              role = Role.Button,
-              onClick = {
-                navigationAnimationScope.launch {
-                  navigationState.tryAnimateToChild(timelineBlock.section)
-                }
-              },
-            )
-            .graphicsLayer { alpha = labelAlpha },
+          Modifier.graphicsLayer { alpha = labelAlpha },
           propagateMinConstraints = true,
         ) {
           label(taskBlockPadding)
