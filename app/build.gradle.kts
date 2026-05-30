@@ -1,8 +1,5 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
   alias(libs.plugins.android.application)
-  alias(libs.plugins.jetbrains.kotlin.android)
   alias(libs.plugins.jetbrains.kotlin.compose)
   alias(libs.plugins.ksp)
   alias(libs.plugins.androidx.room)
@@ -40,8 +37,6 @@ android {
   buildFeatures { compose = true }
   packaging { resources { excludes.add("/META-INF/{AL2.0,LGPL2.1}") } }
 }
-
-kotlin { compilerOptions { jvmTarget = JvmTarget.JVM_1_8 } }
 
 composeCompiler {
   stabilityConfigurationFiles.add(project.layout.projectDirectory.file("compose-stability.conf"))

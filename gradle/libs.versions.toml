@@ -1,20 +1,20 @@
 [versions]
 
 # Kotlin
-kotlin = "2.2.20"
-ksp = "2.2.20-2.0.3"
+kotlin = "2.3.21"
+ksp = "2.3.7"
 
 # Plugins
-android-gradle-plugin = "8.12.3"
+android-gradle-plugin = "9.1.1"
 
 # Android & Compose
-activity-compose = "1.11.0"
-compose-bom = "2025.09.01"
-core-ktx = "1.17.0"
+activity-compose = "1.13.0"
+compose-bom = "2026.05.01"
+core-ktx = "1.18.0"
 desugar-jdk = "2.1.5"
-lifecycle = "2.9.4"
-paging = "3.3.6"
-room = "2.8.1"
+lifecycle = "2.10.0"
+paging = "3.5.0"
+room = "2.8.4"
 
 # Utilities
 kotlinx-collections-immutable = "0.4.0"
