@@ -9,3 +9,6 @@ data class Task(
   val dueDate: LocalDate,
   val doneDate: LocalDate? = null,
 )
+
+val Task.isDone
+  get() = doneDate != null

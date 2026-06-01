@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.overscroll
 import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -25,6 +27,7 @@ import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.lerp
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -33,14 +36,17 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.roundToIntSize
 import androidx.compose.ui.util.lerp
+import java.time.LocalDate
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.daysUntil
 import com.robinwersich.todue.domain.model.size
+import com.robinwersich.todue.ui.composeextensions.DeriveScope
 import com.robinwersich.todue.ui.composeextensions.PaddedRoundedCornerShape
 import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
 import com.robinwersich.todue.ui.composeextensions.anchoredDraggableWithNestedScroll
+import com.robinwersich.todue.ui.composeextensions.drawShape
 import com.robinwersich.todue.ui.composeextensions.modifiers.placeRelative
 import com.robinwersich.todue.ui.composeextensions.modifiers.scaleFromSize
 import com.robinwersich.todue.ui.composeextensions.reversed
@@ -48,6 +54,7 @@ import com.robinwersich.todue.ui.presentation.organizer.state.NavigationPosition
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
 import com.robinwersich.todue.ui.presentation.organizer.state.TimelineStyle
 import com.robinwersich.todue.ui.presentation.organizer.state.timelineStyle
+import androidx.compose.ui.graphics.lerp as colorLerp
 
 enum class TaskBlockContentMode {
   /** Block occupies the whole viewport. */
@@ -62,11 +69,9 @@ enum class TaskBlockContentMode {
     get() = this == PARENT
 }
 
-enum class TaskBlockClickTarget {
-  CHILD,
-  PARENT,
-  NONE,
-}
+private val taskBlockCornerRadius = 12.dp
+private val taskBlockGapSize = 4.dp
+private val taskBlockPaddingValues = PaddingValues(taskBlockGapSize / 2)
 
 /**
  * A 2-dimensional navigation component that allows the user to navigate through [TimelineBlock]s on
@@ -89,7 +94,7 @@ fun OrganizerNavigation(
   taskBlockLabel: @Composable (TimelineBlock, PaddingValues) -> Unit,
   taskBlockContent: @Composable (TimelineBlock, TaskBlockContentMode, PaddingValues) -> Unit,
 ) {
-  val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
+  val backgroundColor = MaterialTheme.colorScheme.surface
   val density = LocalDensity.current
 
   val timelineDraggableState = navigationState.timelineDraggableState
@@ -104,7 +109,7 @@ fun OrganizerNavigation(
           .background(backgroundColor)
           .overscroll(overscrollEffect)
           .clipToBounds()
-          .padding(contentPadding)
+          .padding(contentPadding + PaddingValues(horizontal = taskBlockGapSize / 2))
           .anchoredDraggable(
             timelineDraggableState,
             orientation = Orientation.Horizontal,
@@ -150,9 +155,6 @@ private fun TaskBlocks(
   }
 }
 
-private val taskBlockPadding = PaddingValues(4.dp)
-private val taskBlockCornerRadius = 24.dp
-
 @Composable
 private fun TaskBlock(
   navigationState: NavigationState,
@@ -161,12 +163,9 @@ private fun TaskBlock(
   label: @Composable (PaddingValues) -> Unit,
   content: @Composable (TaskBlockContentMode, PaddingValues) -> Unit,
 ) {
-  val backgroundColor = MaterialTheme.colorScheme.surface
-  val contentColor = MaterialTheme.colorScheme.onSurface
-
   val displayStateTransition =
     navigationState.navPosTransition.derived(cacheStates = true) {
-      blockDisplayState(timelineBlock, it, navigationState.childTimelineSizeRatio)
+      blockDisplayState(timelineBlock, navigationState.childTimelineSizeRatio)
     }
 
   // size for measuring shouldn't change when the block is entering/exiting the screen to
@@ -181,20 +180,19 @@ private fun TaskBlock(
   val labelAlpha by labelAlphaState
   val showLabel by remember(labelAlphaState) { derivedStateOf { labelAlpha > 0f } }
   val showContent by remember(contentAlphaState) { derivedStateOf { contentAlpha > 0f } }
-  val clickTarget by
-    displayStateTransition.derivedValue { prevState, nextState ->
-      when {
-        prevState.timelineStyle == TimelineStyle.CHILD &&
-          nextState.timelineStyle == TimelineStyle.CHILD -> TaskBlockClickTarget.CHILD
-        prevState.timelineStyle == TimelineStyle.PARENT &&
-          nextState.timelineStyle == TimelineStyle.PARENT -> TaskBlockClickTarget.PARENT
-        else -> TaskBlockClickTarget.NONE
-      }
+  val clickTarget by displayStateTransition.derivedValue { prevState, nextState ->
+    when {
+      prevState.timelineStyle == TimelineStyle.CHILD &&
+        nextState.timelineStyle == TimelineStyle.CHILD -> TaskBlockClickTarget.CHILD
+      prevState.timelineStyle == TimelineStyle.PARENT &&
+        nextState.timelineStyle == TimelineStyle.PARENT -> TaskBlockClickTarget.PARENT
+      else -> TaskBlockClickTarget.NONE
     }
+  }
   val contentMode by
     displayStateTransition
-      .derived { state ->
-        when (state.timelineStyle) {
+      .derived {
+        when (current.timelineStyle) {
           TimelineStyle.HIDDEN_CHILD,
           TimelineStyle.CHILD,
           TimelineStyle.FULLSCREEN -> TaskBlockContentMode.FULLSCREEN
@@ -206,12 +204,18 @@ private fun TaskBlock(
         if (prevState.isFullscreen && nextState.isFullscreen) TaskBlockContentMode.FULLSCREEN
         else TaskBlockContentMode.PARENT
       }
-  val shape = PaddedRoundedCornerShape(taskBlockCornerRadius, taskBlockPadding)
+  val shape = PaddedRoundedCornerShape(taskBlockCornerRadius, taskBlockPaddingValues)
+  val style by blockStyle(displayStateTransition, timelineBlock)
 
   Box(
     Modifier.placeRelative({ relativeOffset }, { relativeSize })
+      .drawShape(
+        shape,
+        backgroundColor = { style.backgroundColor },
+        borderColor = { style.borderColor },
+        borderWidth = { 0.5.dp },
+      )
       .clip(shape)
-      .background(backgroundColor)
       .clickable(
         interactionSource = null,
         indication = null,
@@ -220,8 +224,7 @@ private fun TaskBlock(
       ) {
         navigationAnimationScope.launch {
           when (clickTarget) {
-            TaskBlockClickTarget.CHILD ->
-              navigationState.tryAnimateToChild(timelineBlock.section)
+            TaskBlockClickTarget.CHILD -> navigationState.tryAnimateToChild(timelineBlock.section)
             TaskBlockClickTarget.PARENT -> navigationState.animateToParent()
             TaskBlockClickTarget.NONE -> {}
           }
@@ -229,24 +232,24 @@ private fun TaskBlock(
       },
     propagateMinConstraints = true,
   ) {
-    CompositionLocalProvider(LocalContentColor provides contentColor) {
-      if (showLabel) {
-        Box(
-          Modifier.graphicsLayer { alpha = labelAlpha },
-          propagateMinConstraints = true,
-        ) {
-          label(taskBlockPadding)
+    if (showLabel) {
+      Box(
+        Modifier.graphicsLayer { alpha = labelAlpha },
+        propagateMinConstraints = true,
+      ) {
+        CompositionLocalProvider(LocalContentColor provides style.labelColor) {
+          label(taskBlockPaddingValues)
         }
       }
+    }
 
-      if (showContent) {
-        Box(
-          Modifier.scaleFromSize { contentMeasureSize?.roundToIntSize() }
-            .graphicsLayer { alpha = contentAlpha },
-          propagateMinConstraints = true,
-        ) {
-          content(contentMode, taskBlockPadding)
-        }
+    if (showContent) {
+      Box(
+        Modifier.scaleFromSize { contentMeasureSize?.roundToIntSize() }
+          .graphicsLayer { alpha = contentAlpha },
+        propagateMinConstraints = true,
+      ) {
+        content(contentMode, taskBlockPaddingValues)
       }
     }
   }
@@ -259,42 +262,99 @@ private data class TaskBlockDisplayState(
   val relativeOffset: Offset,
 )
 
-private fun blockDisplayState(
+private fun DeriveScope<NavigationPosition>.blockDisplayState(
   timelineBlock: TimelineBlock,
-  navPos: NavigationPosition,
   childTimelineSizeRatio: Float,
 ): TaskBlockDisplayState {
   val timelineId = timelineBlock.timelineId
   val timeBlock = timelineBlock.section
-  val timelineStyle = timelineStyle(timelineId, navPos.timelineNavPos)
+  val timelineStyle = timelineStyle(timelineId, current.timelineNavPos)
+
+  fun NavigationPosition.relativeHeight() = timeBlock.size.toFloat() / dateRange.size.toFloat()
+
+  val relativeHeight = current.relativeHeight()
+  val relativeWidth =
+    when (timelineStyle) {
+      TimelineStyle.HIDDEN_CHILD,
+      TimelineStyle.CHILD -> childTimelineSizeRatio
+      TimelineStyle.FULLSCREEN -> 1f
+      TimelineStyle.PARENT -> 1f - childTimelineSizeRatio
+      TimelineStyle.HIDDEN_PARENT ->
+        (1f - childTimelineSizeRatio) / other.relativeHeight() * relativeHeight
+    }
+
+  val relativeOffsetLeft =
+    when (timelineStyle) {
+      TimelineStyle.HIDDEN_CHILD -> -childTimelineSizeRatio
+      TimelineStyle.CHILD,
+      TimelineStyle.FULLSCREEN -> 0f
+      TimelineStyle.PARENT -> childTimelineSizeRatio
+      TimelineStyle.HIDDEN_PARENT -> 1f
+    }
+  val relativeOffsetTop =
+    current.dateRange.start.daysUntil(timeBlock.start) / current.dateRange.size.toFloat()
+
   return TaskBlockDisplayState(
     timelineStyle = timelineStyle,
-    isFocussed = timelineBlock == navPos.timelineBlock,
-    relativeSize =
-      Size(
-        width =
-          when (timelineStyle) {
-            TimelineStyle.HIDDEN_CHILD,
-            TimelineStyle.CHILD -> childTimelineSizeRatio
-            TimelineStyle.FULLSCREEN -> 1f
-            TimelineStyle.PARENT,
-            TimelineStyle.HIDDEN_PARENT -> 1f - childTimelineSizeRatio
-          },
-        height = timeBlock.size.toFloat() / navPos.dateRange.size.toFloat(),
-      ),
-    relativeOffset =
-      Offset(
-        x =
-          when (timelineStyle) {
-            TimelineStyle.HIDDEN_CHILD -> -childTimelineSizeRatio
-            TimelineStyle.CHILD,
-            TimelineStyle.FULLSCREEN -> 0f
-            TimelineStyle.PARENT -> childTimelineSizeRatio
-            TimelineStyle.HIDDEN_PARENT -> 1f
-          },
-        y = (navPos.dateRange.start.daysUntil(timeBlock.start) / navPos.dateRange.size.toFloat()),
-      ),
+    isFocussed = timelineBlock == current.timelineBlock,
+    relativeSize = Size(relativeWidth, relativeHeight),
+    relativeOffset = Offset(relativeOffsetLeft, relativeOffsetTop),
   )
+}
+
+private data class TaskBlockStyle(
+  val backgroundColor: Color,
+  val borderColor: Color,
+  val labelColor: Color,
+)
+
+@Composable
+private fun blockStyle(
+  displayStateTransition: SwipeableTransition<TaskBlockDisplayState>,
+  timelineBlock: TimelineBlock,
+  today: LocalDate = LocalDate.now(),
+): State<TaskBlockStyle> {
+  val colorScheme = MaterialTheme.colorScheme
+  val timeBlock = timelineBlock.section
+
+  return displayStateTransition.interpolatedValue(
+    lerp = { start, end, fraction ->
+      TaskBlockStyle(
+        backgroundColor = colorLerp(start.backgroundColor, end.backgroundColor, fraction),
+        borderColor = colorLerp(start.borderColor, end.borderColor, fraction),
+        labelColor = colorLerp(start.labelColor, end.labelColor, fraction),
+      )
+    },
+    padding = ::blockLabelTransitionPadding,
+  ) { state ->
+    val labelColor =
+      when {
+        timeBlock.endInclusive < today -> colorScheme.onSurfaceVariant
+        today < timeBlock.start -> colorScheme.onSurface
+        else -> colorScheme.onPrimary
+      }
+    when (state.timelineStyle) {
+      TimelineStyle.CHILD,
+      TimelineStyle.HIDDEN_CHILD -> {
+        TaskBlockStyle(
+          backgroundColor =
+            when {
+              timeBlock.endInclusive < today -> colorScheme.surfaceContainer
+              today < timeBlock.start -> colorScheme.surfaceContainerHigh
+              else -> colorScheme.primary
+            },
+          borderColor = Color.Transparent,
+          labelColor = labelColor,
+        )
+      }
+      else ->
+        TaskBlockStyle(
+          backgroundColor = colorScheme.surfaceContainerLowest,
+          borderColor = if (state.isFocussed) colorScheme.outline else colorScheme.outlineVariant,
+          labelColor = labelColor,
+        )
+    }
+  }
 }
 
 @Composable
@@ -349,13 +409,7 @@ private fun blockContentAlpha(displayStateTransition: SwipeableTransition<TaskBl
 private fun blockLabelAlpha(displayStateTransition: SwipeableTransition<TaskBlockDisplayState>) =
   displayStateTransition.interpolatedValue(
     ::lerp,
-    padding = { state, otherState ->
-      when {
-        state.timelineStyle == TimelineStyle.CHILD &&
-          otherState.timelineStyle == TimelineStyle.FULLSCREEN -> 0.6f
-        else -> 0f
-      }
-    },
+    padding = ::blockLabelTransitionPadding,
     transform = {
       when (it.timelineStyle) {
         TimelineStyle.CHILD,
@@ -364,3 +418,21 @@ private fun blockLabelAlpha(displayStateTransition: SwipeableTransition<TaskBloc
       }
     },
   )
+
+private fun blockLabelTransitionPadding(
+  state: TaskBlockDisplayState,
+  otherState: TaskBlockDisplayState,
+): Float =
+  when {
+    state.timelineStyle == TimelineStyle.CHILD &&
+      otherState.timelineStyle == TimelineStyle.FULLSCREEN -> 0.4f
+    state.timelineStyle == TimelineStyle.FULLSCREEN &&
+      otherState.timelineStyle == TimelineStyle.CHILD -> 0.1f
+    else -> 0f
+  }
+
+private enum class TaskBlockClickTarget {
+  CHILD,
+  PARENT,
+  NONE,
+}

@@ -46,17 +46,19 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import java.time.LocalDate
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TimelineBlock
+import com.robinwersich.todue.domain.model.isDone
 import com.robinwersich.todue.ui.composeextensions.modifiers.signedPadding
-import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
+import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.utility.letIf
+import java.time.LocalDate
 
 data class TaskViewState(
   val task: Task,
@@ -67,8 +69,11 @@ data class TaskViewState(
 
 sealed interface TaskViewEvent {
   data object Click : TaskViewEvent
+
   data object Update : TaskViewEvent
+
   data object Delete : TaskViewEvent
+
   data class SetDone(val done: Boolean) : TaskViewEvent
 }
 
@@ -120,45 +125,50 @@ private fun SharedTransitionScope.CollapsedTaskView(
   animatedVisibilityScope: AnimatedVisibilityScope,
   modifier: Modifier = Modifier,
 ) {
-  Surface(
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
     modifier =
-      modifier.sharedBounds(
-        rememberSharedContentState(SharedTaskElement.CARD),
-        animatedVisibilityScope,
-        resizeMode = RemeasureToBounds,
-      )
-  ) {
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      modifier = Modifier.padding(end = 16.dp).fillMaxWidth(),
-    ) {
-      TaskCheckbox(
-        checked = task.doneDate != null,
-        onCheckedChange = onDone,
-        enabled = enabled,
-        modifier =
-          Modifier.size(checkboxSize)
-            .sharedElement(
-              rememberSharedContentState(SharedTaskElement.CHECKBOX),
-              animatedVisibilityScope,
-            ),
-      )
-      Column(modifier = Modifier.padding(vertical = 8.dp)) {
-        val textColor = LocalContentColor.current.copy(alpha = if (enabled) 1f else 0.38f)
-        val textStyle = MaterialTheme.typography.bodyLarge.merge(color = textColor)
-        BasicTextField(
-          value = task.text,
-          onValueChange = {},
-          enabled = false,
-          textStyle = textStyle,
-          cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-          modifier =
-            Modifier.sharedElement(
-              rememberSharedContentState(SharedTaskElement.TEXT),
-              animatedVisibilityScope,
-            ),
+      modifier
+        .sharedBounds(
+          rememberSharedContentState(SharedTaskElement.CARD),
+          animatedVisibilityScope,
+          resizeMode = RemeasureToBounds,
         )
-      }
+        .padding(end = 16.dp)
+        .fillMaxWidth(),
+  ) {
+    TaskCheckbox(
+      checked = task.doneDate != null,
+      onCheckedChange = onDone,
+      enabled = enabled,
+      modifier =
+        Modifier.size(checkboxSize)
+          .sharedElement(
+            rememberSharedContentState(SharedTaskElement.CHECKBOX),
+            animatedVisibilityScope,
+          ),
+    )
+    Column(modifier = Modifier.padding(vertical = 8.dp)) {
+      val textColor =
+        LocalContentColor.current.copy(alpha = if (enabled && !task.isDone) 1f else 0.38f)
+      val textDecoration = if (task.isDone) TextDecoration.LineThrough else TextDecoration.None
+      val textStyle =
+        MaterialTheme.typography.bodyMedium.merge(
+          color = textColor,
+          textDecoration = textDecoration,
+        )
+      BasicTextField(
+        value = task.text,
+        onValueChange = {},
+        enabled = false,
+        textStyle = textStyle,
+        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+        modifier =
+          Modifier.sharedElement(
+            rememberSharedContentState(SharedTaskElement.TEXT),
+            animatedVisibilityScope,
+          ),
+      )
     }
   }
 }
@@ -173,7 +183,7 @@ private fun SharedTransitionScope.ExpandedTaskView(
   modifier: Modifier = Modifier,
 ) {
   Surface(
-    shape = RoundedCornerShape(24.dp),
+    shape = RoundedCornerShape(12.dp),
     color = MaterialTheme.colorScheme.surfaceContainerHigh,
     modifier =
       modifier.sharedBounds(
@@ -206,7 +216,8 @@ private fun SharedTransitionScope.ExpandedTaskView(
             value = task.text,
             onValueChange = { it: String -> onChange(task.copy(text = it)) },
             enabled = true,
-            textStyle = MaterialTheme.typography.bodyLarge.merge(color = LocalContentColor.current),
+            textStyle =
+              MaterialTheme.typography.bodyMedium.merge(color = LocalContentColor.current),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             modifier =
               Modifier.sharedElement(
@@ -248,6 +259,7 @@ private fun TaskCheckbox(
       painter =
         painterResource(if (checked) R.drawable.circle_checked else R.drawable.circle_unchecked),
       contentDescription = null,
+      tint = with(MaterialTheme.colorScheme) { if (checked) primary else outline },
     )
   }
 }
@@ -341,7 +353,7 @@ private fun TaskProperty(
         .signedPadding(-clickAreaMargin)
         .clip(RoundedCornerShape(clickAreaMargin))
         .clickable(role = Role.Button, onClick = onClick)
-        .signedPadding(clickAreaMargin)
+        .signedPadding(clickAreaMargin),
   ) {
     Icon(painterResource(iconId), contentDescription = null)
     Spacer(Modifier.width(8.dp))

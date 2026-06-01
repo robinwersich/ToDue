@@ -9,7 +9,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.structuralEqualityPolicy
 import com.robinwersich.todue.utility.areSame
 import com.robinwersich.todue.utility.letIf
-import com.robinwersich.todue.utility.map
 import com.robinwersich.todue.utility.relativeProgress
 
 /**
@@ -185,8 +184,11 @@ class SwipeableTransition<T>(
   /**
    * Creates a derived [SwipeableTransition] using the provided state [transform].
    *
-   * @param manyToOne If [transform] is a many-to-one mapping. This will will use [derivedStateOf]
-   *   to reduce the number of recompositions caused by state and progress changes of the original
+   * The [transform] is called for each transition state within a [DeriveScope], which provides
+   * access to the [current][DeriveScope.current] and [other][DeriveScope.other] transition states.
+   *
+   * @param manyToOne If [transform] is a many-to-one mapping. This will use [derivedStateOf] to
+   *   reduce the number of recompositions caused by state and progress changes of the original
    *   transition.
    * @param cacheStates If the results of [transform] should be cached. This defaults to true if
    *   [manyToOne] is set but may want to be used even if [manyToOne] is false in case of an
@@ -196,12 +198,14 @@ class SwipeableTransition<T>(
   fun <S> derive(
     manyToOne: Boolean = false,
     cacheStates: Boolean = manyToOne,
-    transform: (T) -> S,
+    transform: DeriveScope<T>.() -> S,
   ): SwipeableTransition<S> {
     val getStates =
-      { transitionStates().map(transform) }.letIf(cacheStates) {
-        it.withDerivedState(structuralEqualityPolicy())
-      }
+      {
+          val (prev, next) = transitionStates()
+          DeriveScope(prev, next).transform() to DeriveScope(next, prev).transform()
+        }
+        .letIf(cacheStates) { it.withDerivedState(structuralEqualityPolicy()) }
 
     val getProgress =
       if (manyToOne) {
@@ -214,20 +218,23 @@ class SwipeableTransition<T>(
   }
 
   /**
-   * Returns a derived [SwipeableTransition] using the provided [transform]
+   * Returns a derived [SwipeableTransition] using the provided [transform].
    *
-   * @see derive()
+   * @see [derive]
    */
   @Composable
   fun <S> derived(
     manyToOne: Boolean = false,
     cacheStates: Boolean = manyToOne,
-    transform: (T) -> S,
+    transform: DeriveScope<T>.() -> S,
   ) =
     remember(this, manyToOne, cacheStates, transform) { derive(manyToOne, cacheStates, transform) }
 
   /**
    * Creates a derived [SwipeableTransition] with different states and state [padding].
+   *
+   * Both [padding] and [transform] are called within a [DeriveScope], which provides access to the
+   * [current][DeriveScope.current] and [other][DeriveScope.other] transition states.
    *
    * @param manyToOne If [transform] is a many-to-one mapping. This will will use [derivedStateOf]
    *   to reduce the number of recompositions caused by state and progress changes of the original
@@ -240,22 +247,24 @@ class SwipeableTransition<T>(
    * @param transform A function mapping states of this transition to new ones.
    */
   fun <S> derive(
-    padding: (state: T, otherState: T) -> Float,
+    padding: DeriveScope<T>.() -> Float,
     manyToOne: Boolean = false,
     cacheStates: Boolean = manyToOne,
-    transform: (T) -> S,
+    transform: DeriveScope<T>.() -> S,
   ): SwipeableTransition<S> {
     val getStates =
-      { transitionStates().map(transform) }.letIf(cacheStates) {
-        it.withDerivedState(structuralEqualityPolicy())
-      }
+      {
+          val (prev, next) = transitionStates()
+          DeriveScope(prev, next).transform() to DeriveScope(next, prev).transform()
+        }
+        .letIf(cacheStates) { it.withDerivedState(structuralEqualityPolicy()) }
 
     val getProgress =
       {
           val (prev, next) = transitionStates()
           relativeProgress(
-            start = padding(prev, next),
-            end = 1 - padding(next, prev),
+            start = DeriveScope(prev, next).padding(),
+            end = 1 - DeriveScope(next, prev).padding(),
             progress = progress(),
           )
         }
@@ -265,17 +274,21 @@ class SwipeableTransition<T>(
     return SwipeableTransition(transitionStates = getStates, progress = getProgress)
   }
 
+  /** @see [derive] */
   @Composable
   fun <S> derived(
-    padding: (state: T, otherState: T) -> Float,
+    padding: DeriveScope<T>.() -> Float,
     manyToOne: Boolean = false,
     cacheStates: Boolean = manyToOne,
-    transform: (T) -> S,
+    transform: DeriveScope<T>.() -> S,
   ) =
     remember(this, padding, manyToOne, cacheStates, transform) {
       derive(padding, manyToOne, cacheStates, transform)
     }
 }
+
+/** Scope for [SwipeableTransition.derive] providing access to both transition states. */
+class DeriveScope<T>(val current: T, val other: T)
 
 /** Caches and minimizes the update frequency of a value getter using [derivedStateOf]. */
 private fun <T> (() -> T).withDerivedState(policy: SnapshotMutationPolicy<T>) =

@@ -3,26 +3,36 @@ package com.robinwersich.todue.ui.presentation.organizer.components
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusManager
 import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
+import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TimelineBlock
+import com.robinwersich.todue.domain.model.isDone
 import com.robinwersich.todue.ui.composeextensions.mutablePeekableStateOf
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerEvent
 import com.robinwersich.todue.ui.theme.ToDueTheme
@@ -46,6 +56,8 @@ fun TaskList(
     state.removeFocus()
   }
 
+  val (doneTasks, pendingTasks) = remember(tasks) { tasks.partition { it.isDone } }
+
   LookaheadScope {
     LazyColumn(
       modifier =
@@ -57,14 +69,51 @@ fun TaskList(
           }
           .padding(horizontal = 8.dp)
     ) {
-      items(tasks, key = { it.id }) { task ->
+      items(pendingTasks, key = { it.id }) { task ->
         TaskView(
           state = state.getViewState(task, isFullscreen = mode.isFullscreen),
           onEvent = state::onTaskEvent,
           modifier = Modifier.animateItem(fadeOutSpec = spring(stiffness = Spring.StiffnessHigh)),
         )
       }
+      if (doneTasks.isNotEmpty()) {
+        item(key = "done_divider") { DoneSectionDivider(Modifier.animateItem()) }
+        items(doneTasks, key = { it.id }) { task ->
+          TaskView(
+            state = state.getViewState(task, isFullscreen = mode.isFullscreen),
+            onEvent = state::onTaskEvent,
+            modifier = Modifier.animateItem(fadeOutSpec = spring(stiffness = Spring.StiffnessHigh)),
+          )
+        }
+      }
     }
+  }
+}
+
+@Composable
+private fun DoneSectionDivider(modifier: Modifier = Modifier) {
+  val color = MaterialTheme.colorScheme.outline
+  Row(
+    modifier =
+      modifier
+        .fillMaxWidth()
+        .padding(
+          top = 12.dp,
+          bottom = 4.dp,
+          start = 12.dp,
+          end = 12.dp,
+        ),
+    verticalAlignment = Alignment.CenterVertically,
+    horizontalArrangement = Arrangement.Center,
+  ) {
+    HorizontalDivider(modifier = Modifier.weight(1f), color = color)
+    Text(
+      text = stringResource(R.string.done_section_label),
+      style = MaterialTheme.typography.labelSmall,
+      color = color,
+      modifier = Modifier.padding(horizontal = 12.dp),
+    )
+    HorizontalDivider(modifier = Modifier.weight(1f), color = color)
   }
 }
 
@@ -181,6 +230,7 @@ private fun TaskListPreview() {
         text = text,
         scheduledBlock = TimelineBlock(0, Day()),
         dueDate = LocalDate.now(),
+        doneDate = LocalDate.now().takeIf { id == 2 },
       )
     }
   ToDueTheme { TaskList(tasks = tasks, modifier = Modifier.fillMaxSize()) }

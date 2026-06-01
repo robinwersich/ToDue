@@ -1,5 +1,6 @@
 package com.robinwersich.todue.ui.presentation.organizer
 
+import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
@@ -7,14 +8,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.Task
@@ -39,11 +43,22 @@ fun OrganizerScreen(
 ) {
   Scaffold(
     modifier = modifier,
-    topBar = { TopAppBar(title = { Text(stringResource(R.string.app_name)) }) },
+    topBar = {
+      TopAppBar(
+        title = {
+          Text(stringResource(R.string.app_name), style = MaterialTheme.typography.titleMedium)
+        },
+        expandedHeight = 36.dp,
+        colors =
+          TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface),
+      )
+    },
     floatingActionButton = {
       AnimatedVisibility(!navigationState.isSplitView, enter = scaleIn(), exit = scaleOut()) {
         FloatingActionButton(
-          onClick = { onEvent(OrganizerEvent.AddTask(navigationState.currentTimelineBlock)) }
+          onClick = { onEvent(OrganizerEvent.AddTask(navigationState.currentTimelineBlock)) },
+          containerColor = MaterialTheme.colorScheme.primary,
+          contentColor = MaterialTheme.colorScheme.onPrimary,
         ) {
           Icon(painter = painterResource(R.drawable.add), contentDescription = null)
         }
@@ -81,7 +96,7 @@ private val previewTimelines =
     Timeline(2, TimeUnit.MONTH),
   )
 
-private val previewDate = LocalDate.of(2026, 7, 25)
+private val previewDate = LocalDate.now()
 
 private fun sampleTaskBlock(timelineBlock: TimelineBlock) =
   TaskBlock(
@@ -124,7 +139,7 @@ private fun OrganizerScreenSplitViewPreview() {
   }
 }
 
-@Preview(showSystemUi = true)
+@Preview(showSystemUi = true, uiMode = UI_MODE_NIGHT_YES)
 @Composable
 private fun OrganizerScreenMonthPreview() {
   val navigationState =

@@ -56,7 +56,7 @@ import com.robinwersich.todue.utility.union
 @Stable
 class NavigationState(
   timelines: Collection<Timeline> = listOf(defaultTimeline),
-  val childTimelineSizeRatio: Float = 0.3f,
+  val childTimelineSizeRatio: Float = 0.2f,
   positionalThreshold: (totalDistance: Float) -> Float = { it * 0.3f },
   velocityThreshold: () -> Float = { 500f },
   snapAnimationSpec: AnimationSpec<Float> =

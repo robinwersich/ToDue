@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -21,7 +24,10 @@ import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.Week
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerEvent
 import com.robinwersich.todue.ui.presentation.organizer.formatting.TimeBlockFormatter
+import com.robinwersich.todue.ui.presentation.organizer.formatting.TimeBlockLabelComponent
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
+import com.robinwersich.todue.ui.theme.BlockLabelSubtitleStyle
+import com.robinwersich.todue.ui.theme.BlockLabelTitleStyle
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.utility.mapIndexedToImmutableList
 
@@ -31,8 +37,31 @@ fun TaskBlockLabel(
   formatter: TimeBlockFormatter,
   modifier: Modifier = Modifier,
 ) {
+  val components = formatter.formatLabel(timeBlock)
+  val subtitleColor = LocalContentColor.current.copy(alpha = 0.65f)
+
   Box(modifier, contentAlignment = Alignment.Center) {
-    Text(formatter.format(timeBlock, useNarrowFormatting = true), textAlign = TextAlign.Center)
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      for (component in components) {
+        when (component) {
+          is TimeBlockLabelComponent.Title ->
+            Text(component.text, style = BlockLabelTitleStyle, textAlign = TextAlign.Center)
+          is TimeBlockLabelComponent.Subtitle ->
+            Text(
+              component.text,
+              style = BlockLabelSubtitleStyle,
+              color = subtitleColor,
+              textAlign = TextAlign.Center,
+            )
+          is TimeBlockLabelComponent.Divider ->
+            HorizontalDivider(
+              Modifier.width(32.dp).padding(vertical = 2.dp),
+              thickness = 1.dp,
+              color = subtitleColor,
+            )
+        }
+      }
+    }
   }
 }
 
@@ -44,12 +73,20 @@ fun TaskBlockContent(
   modifier: Modifier = Modifier,
   onEvent: (OrganizerEvent) -> Unit = {},
 ) {
+  val heading = formatter.formatHeading(taskBlock.timeBlock)
+  val headingStyle = MaterialTheme.typography.titleLarge
+
   Column(modifier) {
-    Text(
-      formatter.format(taskBlock.timeBlock, useNarrowFormatting = false),
-      style = MaterialTheme.typography.headlineSmall,
-      modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
-    )
+    Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)) {
+      Text(heading.title, style = headingStyle)
+      heading.subtitle?.let {
+        Text(
+          heading.subtitle,
+          style = MaterialTheme.typography.titleSmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+    }
     TaskList(taskBlock.tasks, mode = mode, onEvent = onEvent, modifier = Modifier.fillMaxSize())
   }
 }

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TaskBlock
+import com.robinwersich.todue.domain.model.isDone
 import com.robinwersich.todue.domain.repository.TaskRepository
 import com.robinwersich.todue.domain.repository.TimeBlockRepository
 import com.robinwersich.todue.toDueApplication
@@ -41,9 +42,9 @@ class OrganizerViewModel(
       currentTaskBlockFlow,
       navigationState.focussedTimelineBlocksFlow,
     ) { activeTaskBlocks, currentTaskBlock, focussedTimelineBlocks ->
-      focussedTimelineBlocks.associateWith {
-        if (it == currentTaskBlock.timelineBlock) currentTaskBlock
-        else activeTaskBlocks.getOrElse(it) { TaskBlock(it) }
+      focussedTimelineBlocks.associateWith { timelineBlock ->
+        if (timelineBlock == currentTaskBlock.timelineBlock) currentTaskBlock
+        else activeTaskBlocks.getOrElse(timelineBlock) { TaskBlock(timelineBlock) }
       }
     }
 
