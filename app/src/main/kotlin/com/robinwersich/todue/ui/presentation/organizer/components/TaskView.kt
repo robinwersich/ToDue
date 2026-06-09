@@ -55,10 +55,12 @@ import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.isDone
 import com.robinwersich.todue.ui.composeextensions.modifiers.signedPadding
-import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
+import com.robinwersich.todue.ui.presentation.organizer.formatting.formatDuration
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.utility.letIf
+import java.time.Duration
 import java.time.LocalDate
+import kotlinx.collections.immutable.persistentListOf
 
 data class TaskViewState(
   val task: Task,
@@ -230,10 +232,10 @@ private fun SharedTransitionScope.ExpandedTaskView(
       }
 
       TaskProperties(
-        scheduledBlock = task.scheduledBlock,
         dueDate = task.dueDate,
-        onBlockChanged = { onChange(task.copy(scheduledBlock = it)) },
         onDueDateChanged = { onChange(task.copy(dueDate = it)) },
+        estimatedDuration = task.estimatedDuration,
+        onEstimatedDurationChanged = { onChange(task.copy(estimatedDuration = it)) },
         onDelete = onDelete,
         modifier =
           Modifier.padding(start = checkboxSize).wrapContentHeight(Alignment.Top, unbounded = true),
@@ -266,22 +268,22 @@ private fun TaskCheckbox(
 
 @Composable
 private fun TaskProperties(
-  scheduledBlock: TimelineBlock,
   dueDate: LocalDate,
-  onBlockChanged: (TimelineBlock) -> Unit,
   onDueDateChanged: (LocalDate) -> Unit,
+  estimatedDuration: Duration,
+  onEstimatedDurationChanged: (Duration) -> Unit,
   onDelete: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
   Column(modifier = modifier) {
     HorizontalDivider()
-    ScheduledTimelineBlockProperty(block = scheduledBlock, onChange = onBlockChanged)
-    /*Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-      TaskProperty(R.drawable.scheduled_date, "this week", onClick = {})
-      TaskProperty(R.drawable.time_estimate, "30min", onClick = {})
-    }*/
-    HorizontalDivider()
-    DueDateProperty(dueDate = dueDate, onDueDateChanged)
+    Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+      DueDateProperty(dueDate = dueDate, onChange = onDueDateChanged)
+      TimeEstimateProperty(
+        duration = estimatedDuration,
+        onChange = onEstimatedDurationChanged,
+      )
+    }
     HorizontalDivider()
     Row(
       horizontalArrangement = Arrangement.End,
@@ -297,41 +299,61 @@ private fun TaskProperties(
 }
 
 @Composable
-private fun ScheduledTimelineBlockProperty(
-  block: TimelineBlock,
-  onChange: (TimelineBlock) -> Unit,
+private fun <T> PickerProperty(
+  @DrawableRes iconId: Int,
+  displayText: String,
+  picker: @Composable (onChange: (T) -> Unit, onCancel: () -> Unit) -> Unit,
+  onChange: (T) -> Unit,
 ) {
-  val timeBlockFormatter = rememberTimeBlockFormatter()
   var showSelection by rememberSaveable { mutableStateOf(false) }
   if (showSelection) {
-    DueDatePicker(
-      initialSelection = block.section.endInclusive,
-      onConfirm = {
-        onChange(TimelineBlock(block.timelineId, Day(it)))
+    picker(
+      {
+        onChange(it)
         showSelection = false
       },
-      onCancel = { showSelection = false },
+      { showSelection = false },
     )
   }
-  val timeBlockName = timeBlockFormatter.format(block.section)
-  TaskProperty(R.drawable.scheduled_date, timeBlockName, onClick = { showSelection = true })
+  TaskProperty(iconId, displayText, onClick = { showSelection = true })
 }
 
 @Composable
 private fun DueDateProperty(dueDate: LocalDate, onChange: (LocalDate) -> Unit) {
-  var showSelection by rememberSaveable { mutableStateOf(false) }
-  if (showSelection) {
-    DueDatePicker(
-      initialSelection = dueDate,
-      onConfirm = {
-        onChange(it)
-        showSelection = false
-      },
-      onCancel = { showSelection = false },
-    )
-  }
   // TODO: use custom formatting
-  TaskProperty(R.drawable.due_date, dueDate.toString(), onClick = { showSelection = true })
+  PickerProperty(
+    iconId = R.drawable.due_date,
+    displayText = dueDate.toString(),
+    picker = { onConfirm, onCancel ->
+      DueDatePicker(initialSelection = dueDate, onConfirm = onConfirm, onCancel = onCancel)
+    },
+    onChange = onChange,
+  )
+}
+
+private val DURATION_PRESETS =
+  persistentListOf(
+    Duration.ofMinutes(15),
+    Duration.ofMinutes(30),
+    Duration.ofMinutes(45),
+    Duration.ofHours(1),
+  )
+
+@Composable
+private fun TimeEstimateProperty(duration: Duration, onChange: (Duration) -> Unit) {
+  PickerProperty(
+    iconId = R.drawable.time_estimate,
+    displayText = formatDuration(duration),
+    picker = { onConfirm, onCancel ->
+      DurationPickerDialog(
+        initialDuration = duration,
+        presets = DURATION_PRESETS,
+        onConfirm = onConfirm,
+        onCancel = onCancel,
+      )
+    },
+    onChange = onChange,
+  )
 }
 
 @Composable

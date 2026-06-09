@@ -10,8 +10,6 @@ import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TimelineBlock
 import java.time.Duration
 import java.time.LocalDate
-import kotlin.time.Duration.Companion.hours
-import kotlin.time.toJavaDuration
 
 @Entity(
   tableName = "todo",
@@ -48,6 +46,7 @@ fun TaskEntity.toModel(scheduledBlock: TimelineBlock) =
     text = text,
     scheduledBlock = scheduledBlock,
     dueDate = dueDate,
+    estimatedDuration = estimatedDuration,
     doneDate = doneDate,
   )
 
@@ -57,6 +56,6 @@ fun Task.toEntity() =
     text = text,
     scheduledTimelineSection = scheduledBlock.toEntity(),
     dueDate = dueDate,
-    estimatedDuration = 1.hours.toJavaDuration(),
+    estimatedDuration = estimatedDuration,
     doneDate = doneDate,
   )

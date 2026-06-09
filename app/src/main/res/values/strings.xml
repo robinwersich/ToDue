@@ -30,6 +30,11 @@
     <string name="format_year">yyyy</string>
     <string name="format_week_label">W%d</string>
 
+    <!-- Duration Picker -->
+    <string name="duration_title">Duration</string>
+    <string name="duration_subtitle">How long will this task take?</string>
+    <string name="drag_to_set">drag to set</string>
+
     <!-- Task List -->
     <string name="done_section_label">DONE</string>
 </resources>

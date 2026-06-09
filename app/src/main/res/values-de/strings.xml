@@ -27,6 +27,11 @@
     <string name="format_year">yyyy</string>
     <string name="format_week_label">KW%d</string>
 
+    <!-- Duration Picker -->
+    <string name="duration_title">Dauer</string>
+    <string name="duration_subtitle">Wie lange braucht diese Aufgabe?</string>
+    <string name="drag_to_set">ziehen zum Einstellen</string>
+
     <!-- Task List -->
     <string name="done_section_label">ERLEDIGT</string>
 </resources>
