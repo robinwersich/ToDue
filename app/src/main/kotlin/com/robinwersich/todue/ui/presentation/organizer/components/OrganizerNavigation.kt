@@ -42,7 +42,7 @@ import kotlinx.coroutines.launch
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.daysUntil
 import com.robinwersich.todue.domain.model.duration
-import com.robinwersich.todue.domain.model.size
+import com.robinwersich.todue.domain.model.numberOfDays
 import com.robinwersich.todue.ui.composeextensions.DeriveScope
 import com.robinwersich.todue.ui.composeextensions.PaddedRoundedCornerShape
 import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
@@ -293,7 +293,7 @@ private fun DeriveScope<NavigationPosition>.blockDisplayState(
       TimelineStyle.HIDDEN_PARENT -> 1f
     }
   val relativeOffsetTop =
-    current.dateRange.start.daysUntil(timeBlock.start) / current.dateRange.size.toFloat()
+    current.dateRange.start.daysUntil(timeBlock.start) / current.dateRange.numberOfDays.toFloat()
 
   return TaskBlockDisplayState(
     timelineStyle = timelineStyle,

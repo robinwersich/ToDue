@@ -28,7 +28,7 @@ import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.center
 import com.robinwersich.todue.domain.model.rangeTo
-import com.robinwersich.todue.domain.model.size
+import com.robinwersich.todue.domain.model.numberOfDays
 import com.robinwersich.todue.domain.model.toDoubleRange
 import com.robinwersich.todue.ui.composeextensions.SwipeableTransition
 import com.robinwersich.todue.ui.composeextensions.getAdjacentToCurrentAnchors
@@ -450,7 +450,7 @@ class NavigationState(
 }
 
 private fun DateRange.applyMargin(startMargin: Float, endMargin: Float): DateRange {
-  val rangeSize = size
+  val rangeSize = numberOfDays
   val newStart = start.minusDays(ceil(rangeSize * startMargin).toLong())
   val newEnd = endInclusive.plusDays(ceil(rangeSize * endMargin).toLong())
   return newStart..newEnd

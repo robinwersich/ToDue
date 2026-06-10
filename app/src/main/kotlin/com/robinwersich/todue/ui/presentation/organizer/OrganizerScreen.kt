@@ -4,6 +4,7 @@ import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -20,14 +21,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
+import kotlin.random.Random
+import kotlin.time.Duration.Companion.hours
 import com.robinwersich.todue.R
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TaskBlock
+import com.robinwersich.todue.domain.model.TaskBlockMainData
+import com.robinwersich.todue.domain.model.TaskBlockPreviewData
 import com.robinwersich.todue.domain.model.TimeUnit
 import com.robinwersich.todue.domain.model.Timeline
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.ui.presentation.organizer.components.OrganizerNavigation
 import com.robinwersich.todue.ui.presentation.organizer.components.TaskBlockContent
+import com.robinwersich.todue.ui.presentation.organizer.components.TaskBlockFillOverlay
 import com.robinwersich.todue.ui.presentation.organizer.components.TaskBlockLabel
 import com.robinwersich.todue.ui.presentation.organizer.formatting.rememberTimeBlockFormatter
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
@@ -70,11 +76,13 @@ fun OrganizerScreen(
       navigationState = navigationState,
       contentPadding = scaffoldPadding,
       taskBlockLabel = { timelineBlock, padding ->
-        TaskBlockLabel(
-          timeBlock = timelineBlock.section,
-          formatter = formatter,
-          modifier = Modifier.padding(padding),
-        )
+        Box(Modifier.padding(padding), propagateMinConstraints = true) {
+          TaskBlockFillOverlay(taskBlock = getTaskBlock(timelineBlock))
+          TaskBlockLabel(
+            timeBlock = timelineBlock.section,
+            formatter = formatter,
+          )
+        }
       },
       taskBlockContent = { timelineBlock, mode, padding ->
         TaskBlockContent(
@@ -98,24 +106,30 @@ private val previewTimelines =
 
 private val previewDate = LocalDate.now()
 
-private fun sampleTaskBlock(timelineBlock: TimelineBlock) =
-  TaskBlock.main(
+private fun sampleTaskBlock(timelineBlock: TimelineBlock): TaskBlock {
+  return TaskBlock(
     timelineBlock,
-    listOf(
-      Task(
-        id = 1,
-        text = "Buy groceries",
-        scheduledBlock = timelineBlock,
-        dueDate = timelineBlock.section.endInclusive,
+    mainData =
+      TaskBlockMainData(
+        tasks =
+          listOf(
+            Task(
+              id = 1,
+              text = "Buy groceries",
+              scheduledBlock = timelineBlock,
+              dueDate = timelineBlock.section.endInclusive,
+            ),
+            Task(
+              id = 2,
+              text = "Clean house",
+              scheduledBlock = timelineBlock,
+              dueDate = timelineBlock.section.endInclusive,
+            ),
+          )
       ),
-      Task(
-        id = 2,
-        text = "Clean house",
-        scheduledBlock = timelineBlock,
-        dueDate = timelineBlock.section.endInclusive,
-      ),
-    ),
+    previewData = TaskBlockPreviewData(totalEstimatedDuration = Random.nextInt(4).hours),
   )
+}
 
 @Preview(showSystemUi = true)
 @Composable

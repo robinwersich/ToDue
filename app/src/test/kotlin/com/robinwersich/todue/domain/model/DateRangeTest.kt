@@ -1,21 +1,21 @@
 package com.robinwersich.todue.domain.model
 
 import com.google.common.truth.Truth.assertThat
-import com.robinwersich.todue.utility.size
 import java.time.LocalDate
 import org.junit.Test
+import com.robinwersich.todue.utility.size
 
 class DateRangeTest {
   @Test
   fun `duration includes start and end day`() {
     val dateRange = LocalDate.of(2020, 1, 1)..LocalDate.of(2020, 1, 10)
-    assertThat(dateRange.size).isEqualTo(10)
+    assertThat(dateRange.numberOfDays).isEqualTo(10)
   }
 
   @Test
   fun `duration is 1 for single day range`() {
     val dateRange = LocalDate.of(2020, 1, 1)..LocalDate.of(2020, 1, 1)
-    assertThat(dateRange.size).isEqualTo(1)
+    assertThat(dateRange.numberOfDays).isEqualTo(1)
     assertThat(dateRange.isEmpty()).isFalse()
   }
 
@@ -23,7 +23,7 @@ class DateRangeTest {
   fun `DateRange and derived DateTimeRange have same duration`() {
     val dateRange = LocalDate.of(2020, 1, 1)..LocalDate.of(2020, 1, 10)
     val dateTimeRange = dateRange.toDoubleRange()
-    assertThat(dateTimeRange.size).isEqualTo(dateRange.size.toDouble())
+    assertThat(dateTimeRange.size).isEqualTo(dateRange.numberOfDays.toDouble())
   }
 
   @Test

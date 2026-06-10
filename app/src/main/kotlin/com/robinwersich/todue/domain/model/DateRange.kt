@@ -12,11 +12,11 @@ typealias DateRange = ClosedRange<LocalDate>
  * of the first day to the end of the last day, so a range from 2021-01-01 to 2021-01-01 has a size
  * of 1.
  */
-val DateRange.size: Long
+val DateRange.numberOfDays: Long
   get() = endInclusive.toEpochDay() + 1 - start.toEpochDay()
 
 val DateRange.duration: Duration
-  get() = size.days
+  get() = numberOfDays.days
 
 /** Returns the date at the middle of this range (or the one just before for even-sized ranges). */
 val DateRange.center: LocalDate

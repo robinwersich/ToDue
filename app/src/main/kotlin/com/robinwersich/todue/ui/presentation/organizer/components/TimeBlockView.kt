@@ -1,8 +1,11 @@
 package com.robinwersich.todue.ui.presentation.organizer.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.HorizontalDivider
@@ -16,12 +19,16 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.times
 import com.robinwersich.todue.domain.model.Day
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TaskBlock
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.Week
+import com.robinwersich.todue.domain.model.numberOfDays
 import com.robinwersich.todue.ui.presentation.organizer.OrganizerEvent
 import com.robinwersich.todue.ui.presentation.organizer.formatting.TimeBlockFormatter
 import com.robinwersich.todue.ui.presentation.organizer.formatting.TimeBlockLabelComponent
@@ -62,6 +69,25 @@ fun TaskBlockLabel(
         }
       }
     }
+  }
+}
+
+@Composable
+fun TaskBlockFillOverlay(
+  taskBlock: TaskBlock,
+  modifier: Modifier = Modifier,
+) {
+  val estimatedTaskDuration = taskBlock.previewData?.totalEstimatedDuration ?: Duration.ZERO
+  val availableDuration = (taskBlock.timeBlock.numberOfDays.toInt() * 8.hours)
+  val fillFraction = (estimatedTaskDuration / availableDuration).toFloat()
+
+  Box(modifier) {
+    Box(
+      Modifier.fillMaxWidth()
+        .fillMaxHeight(fillFraction)
+        .align(Alignment.BottomCenter)
+        .background(LocalContentColor.current.copy(alpha = 0.1f))
+    )
   }
 }
 
