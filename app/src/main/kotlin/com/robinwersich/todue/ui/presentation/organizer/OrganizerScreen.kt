@@ -99,23 +99,22 @@ private val previewTimelines =
 private val previewDate = LocalDate.now()
 
 private fun sampleTaskBlock(timelineBlock: TimelineBlock) =
-  TaskBlock(
+  TaskBlock.main(
     timelineBlock,
-    tasks =
-      listOf(
-        Task(
-          id = 1,
-          text = "Buy groceries",
-          scheduledBlock = timelineBlock,
-          dueDate = timelineBlock.section.endInclusive,
-        ),
-        Task(
-          id = 2,
-          text = "Clean house",
-          scheduledBlock = timelineBlock,
-          dueDate = timelineBlock.section.endInclusive,
-        ),
+    listOf(
+      Task(
+        id = 1,
+        text = "Buy groceries",
+        scheduledBlock = timelineBlock,
+        dueDate = timelineBlock.section.endInclusive,
       ),
+      Task(
+        id = 2,
+        text = "Clean house",
+        scheduledBlock = timelineBlock,
+        dueDate = timelineBlock.section.endInclusive,
+      ),
+    ),
   )
 
 @Preview(showSystemUi = true)

@@ -22,15 +22,11 @@ interface TaskRepository {
 
   suspend fun setDoneDate(id: Long, date: LocalDate?)
 
-  fun getTaskBlockFlow(timelineBlock: TimelineBlock): Flow<TaskBlock>
-
-  suspend fun getTasks(timelineBlock: TimelineBlock): List<Task>
-
-  suspend fun getTaskBlock(timelineBlock: TimelineBlock): TaskBlock
-
-  suspend fun getTaskBlocks(timelineBlocks: Collection<TimelineBlock>): List<TaskBlock>
-
-  suspend fun getTaskBlocksMap(
+  fun getTaskBlockMainDataFlows(
     timelineBlocks: Collection<TimelineBlock>
-  ): Map<TimelineBlock, TaskBlock>
+  ): Flow<Map<TimelineBlock, TaskBlock>>
+
+  fun getTaskBlockPreviewDataFlows(
+    timelineBlocks: Collection<TimelineBlock>
+  ): Flow<Map<TimelineBlock, TaskBlock>>
 }

@@ -40,11 +40,16 @@ data class TaskEntity(
   @ColumnInfo(name = "done_date") val doneDate: LocalDate? = null,
 )
 
-fun TaskEntity.toModel(scheduledBlock: TimelineBlock) =
+/**
+ * The [Task.scheduledBlock] will be a simple day range by default. If the caller already has a
+ * semantically more accurate [TimelineBlock] available (e.g. a Week) that the task is scheduled
+ * for, it can be passed in optionally.
+ */
+fun TaskEntity.toModel(timelineBlock: TimelineBlock? = null) =
   Task(
     id = id,
     text = text,
-    scheduledBlock = scheduledBlock,
+    scheduledBlock = timelineBlock ?: scheduledTimelineSection.toModel(),
     dueDate = dueDate,
     estimatedDuration = estimatedDuration,
     doneDate = doneDate,

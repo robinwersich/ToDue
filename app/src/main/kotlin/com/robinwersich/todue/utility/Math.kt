@@ -2,6 +2,7 @@ package com.robinwersich.todue.utility
 
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.time.Duration
 
 /**
  * Returns the relative progress of [progress] between [start] and [end], clamped between 0 and 1.
@@ -93,3 +94,14 @@ infix fun ClosedRange<Long>.union(other: ClosedRange<Long>) =
 @JvmName("unionChar")
 infix fun ClosedRange<Char>.union(other: ClosedRange<Char>) =
   minOf(start, other.start)..maxOf(endInclusive, other.endInclusive)
+
+// --- sumOf ---
+
+@JvmName("sumOfDuration")
+inline fun <T> Iterable<T>.sumOf(selector: (T) -> Duration): Duration {
+  var sum: Duration = Duration.ZERO
+  for (element in this) {
+    sum += selector(element)
+  }
+  return sum
+}

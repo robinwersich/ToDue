@@ -42,6 +42,9 @@ inline fun <T> Pair<T, T>.find(predicate: (T) -> Boolean): T? =
 inline fun <T, R> Pair<T, T>.map(transform: (T) -> R): Pair<R, R> =
   transform(first) to transform(second)
 
+fun <T> Pair<T, T>.distinct(): List<T> =
+  if (first == second) listOf(first) else listOf(first, second)
+
 val <T> Pair<T, T>.areSame
   get() = first == second
 
@@ -54,3 +57,19 @@ inline fun <T> Pair<T, T>.forEachDistinct(action: (T) -> Unit) {
   action(first)
   if (first != second) action(second)
 }
+
+inline fun <K : Any, V : Any, D : MutableMap<K, V>> Map<K, V>.mergeTo(
+  destination: D,
+  other: Map<K, V>,
+  valueMerge: (K, V, V) -> V,
+): D =
+  (this.keys + other.keys).associateWithTo(destination) { key ->
+    val thisValue = this[key]
+    val otherValue = other[key]
+    when {
+      thisValue != null && otherValue != null -> valueMerge(key, thisValue, otherValue)
+      thisValue != null -> thisValue
+      otherValue != null -> otherValue
+      else -> error("key $key is in neither of the merged maps") // should be unreachable
+    }
+  }

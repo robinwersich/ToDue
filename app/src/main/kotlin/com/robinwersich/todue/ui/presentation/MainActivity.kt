@@ -19,12 +19,12 @@ class MainActivity : ComponentActivity() {
     setContent {
       ToDueTheme {
         val viewModel: OrganizerViewModel = viewModel(factory = OrganizerViewModel.Factory)
-        val taskBlockViewStates by
-          viewModel.focussedTaskBlockViewStatesFlow.collectAsStateWithLifecycle(persistentMapOf())
+        val taskBlockData by
+          viewModel.taskBlockDataFlow.collectAsStateWithLifecycle(persistentMapOf())
         OrganizerScreen(
           navigationState = viewModel.navigationState,
           getTaskBlock = { timelineBlock ->
-            taskBlockViewStates.getOrElse(timelineBlock) { TaskBlock(timelineBlock) }
+            taskBlockData.getOrElse(timelineBlock) { TaskBlock(timelineBlock) }
           },
           onEvent = viewModel::handleEvent,
         )

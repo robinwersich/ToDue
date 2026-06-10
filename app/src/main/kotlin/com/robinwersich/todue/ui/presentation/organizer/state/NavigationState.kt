@@ -20,6 +20,7 @@ import java.time.LocalDate
 import kotlin.math.ceil
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import com.robinwersich.todue.domain.model.DateRange
 import com.robinwersich.todue.domain.model.TimeBlock
 import com.robinwersich.todue.domain.model.TimeUnit
@@ -38,8 +39,10 @@ import com.robinwersich.todue.ui.composeextensions.pairReferentialEqualityPolicy
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState.Companion.defaultTimeline
 import com.robinwersich.todue.utility.buildImmutableList
 import com.robinwersich.todue.utility.center
+import com.robinwersich.todue.utility.distinct
 import com.robinwersich.todue.utility.forEachDistinct
 import com.robinwersich.todue.utility.intersection
+import com.robinwersich.todue.utility.map
 import com.robinwersich.todue.utility.size
 import com.robinwersich.todue.utility.union
 
@@ -417,11 +420,7 @@ class NavigationState(
 
   /** The visible [TimelineBlock]s that currently are expanded. */
   val focussedTimelineBlocksFlow = snapshotFlow {
-    val (prevPos, nextPos) = navPosTransition.transitionStates()
-    val prevTimelineBlock = prevPos.timelineBlock
-    val nextTimelineBlock = nextPos.timelineBlock
-    if (prevTimelineBlock == nextTimelineBlock) listOf(prevTimelineBlock)
-    else listOf(prevTimelineBlock, nextTimelineBlock)
+    navPosTransition.transitionStates().map { it.timelineBlock }.distinct()
   }
 
   /** The [TimelineBlock]s that currently show some data. */
@@ -435,11 +434,19 @@ class NavigationState(
       }
     }
     buildImmutableList {
-      activeDateRangesByTimeline.forEach { timeline, dateRange ->
+      activeDateRangesByTimeline.forEach { (timeline, dateRange) ->
         addAll(getTimelineBlocks(timeline, dateRange))
       }
     }
   }
+
+  val childTimelineBlocksFlow =
+    snapshotFlow {
+        navPosTransition.transitionStates().map { it.timelineNavPos.child?.id }.distinct()
+      }
+      .combine(activeTimelineBlocksFlow) { childTimelineIds, activeBlocks ->
+        activeBlocks.filter { block -> block.timelineId in childTimelineIds }
+      }
 }
 
 private fun DateRange.applyMargin(startMargin: Float, endMargin: Float): DateRange {

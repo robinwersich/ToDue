@@ -5,18 +5,19 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import java.time.LocalDate
+import kotlinx.collections.immutable.persistentMapOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TaskBlock
-import com.robinwersich.todue.domain.model.isDone
+import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.repository.TaskRepository
 import com.robinwersich.todue.domain.repository.TimeBlockRepository
 import com.robinwersich.todue.toDueApplication
 import com.robinwersich.todue.ui.presentation.organizer.state.NavigationState
+import com.robinwersich.todue.utility.mergeTo
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OrganizerViewModel(
@@ -32,20 +33,38 @@ class OrganizerViewModel(
     viewModelScope.launch { navigationState.updateDateAnchorsOnSwipe() }
   }
 
-  private val activeTaskBlocksFlow =
-    navigationState.activeTimelineBlocksFlow.map { taskRepository.getTaskBlocksMap(it) }
-  private val currentTaskBlockFlow =
-    navigationState.currentTimelineBlockFlow.flatMapLatest { taskRepository.getTaskBlockFlow(it) }
-  val focussedTaskBlockViewStatesFlow =
+  /** Preview data for all active task blocks in preview mode */
+  private val taskBlockPreviewsFlow =
+    navigationState.childTimelineBlocksFlow.flatMapLatest {
+      taskRepository.getTaskBlockPreviewDataFlows(it)
+    }
+
+  /** Main data for the currently focussed task blocks (a subset of the active blocks) */
+  private val focussedTaskBlockDataFlow =
+    navigationState.focussedTimelineBlocksFlow.flatMapLatest { timelineBlocks ->
+      taskRepository.getTaskBlockMainDataFlows(timelineBlocks)
+    }
+
+  /**
+   * Main and preview data for all active blocks, with main data taking precedence over preview data
+   */
+  val taskBlockDataFlow =
     combine(
-      activeTaskBlocksFlow,
-      currentTaskBlockFlow,
-      navigationState.focussedTimelineBlocksFlow,
-    ) { activeTaskBlocks, currentTaskBlock, focussedTimelineBlocks ->
-      focussedTimelineBlocks.associateWith { timelineBlock ->
-        if (timelineBlock == currentTaskBlock.timelineBlock) currentTaskBlock
-        else activeTaskBlocks.getOrElse(timelineBlock) { TaskBlock(timelineBlock) }
-      }
+      taskBlockPreviewsFlow,
+      focussedTaskBlockDataFlow,
+    ) { activeTimelineBlocks, focussedTimelineBlocks ->
+      activeTimelineBlocks
+        .mergeTo(
+          persistentMapOf<TimelineBlock, TaskBlock>().builder(),
+          focussedTimelineBlocks,
+        ) { _, preview, main ->
+          TaskBlock(
+            timelineBlock = main.timelineBlock,
+            mainData = main.mainData,
+            previewData = preview.previewData,
+          )
+        }
+        .build()
     }
 
   fun handleEvent(event: OrganizerEvent) {

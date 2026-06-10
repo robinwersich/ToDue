@@ -1,6 +1,8 @@
 package com.robinwersich.todue.domain.model
 
 import java.time.LocalDate
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 
 /** A range of dates with inclusive start and end. */
 typealias DateRange = ClosedRange<LocalDate>
@@ -12,6 +14,9 @@ typealias DateRange = ClosedRange<LocalDate>
  */
 val DateRange.size: Long
   get() = endInclusive.toEpochDay() + 1 - start.toEpochDay()
+
+val DateRange.duration: Duration
+  get() = size.days
 
 /** Returns the date at the middle of this range (or the one just before for even-sized ranges). */
 val DateRange.center: LocalDate

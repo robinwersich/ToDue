@@ -6,6 +6,7 @@ import androidx.room.Query
 import androidx.room.Update
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
+import com.robinwersich.todue.data.entity.ScheduledWork
 import com.robinwersich.todue.data.entity.TaskEntity
 
 @Dao
@@ -29,20 +30,24 @@ interface TaskDao {
   @Query("UPDATE todo SET done_date = :date WHERE id = :id")
   suspend fun setDoneDate(id: Long, date: LocalDate?)
 
-  /** All tasks with a scheduled range overlapping with the given date range. */
+  /**
+   * All work in the timeline with the given [timelineId] OR child timelines and with a scheduled
+   * range overlapping with the given date range.
+   */
   @Query(
     """
-    SELECT * FROM todo
-    WHERE todo.scheduled_timeline_id = :timelineId
+    SELECT scheduled_timeline_id, scheduled_start, scheduled_end_inclusive, estimated_duration
+    FROM todo
+    WHERE todo.scheduled_timeline_id <= :timelineId
     AND todo.scheduled_end_inclusive >= :start
     AND todo.scheduled_start <= :endInclusive
     """
   )
-  suspend fun getTasks(
+  fun getScheduledWork(
     timelineId: Long,
     start: LocalDate,
     endInclusive: LocalDate,
-  ): List<TaskEntity>
+  ): Flow<List<ScheduledWork>>
 
   /** Returns a [Flow] of all tasks with a scheduled range overlapping with the given date range. */
   @Query(

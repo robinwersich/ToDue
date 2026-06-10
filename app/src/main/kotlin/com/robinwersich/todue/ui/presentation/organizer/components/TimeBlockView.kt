@@ -87,7 +87,14 @@ fun TaskBlockContent(
         )
       }
     }
-    TaskList(taskBlock.tasks, mode = mode, onEvent = onEvent, modifier = Modifier.fillMaxSize())
+    if (taskBlock.mainData != null) {
+      TaskList(
+        taskBlock.mainData.tasks,
+        mode = mode,
+        onEvent = onEvent,
+        modifier = Modifier.fillMaxSize(),
+      )
+    }
   }
 }
 
@@ -105,7 +112,7 @@ fun ExpandedTimeBlockViewPreview() {
     }
   ToDueTheme {
     TaskBlockContent(
-      TaskBlock(TimelineBlock(0, Week()), tasks),
+      TaskBlock.main(TimelineBlock(0, Week()), tasks),
       TaskBlockContentMode.FULLSCREEN,
       rememberTimeBlockFormatter(),
       modifier = Modifier.fillMaxSize(),

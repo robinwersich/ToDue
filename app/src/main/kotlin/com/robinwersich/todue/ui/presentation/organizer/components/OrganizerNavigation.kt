@@ -41,6 +41,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import com.robinwersich.todue.domain.model.TimelineBlock
 import com.robinwersich.todue.domain.model.daysUntil
+import com.robinwersich.todue.domain.model.duration
 import com.robinwersich.todue.domain.model.size
 import com.robinwersich.todue.ui.composeextensions.DeriveScope
 import com.robinwersich.todue.ui.composeextensions.PaddedRoundedCornerShape
@@ -270,7 +271,7 @@ private fun DeriveScope<NavigationPosition>.blockDisplayState(
   val timeBlock = timelineBlock.section
   val timelineStyle = timelineStyle(timelineId, current.timelineNavPos)
 
-  fun NavigationPosition.relativeHeight() = timeBlock.size.toFloat() / dateRange.size.toFloat()
+  fun NavigationPosition.relativeHeight() = (timeBlock.duration / dateRange.duration).toFloat()
 
   val relativeHeight = current.relativeHeight()
   val relativeWidth =
