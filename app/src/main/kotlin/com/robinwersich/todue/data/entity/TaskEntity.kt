@@ -8,8 +8,8 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.robinwersich.todue.domain.model.Task
 import com.robinwersich.todue.domain.model.TimelineBlock
-import java.time.Duration
 import java.time.LocalDate
+import kotlin.time.Duration
 
 @Entity(
   tableName = "todo",

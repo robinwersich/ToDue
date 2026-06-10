@@ -1,8 +1,9 @@
 package com.robinwersich.todue.data.database
 
 import androidx.room.TypeConverter
-import java.time.Duration
 import java.time.LocalDate
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 
 class Converters {
   @TypeConverter
@@ -10,8 +11,8 @@ class Converters {
 
   @TypeConverter fun localDateToTimestamp(localDate: LocalDate?) = localDate?.toEpochDay()
 
-  @TypeConverter fun secondsToDuration(seconds: Long?) = seconds?.let { Duration.ofSeconds(it) }
+  @TypeConverter fun secondsToDuration(seconds: Long?) = seconds?.seconds
 
   // Millisecond precision is not required in this domain, so we store only seconds.
-  @TypeConverter fun durationToSeconds(duration: Duration?) = duration?.seconds
+  @TypeConverter fun durationToSeconds(duration: Duration?) = duration?.inWholeSeconds
 }

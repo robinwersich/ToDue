@@ -48,8 +48,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import java.time.Duration
 import kotlin.math.PI
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlin.math.atan2
 import kotlin.math.roundToInt
 import kotlinx.collections.immutable.ImmutableList
@@ -80,7 +82,7 @@ private class DurationPickerState(
   val snappedDuration: Duration
     get() {
       val snapped = snapToMinutes(rawAngle).coerceIn(snapIntervalMinutes, maxMinutes.toInt())
-      return Duration.ofMinutes(snapped.toLong())
+      return snapped.minutes
     }
 
   suspend fun animateToDuration(duration: Duration) {
@@ -90,7 +92,7 @@ private class DurationPickerState(
   }
 
   fun durationToAngle(duration: Duration): Float {
-    val minutes = duration.toMinutes().coerceIn(0, maxMinutes)
+    val minutes = duration.inWholeMinutes.coerceIn(0, maxMinutes)
     return (minutes / 60f) * TWO_PI
   }
 
@@ -232,7 +234,7 @@ private fun DurationDialCanvas(state: DurationPickerState, modifier: Modifier = 
                     state
                       .snapToMinutes(targetRawAngle)
                       .coerceIn(state.snapIntervalMinutes, state.maxMinutes.toInt())
-                  Duration.ofMinutes(snappedMinutes.toLong())
+                  snappedMinutes.minutes
                 }
               scope.launch { state.animateToDuration(snapTarget) }
               break
@@ -332,17 +334,17 @@ private fun PresetChipsRow(
 
 private val PREVIEW_PRESETS =
   persistentListOf(
-    Duration.ofMinutes(15),
-    Duration.ofMinutes(30),
-    Duration.ofMinutes(45),
-    Duration.ofHours(1),
+    15.minutes,
+    30.minutes,
+    45.minutes,
+    1.hours,
   )
 
 @Preview
 @Composable
 private fun DurationPickerContentPreview() {
   ToDueTheme {
-    val state = remember { DurationPickerState(Duration.ofMinutes(45)) }
+    val state = remember { DurationPickerState(45.minutes) }
     DurationPickerContent(
       state = state,
       presets = PREVIEW_PRESETS,

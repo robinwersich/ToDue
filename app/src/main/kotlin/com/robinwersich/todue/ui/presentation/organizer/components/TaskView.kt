@@ -58,8 +58,10 @@ import com.robinwersich.todue.ui.composeextensions.modifiers.signedPadding
 import com.robinwersich.todue.ui.presentation.organizer.formatting.formatDuration
 import com.robinwersich.todue.ui.theme.ToDueTheme
 import com.robinwersich.todue.utility.letIf
-import java.time.Duration
 import java.time.LocalDate
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
 import kotlinx.collections.immutable.persistentListOf
 
 data class TaskViewState(
@@ -333,10 +335,10 @@ private fun DueDateProperty(dueDate: LocalDate, onChange: (LocalDate) -> Unit) {
 
 private val DURATION_PRESETS =
   persistentListOf(
-    Duration.ofMinutes(15),
-    Duration.ofMinutes(30),
-    Duration.ofMinutes(45),
-    Duration.ofHours(1),
+    15.minutes,
+    30.minutes,
+    45.minutes,
+    1.hours,
   )
 
 @Composable

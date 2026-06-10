@@ -1,9 +1,9 @@
 package com.robinwersich.todue.ui.presentation.organizer.formatting
 
-import java.time.Duration
+import kotlin.time.Duration
 
 fun formatDuration(duration: Duration): String {
-  val totalMinutes = duration.toMinutes()
+  val totalMinutes = duration.inWholeMinutes
   val hours = totalMinutes / 60
   val minutes = totalMinutes % 60
   return when {
